@@ -1,0 +1,645 @@
+// assets/fetch-shim.js
+(function(){
+  'use strict';
+  if (location.protocol !== 'file:') return; // only patch when running from file://
+
+  const TIERS_FALLBACK = {
+"version": "2026-03-13",
+  "game": "Kingshot",
+  "dynamicText": true,
+  "source_notes": {
+    "tiers_source": "tiers.json (user upload)",
+    "tiers_citation": "turn1search1",
+    "interpolation_model": "Stars: 6 parts per star; band ramp 1:2:3:4 unless explicit per-part data given; Skills/Widgets: linear fill between known endpoints"
+  },
+
+  "troops": {
+    "types": {
+      "Infantry": {
+        "passives": [
+          { "name": "Master Brawler", "effect": { "enemyType": "Cavalry", "damageDealtUp_percent": 10 } },
+          { "name": "Bands of Steel", "effect": { "enemyType": "Cavalry", "defenseUp_percent": 10 } }
+        ]
+      },
+      "Cavalry": {
+        "passives": [
+          { "name": "Charge", "effect": { "enemyType": "Archer", "damageDealtUp_percent": 10 } },
+          { "name": "Ambusher", "effect": { "bypassInfantry_chance_percent": 20, "target": "Archers" } }
+        ]
+      },
+      "Archer": {
+        "passives": [
+          { "name": "Ranged Strike", "effect": { "enemyType": "Infantry", "damageDealtUp_percent": 10 } },
+          { "name": "Volley", "effect": { "extraAttack_chance_percent": 10 } }
+        ]
+      }
+    },
+    "truegold_additions": {
+      "Infantry": [
+        { "name": "Unyielding Shield", "requiresTGLevel": 3, "reduceIncomingDamage_chance_percent": 25, "reduceIncomingDamage_value_percent": 36 },
+        { "name": "Unyielding Shield (Upgraded)", "requiresTGLevel": 5, "reduceIncomingDamage_chance_percent": 37.5, "reduceIncomingDamage_value_percent": 36 }
+      ],
+      "Cavalry": [
+        { "name": "Assault Lance", "requiresTGLevel": 3, "doubleDamage_chance_percent": 10 },
+        { "name": "Assault Lance (Upgraded)", "requiresTGLevel": 5, "doubleDamage_chance_percent": 15 }
+      ],
+      "Archer": [
+        { "name": "Howling Wind", "requiresTGLevel": 3, "extraDamage_chance_percent": 20, "extraDamage_value_percent": 50 },
+        { "name": "Howling Wind (Upgraded)", "requiresTGLevel": 5, "extraDamage_chance_percent": 30, "extraDamage_value_percent": 50 }
+      ]
+    },
+    "tiers": {
+      "T6":       { "inf": [243, 730],  "cav": [730, 243],  "arc": [974, 183]  },
+      "T9":       { "inf": [400, 1200], "cav": [1200, 400], "arc": [1600, 300] },
+      "T10":      { "inf": [472, 1416], "cav": [1416, 470], "arc": [1888, 354] },
+      "T10.TG1":  { "inf": [491, 1473], "cav": [1473, 491], "arc": [1964, 368] },
+      "T10.TG2":  { "inf": [515, 1546], "cav": [1546, 515], "arc": [2062, 387] },
+      "T10.TG3":  { "inf": [541, 1624], "cav": [1624, 541], "arc": [2165, 402] },
+      "T10.TG4":  { "inf": [568, 1705], "cav": [1705, 568], "arc": [2273, 426] },
+      "T10.TG5":  { "inf": [597, 1790], "cav": [1790, 597], "arc": [2387, 448] }
+    }
+  },
+
+  "heroes": [
+    {
+      "name": "Amadeus",
+      "troopType": "Infantry",
+      "skills": [
+        {
+          "name": "Battle Ready",
+          "description": "Increase total Squads' Lethality",
+          "template": "Young ranger Amadeus excels in boosting morale, increasing the total Squads' Lethality by {lethalityUp_percent}.",
+          "levels": {
+            "Level 1": { "lethalityUp_percent": 5 },
+            "Level 2": { "lethalityUp_percent": 10 },
+            "Level 3": { "lethalityUp_percent": 15 },
+            "Level 4": { "lethalityUp_percent": 20 },
+            "Level 5": { "lethalityUp_percent": 25 }
+          }
+        },
+        {
+          "name": "Wave of the Blade",
+          "description": "Increase total Squads' Attack",
+          "template": "Amadeus imparts the secrets of swordsmanship, increasing the total Squads' Attack by {attackUp_percent}.",
+          "levels": {
+            "Level 1": { "attackUp_percent": 5 },
+            "Level 2": { "attackUp_percent": 10 },
+            "Level 3": { "attackUp_percent": 15 },
+            "Level 4": { "attackUp_percent": 20 },
+            "Level 5": { "attackUp_percent": 25 }
+          }
+        },
+        {
+          "name": "Unrighteous Strike",
+          "description": "Chance to increase damage dealt for all squads",
+          "template": "Amadeus' unique swordplay has a {procChance_percent} chance of increasing damage dealt by {effectValue_percent} for all squads.",
+          "effectValue_percent": 50,
+          "levels": {
+            "Level 1": { "procChance_percent": 8 },
+            "Level 2": { "procChance_percent": 16 },
+            "Level 3": { "procChance_percent": 24 },
+            "Level 4": { "procChance_percent": 32 },
+            "Level 5": { "procChance_percent": 40 }
+          }
+        }
+      ],
+      "expedition": {
+        "attack_percent":  { "⭐1": 31.34, "⭐2": 81.56, "⭐3": 131.78, "⭐4": 182.00, "⭐5": 260.20 },
+        "defense_percent": { "⭐1": 31.34, "⭐2": 81.56, "⭐3": 131.78, "⭐4": 182.00, "⭐5": 260.20 },
+        "notes": "3→4 per-part increment honored at +8.37% (full band +50.22%)"
+      },
+      "widget": {
+        "stats": {
+          "infantryLethality_percent": { "Level 1": 12.5, "Level 2": 25.0, "Level 3": 37.5, "Level 4": 50.0, "Level 5": 62.5 },
+          "infantryHealth_percent":    { "Level 1": 12.5, "Level 2": 25.0, "Level 3": 37.5, "Level 4": 50.0, "Level 5": 62.5 }
+        },
+        "exclusiveSkills": [
+          {
+            "name": "Double Parry",
+            "description": "Reduce damage taken",
+            "template": "Amadeus is a skillful parrier, reducing damage taken by {damageTakenDown_percent}.",
+            "levels": {
+              "⚔️ Lv.1": { "damageTakenDown_percent": 10 },
+              "⚔️ Lv.2": { "damageTakenDown_percent": 15 },
+              "⚔️ Lv.3": { "damageTakenDown_percent": 20 },
+              "⚔️ Lv.4": { "damageTakenDown_percent": 25 },
+              "⚔️ Lv.5": { "damageTakenDown_percent": 30 }
+            }
+          },
+          {
+            "name": "Discernment",
+            "description": "Increase Rally Attack",
+            "template": "Amadeus attacks in a sword-tailored formation, increasing Rally Attack by {rallyAttackUp_percent}.",
+            "levels": {
+              "⚔️ Lv.1": { "rallyAttackUp_percent": 5 },
+              "⚔️ Lv.2": { "rallyAttackUp_percent": 7.5 },
+              "⚔️ Lv.3": { "rallyAttackUp_percent": 10 },
+              "⚔️ Lv.4": { "rallyAttackUp_percent": 12.5 },
+              "⚔️ Lv.5": { "rallyAttackUp_percent": 15 }
+            }
+          }
+        ]
+      }
+    },
+
+    {
+      "name": "Marlin",
+      "troopType": "Archer",
+      "skills": [
+        {
+          "name": "Wild Card",
+          "description": "Chance to increase damage dealt by 50% for all squads",
+          "template": "Marlin, being unpredictable, has a {procChance_percent} chance of increasing damage dealt by {effectValue_percent} for all squads.",
+          "effectValue_percent": 50,
+          "levels": {
+            "Level 1": { "procChance_percent": 8 },
+            "Level 2": { "procChance_percent": 16 },
+            "Level 3": { "procChance_percent": 24 },
+            "Level 4": { "procChance_percent": 32 },
+            "Level 5": { "procChance_percent": 40 }
+          }
+        },
+        {
+          "name": "Rumhead",
+          "description": "Chance when attacking to reduce enemy Lethality",
+          "template": "Marlin grants all squads a {procChance_percent} chance of reducing the total enemy squads' Lethality by {effectValue_percent} for {durationTurns} turns when attacking.",
+          "effectValue_percent": 50,
+          "durationTurns": 2,
+          "levels": {
+            "Level 1": { "procChance_percent": 10 },
+            "Level 2": { "procChance_percent": 20 },
+            "Level 3": { "procChance_percent": 30 },
+            "Level 4": { "procChance_percent": 40 },
+            "Level 5": { "procChance_percent": 50 }
+          }
+        },
+        {
+          "name": "Dynamo",
+          "description": "Chance to increase damage dealt by 50%",
+          "template": "Your squads' attacks have a {procChance_percent} chance of increasing damage dealt by {effectValue_percent}.",
+          "effectValue_percent": 50,
+          "levels": {
+            "Level 1": { "procChance_percent": 10 },
+            "Level 2": { "procChance_percent": 20 },
+            "Level 3": { "procChance_percent": 30 },
+            "Level 4": { "procChance_percent": 40 },
+            "Level 5": { "procChance_percent": 50 }
+          }
+        }
+      ],
+      "expedition": {
+        "attack_percent":  { "⭐1": 116.68, "⭐2": 129.031, "⭐3": 153.733, "⭐4": 190.786, "⭐5": 240.19 },
+        "defense_percent": { "⭐1": 116.68, "⭐2": 129.031, "⭐3": 153.733, "⭐4": 190.786, "⭐5": 240.19 },
+        "anchors_confirmed": { "given_4+1/6": 199.02, "recomputed_4+1/6": 199.02 }
+      },
+      "widget": {
+        "stats": {
+          "archerLethality_percent": { "Level 1": 12.0, "Level 2": 24.0, "Level 3": 36.0, "Level 4": 48.0, "Level 5": 60.0 },
+          "archerHealth_percent":    { "Level 1": 12.0, "Level 2": 24.0, "Level 3": 36.0, "Level 4": 48.0, "Level 5": 60.0 }
+        },
+        "exclusiveSkills": [
+          {
+            "name": "Servant of Wine",
+            "description": "Heal weakest hero by % of Attack on each basic attack",
+            "template": "There's no battlefield pick-me-up like Marlin's special brew, healing your weakest hero by {healOnBasic_attackPercent} of Attack with each basic attack.",
+            "levels": {
+              "⚔️ Lv.1": { "healOnBasic_attackPercent": 5 },
+              "⚔️ Lv.2": { "healOnBasic_attackPercent": 7.5 },
+              "⚔️ Lv.3": { "healOnBasic_attackPercent": 10 },
+              "⚔️ Lv.4": { "healOnBasic_attackPercent": 12.5 },
+              "⚔️ Lv.5": { "healOnBasic_attackPercent": 15 }
+            }
+          },
+          {
+            "name": "Admiral of the Line",
+            "description": "Increase Rally Squads' Lethality",
+            "template": "A true admiral leads from the front. Increases Rally Squads' Lethality by {rallyLethalityUp_percent}.",
+            "levels": {
+              "⚔️ Lv.1": { "rallyLethalityUp_percent": 5 },
+              "⚔️ Lv.2": { "rallyLethalityUp_percent": 7.5 },
+              "⚔️ Lv.3": { "rallyLethalityUp_percent": 10 },
+              "⚔️ Lv.4": { "rallyLethalityUp_percent": 12.5 },
+              "⚔️ Lv.5": { "rallyLethalityUp_percent": 15 }
+            }
+          }
+        ]
+      }
+    },
+
+    {
+      "name": "Petra",
+      "troopType": "Cavalry",
+      "skills": [
+        {
+          "name": "Evil Eye",
+          "description": "Chance to increase target's damage taken",
+          "template": "Grants all squads' attacks a {procChance_percent} chance of cursing the target, increasing their damage taken by {effectValue_percent}.",
+          "effectValue_percent": 50,
+          "levels": {
+            "Level 1": { "procChance_percent": 10 },
+            "Level 2": { "procChance_percent": 20 },
+            "Level 3": { "procChance_percent": 30 },
+            "Level 4": { "procChance_percent": 40 },
+            "Level 5": { "procChance_percent": 50 }
+          }
+        },
+        {
+          "name": "The Favor",
+          "description": "Chance to increase squads' Attack by 50%",
+          "template": "Petra grants a {procChance_percent} chance of increasing squads' Attack by {effectValue_percent}.",
+          "effectValue_percent": 50,
+          "levels": {
+            "Level 1": { "procChance_percent": 10 },
+            "Level 2": { "procChance_percent": 20 },
+            "Level 3": { "procChance_percent": 30 },
+            "Level 4": { "procChance_percent": 40 },
+            "Level 5": { "procChance_percent": 50 }
+          }
+        },
+        {
+          "name": "The Shield",
+          "description": "Chance to reduce damage taken by 50%",
+          "template": "Petra's divination navigates bad outcomes with a {procChance_percent} chance of reducing damage taken by {effectValue_percent} for all squads.",
+          "effectValue_percent": 50,
+          "levels": {
+            "Level 1": { "procChance_percent": 10 },
+            "Level 2": { "procChance_percent": 20 },
+            "Level 3": { "procChance_percent": 30 },
+            "Level 4": { "procChance_percent": 40 },
+            "Level 5": { "procChance_percent": 50 }
+          }
+        }
+      ],
+      "expedition": {
+        "attack_percent":  { "⭐1": 101.68, "⭐2": 120.535, "⭐3": 158.245, "⭐4": 214.81, "⭐5": 290.23 },
+        "defense_percent": { "⭐1": 101.68, "⭐2": 120.535, "⭐3": 158.245, "⭐4": 214.81, "⭐5": 290.23 },
+        "anchors_confirmed": { "given_4+1/6": 227.38, "recomputed_4+1/6": 227.38 }
+      },
+      "widget": {
+        "stats": {
+          "cavalryLethality_percent": { "Level 1": 14.0, "Level 2": 28.0, "Level 3": 42.0, "Level 4": 56.0, "Level 5": 70.0 },
+          "cavalryHealth_percent":    { "Level 1": 14.0, "Level 2": 28.0, "Level 3": 42.0, "Level 4": 56.0, "Level 5": 70.0 }
+        },
+        "exclusiveSkills": [
+          {
+            "name": "Weighted Deck",
+            "description": "Increase upper & lower limit of fluctuating skills",
+            "template": "Petra increases the upper and lower limit of her fluctuating skills by {fluctuationSpreadUp_percent}.",
+            "levels": {
+              "⚔️ Lv.1": { "fluctuationSpreadUp_percent": 30 },
+              "⚔️ Lv.2": { "fluctuationSpreadUp_percent": 60 },
+              "⚔️ Lv.3": { "fluctuationSpreadUp_percent": 90 },
+              "⚔️ Lv.4": { "fluctuationSpreadUp_percent": 120 },
+              "⚔️ Lv.5": { "fluctuationSpreadUp_percent": 150 }
+            }
+          },
+          {
+            "name": "Cosmic Eye",
+            "description": "Increase Rally Squad Attack",
+            "template": "\"Strike!\" Petra increases Rally Squad Attack by {rallyAttackUp_percent}.",
+            "levels": {
+              "⚔️ Lv.1": { "rallyAttackUp_percent": 5 },
+              "⚔️ Lv.2": { "rallyAttackUp_percent": 7.5 },
+              "⚔️ Lv.3": { "rallyAttackUp_percent": 10 },
+              "⚔️ Lv.4": { "rallyAttackUp_percent": 12.5 },
+              "⚔️ Lv.5": { "rallyAttackUp_percent": 15 }
+            }
+          }
+        ]
+      }
+    },
+
+    {
+      "name": "Zoe",
+      "troopType": "Infantry",
+      "skills": [
+        {
+          "name": "Sundering Wound",
+          "description": "Inflict Sunder DoT per turn for 3 turns",
+          "template": "Your squads' attacks gain a {fixedProcChance_percent} chance of inflicting Sunder, dealing {damagePerTurn_percent} damage per turn for {durationTurns} turns.",
+          "fixedProcChance_percent": 20,
+          "durationTurns": 3,
+          "levels": {
+            "Level 1": { "damagePerTurn_percent": 8 },
+            "Level 2": { "damagePerTurn_percent": 16 },
+            "Level 3": { "damagePerTurn_percent": 24 },
+            "Level 4": { "damagePerTurn_percent": 32 },
+            "Level 5": { "damagePerTurn_percent": 40 }
+          }
+        },
+        {
+          "name": "Charisma",
+          "description": "Increase total Squads' Attack",
+          "template": "Zoe's rousing speeches increase the total Squads' Attack by {attackUp_percent}.",
+          "levels": {
+            "Level 1": { "attackUp_percent": 5 },
+            "Level 2": { "attackUp_percent": 10 },
+            "Level 3": { "attackUp_percent": 15 },
+            "Level 4": { "attackUp_percent": 20 },
+            "Level 5": { "attackUp_percent": 25 }
+          }
+        },
+        {
+          "name": "Infinite Arsenal",
+          "description": "Chance to amplify enemy damage taken",
+          "template": "Your squads' attacks gain a {procChance_percent} chance of amplifying enemy squads' damage taken by {effectValue_percent}.",
+          "effectValue_percent": 50,
+          "levels": {
+            "Level 1": { "procChance_percent": 10 },
+            "Level 2": { "procChance_percent": 20 },
+            "Level 3": { "procChance_percent": 30 },
+            "Level 4": { "procChance_percent": 40 },
+            "Level 5": { "procChance_percent": 50 }
+          }
+        }
+      ],
+      "expedition": {
+        "attack_percent":  { "⭐1": 110.165, "⭐2": 123.168, "⭐3": 149.173, "⭐4": 188.18, "⭐5": 240.19 },
+        "defense_percent": { "⭐1": 110.165, "⭐2": 123.168, "⭐3": 149.173, "⭐4": 188.18, "⭐5": 240.19 },
+        "anchors_confirmed": { "given_4": 188.18, "recomputed_4": 188.18 }
+      },
+      "widget": {
+        "stats": {
+          "infantryLethality_percent": { "Level 1": 12.0, "Level 2": 24.0, "Level 3": 36.0, "Level 4": 48.0, "Level 5": 60.0 },
+          "infantryHealth_percent":    { "Level 1": 12.0, "Level 2": 24.0, "Level 3": 36.0, "Level 4": 48.0, "Level 5": 60.0 }
+        },
+        "exclusiveSkills": [
+          {
+            "name": "Death Or Glory",
+            "description": "Gain increased Attack after 'Agony Rush'",
+            "template": "Gains {attackUp_percent} increased Attack until the end of battle once \"Agony Rush\" is triggered.",
+            "levels": {
+              "⚔️ Lv.1": { "attackUp_percent": 8 },
+              "⚔️ Lv.2": { "attackUp_percent": 12 },
+              "⚔️ Lv.3": { "attackUp_percent": 16 },
+              "⚔️ Lv.4": { "attackUp_percent": 20 },
+              "⚔️ Lv.5": { "attackUp_percent": 24 }
+            }
+          },
+          {
+            "name": "Dark Lady",
+            "description": "Increase Defender Squads' Attack",
+            "template": "Zoe increases Defender Squads' Attack by {defenderAttackUp_percent}.",
+            "levels": {
+              "⚔️ Lv.1": { "defenderAttackUp_percent": 5 },
+              "⚔️ Lv.2": { "defenderAttackUp_percent": 7.5 },
+              "⚔️ Lv.3": { "defenderAttackUp_percent": 10 },
+              "⚔️ Lv.4": { "defenderAttackUp_percent": 12.5 },
+              "⚔️ Lv.5": { "defenderAttackUp_percent": 15 }
+            }
+          }
+        ]
+      }
+    },
+
+    {
+      "name": "Jabel",
+      "troopType": "Cavalry",
+      "skills": [
+        {
+          "name": "Rally Flag",
+          "description": "Chance to reduce damage taken",
+          "template": "Jabel, with her banner-like red armor, has a {procChance_percent} chance of reducing damage taken by {effectValue_percent} for all squads.",
+          "effectValue_percent": 50,
+          "levels": {
+            "Level 1": { "procChance_percent": 8 },
+            "Level 2": { "procChance_percent": 16 },
+            "Level 3": { "procChance_percent": 24 },
+            "Level 4": { "procChance_percent": 32 },
+            "Level 5": { "procChance_percent": 40 }
+          }
+        },
+        {
+          "name": "Hero's Domain",
+          "description": "Chance to deal more damage",
+          "template": "Jabel, a fearless knight, grants a {procChance_percent} chance of dealing {effectValue_percent} more damage when attacking.",
+          "effectValue_percent": 50,
+          "levels": {
+            "Level 1": { "procChance_percent": 10 },
+            "Level 2": { "procChance_percent": 20 },
+            "Level 3": { "procChance_percent": 30 },
+            "Level 4": { "procChance_percent": 40 },
+            "Level 5": { "procChance_percent": 50 }
+          }
+        },
+        {
+          "name": "Youthful Rage",
+          "description": "Increase Squads' Lethality",
+          "template": "Jabel's valiant spirit inspires everyone, increasing Squads' Lethality by {lethalityUp_percent}.",
+          "levels": {
+            "Level 1": { "lethalityUp_percent": 5 },
+            "Level 2": { "lethalityUp_percent": 10 },
+            "Level 3": { "lethalityUp_percent": 15 },
+            "Level 4": { "lethalityUp_percent": 20 },
+            "Level 5": { "lethalityUp_percent": 25 }
+          }
+        }
+      ],
+      "expedition": {
+        "attack_percent":  { "⭐1": 43.978, "⭐2": 59.596, "⭐3": 90.833, "⭐4": 137.687, "⭐5": 200.16 },
+        "defense_percent": { "⭐1": 43.978, "⭐2": 59.596, "⭐3": 90.833, "⭐4": 137.687, "⭐5": 200.16 },
+        "anchors_confirmed": { "given_3+3/6": 114.26, "recomputed_3+3/6": 114.259 }
+      },
+      "widget": {
+        "stats": {
+          "cavalryLethality_percent": { "Level 1": 10.0, "Level 2": 20.0, "Level 3": 30.0, "Level 4": 40.0, "Level 5": 50.0 },
+          "cavalryHealth_percent":    { "Level 1": 10.0, "Level 2": 20.0, "Level 3": 30.0, "Level 4": 40.0, "Level 5": 50.0 }
+        },
+        "exclusiveSkills": [
+          {
+            "name": "Crimson Spirit",
+            "description": "Increase damage dealt",
+            "template": "Jabel's will to win helps to breakthrough her limitations, increasing damage dealt by {damageDealtUp_percent}.",
+            "levels": {
+              "⚔️ Lv.1": { "damageDealtUp_percent": 10 },
+              "⚔️ Lv.2": { "damageDealtUp_percent": 15 },
+              "⚔️ Lv.3": { "damageDealtUp_percent": 20 },
+              "⚔️ Lv.4": { "damageDealtUp_percent": 25 },
+              "⚔️ Lv.5": { "damageDealtUp_percent": 30 }
+            }
+          },
+          {
+            "name": "Divine Strength",
+            "description": "Increase Defender Troops' Lethality",
+            "template": "Based on steadfast faith, Defender Troops' Lethality is increased by {defenderLethalityUp_percent}.",
+            "levels": {
+              "⚔️ Lv.1": { "defenderLethalityUp_percent": 5 },
+              "⚔️ Lv.2": { "defenderLethalityUp_percent": 7.5 },
+              "⚔️ Lv.3": { "defenderLethalityUp_percent": 10 },
+              "⚔️ Lv.4": { "defenderLethalityUp_percent": 12.5 },
+              "⚔️ Lv.5": { "defenderLethalityUp_percent": 15 }
+            }
+          }
+        ]
+      }
+    },
+
+    {
+      "name": "Saul",
+      "troopType": "Archer",
+      "skills": [
+        {
+          "name": "Taskforce Training",
+          "description": "Increase total Squads' Defense and Health",
+          "template": "Saul's training increases total Squads' Defense by {defenseUp_percent} and Health by {healthUp_percent}.",
+          "levels": {
+            "Level 1": { "defenseUp_percent": 2, "healthUp_percent": 3 },
+            "Level 2": { "defenseUp_percent": 4, "healthUp_percent": 6 },
+            "Level 3": { "defenseUp_percent": 6, "healthUp_percent": 9 },
+            "Level 4": { "defenseUp_percent": 8, "healthUp_percent": 12 },
+            "Level 5": { "defenseUp_percent": 10, "healthUp_percent": 15 }
+          }
+        },
+        {
+          "name": "Resourceful",
+          "description": "Construction speed up / cost down",
+          "template": "Construction speed +{constructionSpeedUp_percent}, cost -{constructionCostDown_percent}.",
+          "levels": {
+            "Level 1": { "constructionSpeedUp_percent": 3,  "constructionCostDown_percent": 3  },
+            "Level 2": { "constructionSpeedUp_percent": 6,  "constructionCostDown_percent": 6  },
+            "Level 3": { "constructionSpeedUp_percent": 9,  "constructionCostDown_percent": 9  },
+            "Level 4": { "constructionSpeedUp_percent": 12, "constructionCostDown_percent": 12 },
+            "Level 5": { "constructionSpeedUp_percent": 15, "constructionCostDown_percent": 15 }
+          }
+        },
+        {
+          "name": "Positional Battler",
+          "description": "Increase total Squads' Lethality",
+          "template": "Saul masterfully manipulates the battlefield, increasing total Squads' Lethality by {lethalityUp_percent}.",
+          "levels": {
+            "Level 1": { "lethalityUp_percent": 5 },
+            "Level 2": { "lethalityUp_percent": 10 },
+            "Level 3": { "lethalityUp_percent": 15 },
+            "Level 4": { "lethalityUp_percent": 20 },
+            "Level 5": { "lethalityUp_percent": 25 }
+          }
+        }
+      ],
+      "expedition": {
+        "attack_percent":  { "⭐1": 68.2, "⭐2": 81.396, "⭐3": 107.788, "⭐4": 147.376, "⭐5": 200.16 },
+        "defense_percent": { "⭐1": 68.2, "⭐2": 81.396, "⭐3": 107.788, "⭐4": 147.376, "⭐5": 200.16 }
+      },
+      "widget": {
+        "exclusiveSkills": [
+          {
+            "name": "Fearless Advance",
+            "description": "Increase Attack",
+            "template": "Saul's burst of strong determination under extreme situations increases Attack by {attackUp_percent}.",
+            "levels": {
+              "⚔️ Lv.1": { "attackUp_percent": 8 },
+              "⚔️ Lv.2": { "attackUp_percent": 12 },
+              "⚔️ Lv.3": { "attackUp_percent": 16 },
+              "⚔️ Lv.4": { "attackUp_percent": 20 },
+              "⚔️ Lv.5": { "attackUp_percent": 24 }
+            }
+          },
+          {
+            "name": "Defend to Attack",
+            "description": "Increase Defender Attack",
+            "template": "Increases Defender Troops' Attack by {defenderAttackUp_percent}.",
+            "levels": {
+              "⚔️ Lv.1": { "defenderAttackUp_percent": 5 },
+              "⚔️ Lv.2": { "defenderAttackUp_percent": 7.5 },
+              "⚔️ Lv.3": { "defenderAttackUp_percent": 10 },
+              "⚔️ Lv.4": { "defenderAttackUp_percent": 12.5 },
+              "⚔️ Lv.5": { "defenderAttackUp_percent": 15 }
+            }
+          }
+        ],
+        "stats": {
+          "archerLethality_percent": { "Level 1": 5.0, "Level 2": 16.25, "Level 3": 27.5, "Level 4": 38.75, "Level 5": 50.0 },
+          "archerHealth_percent":    { "Level 1": 5.0, "Level 2": 16.25, "Level 3": 27.5, "Level 4": 38.75, "Level 5": 50.0 }
+        }
+      }
+    }
+  ],
+
+  "joiners": [
+    {
+      "name": "Chenko",
+      "troopType": "Any",
+      "skills": [
+        {
+          "name": "Stand of Arms",
+          "description": "Increase total Squads' Lethality",
+          "template": "Chenko implements advanced weaponry, increasing the total Squads' Lethality by {lethalityUp_percent}.",
+          "levels": {
+            "Level 1": { "lethalityUp_percent": 5 },
+            "Level 2": { "lethalityUp_percent": 10 },
+            "Level 3": { "lethalityUp_percent": 15 },
+            "Level 4": { "lethalityUp_percent": 20 },
+            "Level 5": { "lethalityUp_percent": 25 }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Yeonwoo",
+      "troopType": "Any",
+      "skills": [
+        {
+          "name": "On Guard",
+          "description": "Increase total Squads' Lethality",
+          "template": "\"My blade and I are one.\" Yeonwoo's sword skills increase all Squads' total Lethality by {lethalityUp_percent}.",
+          "levels": {
+            "Level 1": { "lethalityUp_percent": 5 },
+            "Level 2": { "lethalityUp_percent": 10 },
+            "Level 3": { "lethalityUp_percent": 15 },
+            "Level 4": { "lethalityUp_percent": 20 },
+            "Level 5": { "lethalityUp_percent": 25 }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Amane",
+      "troopType": "Any",
+      "skills": [
+        {
+          "name": "Tri-Phalanx",
+          "description": "Increase total Squads' Attack",
+          "template": "Amane's trademark formation increases all Squads' total Attack by {attackUp_percent}.",
+          "levels": {
+            "Level 1": { "attackUp_percent": 5 },
+            "Level 2": { "attackUp_percent": 10 },
+            "Level 3": { "attackUp_percent": 15 },
+            "Level 4": { "attackUp_percent": 20 },
+            "Level 5": { "attackUp_percent": 25 }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Hilde",
+      "troopType": "Any",
+      "skills": [
+        {
+          "name": "Noble Path",
+          "description": "Increase total Squads' Attack and Defense",
+          "template": "Hilde's exhaustive discipline increases total Squads' Attack by {attackUp_percent} and Defense by {defenseUp_percent}.",
+          "levels": {
+            "Level 1": { "attackUp_percent": 3,  "defenseUp_percent": 2  },
+            "Level 2": { "attackUp_percent": 6,  "defenseUp_percent": 4  },
+            "Level 3": { "attackUp_percent": 9,  "defenseUp_percent": 6  },
+            "Level 4": { "attackUp_percent": 12, "defenseUp_percent": 8  },
+            "Level 5": { "attackUp_percent": 15, "defenseUp_percent": 10 }
+          }
+        }
+      ]
+    }
+  ]
+  };
+
+  const originalFetch = window.fetch;
+  window.fetch = async function(resource, init){
+    try{
+      const url = (typeof resource === 'string') ? resource : (resource?.url || '');
+      // Intercept tiers.json (relative or absolute)
+      if (/(^|\/)tiers\.json(\?|$)/i.test(url)) {
+        const body = JSON.stringify(TIERS_FALLBACK);
+        return new Response(body, { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }
+    }catch(e){ /* fall-through to original */ }
+    return originalFetch.apply(this, arguments);
+  };
+})();

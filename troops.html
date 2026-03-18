@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Troops &amp; Stats • KingSim</title>
+  <meta name="viewport" content="width=device-width, initial-scale=0.85, minimum-scale=0.5, maximum-scale=3.0" />
+  <!-- Tell the browser that this page is dark  -->
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0b0f1a">
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#0b0f1a"><!-- keep dark always -->
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+  <!-- Base then Theme (order matters) -->
+  <link rel="stylesheet" href="assets/styles.css" />
+  <link rel="stylesheet" href="assets/theme-all.css" />
+  <link rel="stylesheet" href="assets/anim-all.css" />
+  <link rel="stylesheet" href="assets/mobile-all.css" />
+
+  <!-- Page polish (scoped to Troops) -->
+  <style>
+    body { background: var(--bg); color: var(--ink); }
+    .page-spacer { height: 12px; } /* breathing room under nav */
+    .container { max-width: 1180px; margin: 24px auto; padding: 0 16px; }
+    .panel { margin-bottom: 16px; }
+    .panel.panel-glass { padding: 14px; }
+    .h2 { font-size: 22px; font-weight: 800; margin: 0 0 8px; }
+    .muted { color: var(--muted); }
+
+    /* Grids (keep the legacy hook classes for stat_ocr.js) */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+    @media (max-width: 980px) {
+      .grid-2 { grid-template-columns: 1fr; }
+      .grid-3 { grid-template-columns: 1fr; }
+    }
+
+    /* Inputs on dark glass */
+    input[type="number"], select {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid #2a3f5a;
+      background: #0c1424cc;
+      color: #e9eef7;
+      outline: none;
+      transition: border-color .12s ease, box-shadow .12s ease;
+    }
+    input[type="number"]:focus, select:focus {
+      border-color: #3b5f86;
+      box-shadow: 0 0 0 3px rgba(59,95,134,.25);
+    }
+    label { display:block; margin:8px 0 4px; color:#cdd6e8; font-size:.95rem }
+
+    /* OCR host panels inherit glass look */
+    .ocr-host { padding: 14px; border-radius: 12px; }
+
+    /* Instant hover everywhere */
+    a, .btn, .btn-ok, .btn-primary, .btn-secondary, .btn-outline,
+    .nav .nav-links a, .brand, button {
+      transition: color .12s ease, background-color .12s ease,
+                  border-color .12s ease, box-shadow .12s ease, filter .12s ease;
+    }
+  </style>
+</head>
+<body>
+  <!-- NAV -->
+  <div class="nav">
+    <div class="nav-inner">
+      <a href="index.html" class="brand"><span class="brand-badge"></span>KingSim</a>
+      <div class="nav-links">
+        <a href="index.html" data-tab="home">Home</a>
+        <a href="troops.html" data-tab="troops">Troops &amp; Stats</a>
+        <a href="heros.html" data-tab="heroes">Heroes</a>
+        <a href="magic.html"  data-tab="magic">Bear Magic</a>
+        <a href="optiona.html" data-tab="optiona">Bear Option‑A</a>
+        <a href="mystic.html"  data-tab="mystic">Mystic Trials</a>
+        <a href="pvp.html"     data-tab="pvp">PvP</a>
+        <a href="cb.html"      data-tab="cb">CB / Turrets</a>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="container">
+    <section class="panel panel-glass">
+      <div class="cta-band" style="text-align: center; display: flex; gap: 14px; flex-wrap: wrap; align-items: center; font-size: 18px; justify-content: center; ">
+        <a class="btn-terciary" href="magic.html">Bear Magic</a>
+        <a class="btn-quaternary" href="optiona.html">Bear Option‑A</a>
+      </div>
+    </section>
+    <section class="panel panel-glass">
+      <h2 class="h2" style="text-align: center;">🪖Troop Stats Input🪖</h2>
+      <h4 class="h4" style="text-align: center;">Used for 🐻 Magic and Options-A</h4>
+      <!-- OCR box for stats (hosted area the OCR script will populate) -->
+      <div id="troops_import_stats" class="panel panel-glass ocr-host" aria-live="polite"></div>
+
+      <!-- IMPORTANT: legacy hook class .grid-stats so stat_ocr.js can find this grid -->
+      <div class="grid-3 grid-stats">
+        <div>
+          <h3>Infantry</h3>
+          <label for="inf_atk">Attack (%)</label>
+          <input id="inf_atk" type="number" step="0.1" value="481.6" />
+          <label for="inf_let">Lethality (%)</label>
+          <input id="inf_let" type="number" step="0.1" value="284.4" />
+        </div>
+        <div>
+          <h3>Cavalry</h3>
+          <label for="cav_atk">Attack (%)</label>
+          <input id="cav_atk" type="number" step="0.1" value="501.3" />
+          <label for="cav_let">Lethality (%)</label>
+          <input id="cav_let" type="number" step="0.1" value="325.4" />
+        </div>
+        <div>
+          <h3>Archers</h3>
+          <label for="arc_atk">Attack (%)</label>
+          <input id="arc_atk" type="number" step="0.1" value="509.9" />
+          <label for="arc_let">Lethality (%)</label>
+          <input id="arc_let" type="number" step="0.1" value="479.7" />
+        </div>
+      </div>
+
+      <!-- OCR box for troops (hosted area the OCR script will populate) -->
+      <div id="troops_import_troops" class="panel panel-glass ocr-host" style="margin:12px 0" aria-live="polite"></div>
+      <label for="troopTier" style="margin-top:8px">Troop tier</label>
+      <select id="troopTier">
+        <option value="T6">T6</option>
+        <option value="T9">T9</option>
+        <option value="T10">T10</option>
+        <option value="T10.TG1" selected>T10.TG1</option>
+        <option value="T10.TG2">T10.TG2</option>
+        <option value="T10.TG3">T10.TG3</option>
+        <option value="T10.TG4">T10.TG4</option>
+        <option value="T10.TG5">T10.TG5</option>
+      </select>
+      <!-- IMPORTANT: legacy hook class .grid-tro so stat_ocr.js can find this grid -->
+      <div class="grid-2 grid-tro" style="margin-top:6px">
+        <div>
+          <h3>Your available troops</h3>
+          <label for="stockInf">Infantry</label>
+          <input id="stockInf" type="number" min="0" value="211539" />
+          <label for="stockCav">Cavalry</label>
+          <input id="stockCav" type="number" min="0" value="191128" />
+          <label for="stockArc">Archers</label>
+          <input id="stockArc" type="number" min="0" value="312493" />
+        </div>
+        <div>
+          <h3>Formation settings</h3>
+          <label for="rallySize">Call rally size</label>
+          <input id="rallySize" type="number" min="0" value="134850" />
+          <label for="marchSize">Join cap</label>
+          <input id="marchSize" type="number" min="0" value="65000" />
+          <label for="numFormations"># of marches</label>
+          <input id="numFormations" type="number" min="1" value="6" />
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- FOOTER AUTO-INSERT -->
+  <script src="assets/footer.js"></script>
+  <!-- OCR + state-sync (unchanged logic) -->
+  <script src="stat_ocr.js"></script>
+  <script src="assets/state-sync.js"></script>
+
+  <!-- Shared theme behavior (active tab + ripple) -->
+  <script src="assets/theme-all.js"></script>
+  <script src="assets/anim-all.js"></script>
+  <script src="assets/mobile-all.js"></script>
+</body>
+</html>

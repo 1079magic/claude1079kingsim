@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>CB / Turrets • KingSim (Coming Soon)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=0.85, minimum-scale=0.5, maximum-scale=3.0" />
+  <!-- Tell the browser that this page is dark  -->
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0b0f1a">
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#0b0f1a"><!-- keep dark always -->
+
+  <!-- (Optional) legacy Safari/Chrome hint -->
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <!-- Base then Theme (order matters) -->
+  <link rel="stylesheet" href="assets/styles.css" />
+  <link rel="stylesheet" href="assets/theme-all.css" />
+  <link rel="stylesheet" href="assets/anim-all.css" />
+  <link rel="stylesheet" href="assets/mobile-all.css" />
+
+  <!-- Page polish (scoped) -->
+  <style>
+    body { background: var(--bg); color: var(--ink); }
+    .page-spacer { height: 12px; }                         /* breathing room under nav */
+    .container { max-width: 1180px; margin: 24px auto; padding: 0 16px; }
+
+    .panel { margin-bottom: 16px; }
+    .panel.panel-glass { padding: 14px; }
+
+    .h2 { font-size: 22px; font-weight: 800; margin: 0 0 8px; }
+    .muted { color: var(--muted); }
+
+    /* Coming‑soon card */
+    .soon {
+      display: grid; gap: 10px;
+    }
+    .soon .tags { display:flex; gap:8px; flex-wrap:wrap; }
+    .tag {
+      padding:6px 10px; border-radius:999px; border:1px solid #2a3f5a;
+      background:#0c1424cc; color:#d9e5fb; font-size:.9rem;
+    }
+
+    /* Instant hover feel */
+    a, .btn, .btn-ok, .btn-primary, .btn-secondary, .btn-outline,
+    .nav .nav-links a, .brand, button {
+      transition: color .12s ease, background-color .12s ease,
+                  border-color .12s ease, box-shadow .12s ease, filter .12s ease;
+    }
+  </style>
+</head>
+<body>
+  <!-- NAV -->
+  <div class="nav">
+    <div class="nav-inner">
+      <a href="index.html" class="brand"><span class="brand-badge"></span>KingSim</a>
+      <div class="nav-links">
+        <a href="index.html" data-tab="home">Home</a>
+        <a href="troops.html" data-tab="troops">Troops &amp; Stats</a>
+        <a href="heros.html" data-tab="heroes">Heroes</a>
+        <a href="magic.html" data-tab="magic">Bear Magic</a>
+        <a href="optiona.html" data-tab="optiona">Bear Option‑A</a>
+        <a href="mystic.html" data-tab="mystic">Mystic Trials</a>
+        <a href="pvp.html" data-tab="pvp">PvP</a>
+        <a href="cb.html" data-tab="cb">CB / Turrets</a>
+      </div>
+            <!-- mobile-only CTA cluster; hidden on desktop via your theme CSS -->
+      <div class="nav-ctas">
+        <a class="btn-primary--compact" href="troops.html">🪖</a>
+        <!-- .nav-toggle is injected by theme-all.js on mobile -->
+      </div>
+    </div>
+  </div>
+
+  <div class="page-spacer"></div>
+
+  <div class="container">
+    <section class="panel panel-glass">
+      <h2 class="h2">🛡 CB / Turrets (coming soon)</h2>
+      <div class="soon">
+        <p class="muted">
+          Dedicated calculators for Castle Battle and turret interactions will land here.
+          The module will use your shared Troops &amp; Stats and present clear setup tables.
+        </p>
+        <div class="tags">
+          <span class="tag">Formation Planner</span>
+          <span class="tag">Turret DPS</span>
+          <span class="tag">Wave Timing</span>
+          <span class="tag">On‑device</span>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- FOOTER AUTO-INSERT -->
+  <script src="assets/footer.js"></script>
+  <!-- Shared theme behavior (active tab + ripple) -->
+  <script src="assets/theme-all.js"></script>
+  <script src="assets/anim-all.js"></script>
+  <script src="assets/mobile-all.js"></script>
+</body>
+</html>

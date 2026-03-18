@@ -1,0 +1,216 @@
+/* assets/mobile-all.css — mobile-first compaction & usability tweaks */
+
+/* Base: small screens first (applies up to 820px) */
+@media (max-width: 820px){
+  /* Body baseline */
+  :root{
+    --padX: 12px;
+    --gapS: 10px;
+    --gapM: 12px;
+    --fieldH: 38px;
+    --radius: 10px;
+  }
+  body{ background: var(--bg); color: var(--ink); scroll-behavior:smooth; }
+
+  /* Container & panels */
+  .container{ max-width: 100%; padding: 0 var(--padX); margin: 18px auto; }
+  .panel{ margin-bottom: var(--gapM); }
+  .panel.panel-glass{ padding: 12px; border-radius: var(--radius); }
+
+  /* Headings & text */
+  .h2{ font-size: 18px; margin: 0 0 6px; }
+  h3{ font-size: 16px; margin: 4px 0 6px; }
+  h4{ font-size: 14px; margin: 4px 0; }
+  .muted{ font-size: 13px; }
+
+  /* Nav: sticky, scrollable pills, compact gap */
+  .nav{ position: sticky; top: 0; z-index: 100; }
+  .nav .nav-inner{ padding: 8px var(--padX); gap: 10px; }
+  .brand-badge{ width: 24px; height: 24px; border-radius: 7px; }
+  .nav .nav-links{
+    overflow-x: auto; white-space: nowrap;
+    scrollbar-width: thin; gap: 6px; padding: 4px 6px;
+    scroll-snap-type: x proximity;
+    /* fade edges hint */
+    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 12px, #000 calc(100% - 12px), transparent 100%);
+    mask-image: linear-gradient(90deg, transparent 0, #000 12px, #000 calc(100% - 12px), transparent 100%);
+  }
+  .nav .nav-links a{
+    padding: 8px 12px; font-size: 13px; border-radius: 24px; scroll-snap-align:start;
+  }
+
+  /* Grids collapse & tighter gaps */
+  .grid-2{ display:grid; grid-template-columns: 1fr; gap: var(--gapM); }
+  .grid-3{ display:grid; grid-template-columns: 1fr; gap: var(--gapS); }
+
+  /* Inputs & selects */
+  label{ display:block; margin: 6px 0 4px; font-size: 13px; color:#cdd6e8; }
+  input[type="number"], input[type="text"], select, textarea{
+    width: 100%; min-height: var(--fieldH);
+    padding: 8px 10px; font-size: 14px; border-radius: var(--radius);
+    border: 1px solid #2a3f5a; background:#0c1424cc; color:#e9eef7;
+  }
+  input:focus, select:focus, textarea:focus{
+    border-color:#3b5f86; box-shadow:0 0 0 3px rgba(59,95,134,.25);
+  }
+
+  /* Buttons (compact, immediate hover) */
+  .btn, .btn-ok, .btn-primary, .btn-secondary, .btn-outline, .btn-pill{
+    min-height: var(--fieldH); padding: 8px 10px; font-size: 17px; border-radius: var(--radius);
+    transition: transform .12s ease, filter .12s ease, box-shadow .12s ease, color .12s ease, border-color .12s ease !important;
+  }
+  .btn:hover, .btn-ok:hover, .btn-primary:hover, .btn-secondary:hover, .btn-outline:hover, .btn-pill:hover{ transform: translateY(-1px); }
+  .btn:active, .btn-ok:active, .btn-primary:active, .btn-secondary:active, .btn-outline:active, .btn-pill:active{ transform: translateY(0); filter: brightness(.98); }
+
+  /* Import / Dropzone cards stack nicely */
+  .dropzone{
+    flex-direction: column; align-items: flex-start; gap: 8px;
+    padding: 10px; border-radius: var(--radius);
+  }
+  .dz-hint{ font-size: 12px; }
+
+  /* Table responsiveness: wrap & sticky header */
+  .table-scroll{
+    overflow-x: auto; -webkit-overflow-scrolling: touch; text-align: center;
+    padding-bottom: 6px; margin: 6px -2px 0 0;
+  }
+  .table-scroll::-webkit-scrollbar{ height: 6px; }
+  .table-scroll::-webkit-scrollbar-thumb{ background: rgba(180,200,230,.25); border-radius: 999px; }
+  table{ min-width: 112px; } /* keep columns readable; wrapper will scroll */
+  thead th{
+    position: sticky; top: calc(var(--navH, 56px) + 6px);
+    background: rgba(12,16,26,.8); backdrop-filter: blur(4px);
+    z-index: 1;
+    top: 0 !important;
+  }
+
+  /* Background layers softer on mobile (perf) */
+  .site-bg .bg-image{ filter: brightness(.82) saturate(1.02) contrast(1.02); opacity: .82; }
+  .site-bg .fx-aurora{ animation-duration: 14s; }
+}
+
+/* Very narrow phones */
+@media (max-width: 420px){
+  .nav .brand{ font-size: 14px; }
+  .nav .nav-links a{ padding: 7px 10px; font-size: 12px; }
+  .h2{ font-size: 17px; }
+  h3{ font-size: 15px; }
+  input, select, textarea{ font-size: 12px; }
+}
+
+/* Helper: if a table is wrapped, ensure inner table takes full height context for sticky */
+.table-scroll table{ display: table; width: 100%; }
+
+/* ===== Troops mobile layout ===== */
+@media (max-width:820px){
+  /* 3 compact stat columns (Inf / Cav / Arc) on mid/large phones */
+  .grid-3.grid-stats{ grid-template-columns: repeat(3, minmax(0,1fr)); gap:10px; }
+  .grid-3.grid-stats input{ font-size:12px; padding:7px 9px; }
+}
+@media (max-width:480px){
+  /* Very small devices: 2 columns to stay readable */
+  .grid-3.grid-stats{ grid-template-columns: repeat(3, minmax(0,1fr)); }
+}
+
+/* Keep two columns for amounts / formation on most phones */
+@media (max-width:820px){
+  .grid-2.grid-tro{ grid-template-columns: 1fr 1fr; gap:12px; }
+}
+@media (max-width:360px){
+  .grid-2.grid-tro{ grid-template-columns: 1fr; }
+}
+
+/* ===== Magic + Option‑A tables compact ===== */
+@media (max-width:820px){
+  .table-scroll{ margin: 0px 0px 0px; padding: 10px 0px 0px; }
+  .table-scroll table{ min-width: 120px; } /* was 640; tighter but readable */
+  .table-scroll th, .table-scroll td{ padding: 6px 8px !important; font-size: 14px !important; text-align: center; }
+  .table-scroll thead th{ position: sticky; top: calc(var(--navH,56px) + 6px); z-index: 1; top: 0 !important; }
+}
+@media (max-width:420px){
+  .table-scroll table{ min-width: 120px; }
+  .table-scroll th, .table-scroll td{ padding: 5px 7px !important; font-size: 14px !important; text-align: center;}
+}
+@media (max-width:820px){
+  #opt_fractionReadout, #opt_inventoryReadout{ font-size: 12px; }
+}
+
+/* ===== Header CTA visibility (mobile only) ===== */
+@media (max-width: 640px){
+  /* Ensure the small CTA cluster is visible and placed at the right end */
+  .nav .nav-inner .nav-ctas{
+    display: flex !important;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+  }
+}
+@media (min-width: 641px){
+  /* Hide Add Troops + Menu on desktop/tablet */
+  .nav .nav-inner .nav-ctas{
+    display: none !important;
+  }
+}
+
+/* ===== Mobile: align Add Troops + Menu as identical buttons ===== */
+@media (max-width: 640px){
+  .nav .nav-inner .nav-ctas a.btn-primary--compact,
+  .nav .nav-inner .nav-ctas .nav-toggle{
+    height: var(--fieldH, 38px);
+    min-width: 40px; /* make both the same width; adjust if needed */
+    padding: 0 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius, 10px);
+    font-size: 14px; font-weight: 800; line-height: 1;
+    box-sizing: border-box; margin: 0;
+  }
+  .nav .nav-inner .nav-ctas .nav-toggle svg{
+    width: 18px; height: 18px; flex: 0 0 18px; margin-right: 6px;
+  }
+  .nav .nav-inner .nav-ctas .nav-toggle .label{ font-size: 14px; line-height: 1; }
+}
+
+/* ===== header CTAs visible only on mobile ===== */
+@media (max-width: 640px){
+  /* make sure the cluster is visible on phones */
+  .nav .nav-inner .nav-ctas{
+    display: flex !important;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+  }
+}
+/* hard-hide on tablet/desktop no matter WHERE the toggle lives */
+@media (min-width: 641px){
+  .nav .nav-inner .nav-ctas{ display: none !important; }
+  .nav .nav-toggle,
+  .nav .nav-inner > .nav-toggle,
+  header .nav-toggle,
+  button.nav-toggle,
+  [aria-controls="site-menu"].nav-toggle{
+    display: none !important;
+  }
+}
+
+/* mobile: align Add Troops + Menu identically */
+@media (max-width: 640px){
+  .nav .nav-inner .nav-ctas a.btn-primary--compact,
+  .nav .nav-inner .nav-ctas .nav-toggle{
+    height: var(--fieldH, 38px);
+    min-width: 40px; /* remove if you prefer shrink-to-text */
+    padding: 0 12px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: var(--radius, 10px);
+    font-size: 14px; font-weight: 800; line-height: 1;
+    box-sizing: border-box; margin: 0;
+  }
+  .nav .nav-inner .nav-ctas .nav-toggle svg{
+    width: 18px; height: 18px; flex: 0 0 18px; margin-right: 6px;
+  }
+  .nav .nav-inner .nav-ctas .nav-toggle .label{ font-size: 14px; line-height: 1; }
+}
+
+
+

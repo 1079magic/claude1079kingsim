@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Bear Option‑A • KingSim</title>
+  <meta name="viewport" content="width=device-width, initial-scale=0.85, minimum-scale=0.5, maximum-scale=3.0" />
+  <!-- Tell the browser that this page is dark  -->
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0b0f1a">
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#0b0f1a"><!-- keep dark always -->
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+  <!-- Base then Theme (order matters) -->
+  <link rel="stylesheet" href="assets/styles.css" />
+  <link rel="stylesheet" href="assets/theme-all.css" />
+  <link rel="stylesheet" href="assets/mobile-all.css" />
+  <link rel="stylesheet" href="assets/anim-all.css" />
+
+
+  <!-- Plotly (needed by app2.js) -->
+  <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+
+  <!-- Offline shim for file:// tiers.json -->
+  <script src="assets/fetch-shim.js"></script>
+
+  <!-- Page‑scoped CSS for Bear Option‑A -->
+  <style>
+    /* ===== Bear Option‑A page-scoped rules (match Magic styling) ===== */
+    body.optiona-page { background: var(--bg); color: var(--ink); }
+
+    .container {     
+      margin-left: auto !important;
+      margin-right: auto !important;
+      padding-left: 16px !important;
+      padding-right: 16px !important; 
+    }
+    .panel { margin-bottom: 16px; }
+    .panel.panel-glass { max-width: 1150px; margin: 24px auto; padding: 0 14px; }
+
+    .h2 { font-size: 22px; font-weight: 800; margin: 0 0 8px; }
+    .muted { color: var(--muted); }
+
+    /* --- Brighter glass tables (like Magic) --- */
+    #optTableWrap table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid #2b4670;
+      border-radius: 12px;
+      overflow: hidden;
+      table-layout: auto;  /* desktop: natural column sizing */
+    }
+    #optTableWrap thead th{
+      text-align: center;
+      padding: 10px;
+      color: #f1f6ff;
+      background: linear-gradient(180deg, rgba(35, 16, 16, 0.66), rgba(30, 12, 12, 0.55)); /* brighter */
+      border-bottom: 1px solid #2b4670;
+      font-weight: 600;
+      font-size: 14px;
+      letter-spacing: .2px;
+    }
+    #optTableWrap tbody td{
+      padding: 9px 10px;
+      color: #dbe6fb;
+      border-bottom: 1px solid #2b4670;
+      font-size: 14px;
+    }
+    #optTableWrap tbody tr:last-child td{ border-bottom: 0; }
+
+    /* wrapper for the whole Option‑A visible area */
+    .oa-flow { display: grid; gap: 14px; }
+
+    /* desktop layout: table first, then readouts side-by-side */
+    .oa-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 980px){ .oa-grid-2 { grid-template-columns: 1fr; } }
+
+    /* MOBILE FIT: force the table to truly fit, reduce font slightly */
+    @media (max-width: 640px){
+      body.optiona-page .panel.panel-glass{ padding: 12px; }
+      body.optiona-page #optTableWrap table{
+        table-layout: fixed;     /* equalize columns so it fits 100% width */
+        width: 100% !important;
+      }
+      body.optiona-page #optTableWrap th,
+      body.optiona-page #optTableWrap td{
+        padding: 6px 8px !important;
+        font-size: 12px !important;
+        word-wrap: break-word;
+      }
+    }
+
+    /* REORDER on mobile: put fractions/inventory note UNDER the table */
+    /* We’ll use three blocks: .oa-top (optional headline note), .oa-table, .oa-bottom (fractions/inventory/best) */
+    @media (min-width: 981px){
+      .oa-top    { order: 1; }
+      .oa-table  { order: 2; }
+      .oa-bottom { order: 3; }
+    }
+    @media (max-width: 640px){
+      .oa-table  { order: 1; }
+      .oa-bottom { order: 2; } /* fractions/inventory under the table */
+      .oa-top    { order: 3; } /* any extra note ends last on mobile */
+    }
+
+    /* Optional: small emphasis lines in readouts */
+    .oa-subtle{ color:#cdd6e8; }
+  </style>
+</head>
+<body class="optiona-page fx-preload">
+
+  <!-- NAV -->
+  <div class="nav">
+    <div class="nav-inner">
+      <a class="brand" href="index.html"><span class="brand-badge"></span>KingSim</a>
+      <div class="nav-links">
+        <a href="index.html">Home</a>
+        <a href="troops.html">Troops &amp; Stats</a>
+        <a href="heros.html" data-tab="heroes">Heroes</a>
+        <a href="magic.html">Bear Magic</a>
+        <a href="optiona.html" data-tab="optiona"onclick="window.runBearOption‑A && window.runBearOptionA();">Bear Option‑A</a>
+        <a href="mystic.html">Mystic Trials</a>
+        <a href="pvp.html">PvP</a>
+        <a href="cb.html">CB / Turrets</a>
+      </div>
+      <!-- mobile-only CTA cluster; hidden on desktop by your theme CSS -->
+      <div class="nav-ctas">
+        <a class="btn-primary--compact" href="troops.html">🪖</a>
+        <!-- .nav-toggle is injected by theme-all.js on mobile -->
+      </div>
+    </div>
+  </div>
+
+    <section class="panel panel-glass fx-enter">
+        <h2 class="h2" style="text-align: center;">⚡🐻 Bear Option‑A 🐻⚡<br>Formation Optimizer</h2>
+        <section class="sub-panel-optiona panel panel-glass fx-enter" style="margin-top:14px;">
+          <strong>
+            <div id="bestReadout" class="muted1" style="margin-top:10px; text-align:center; text-decoration:solid;"></div>
+          </strong>
+
+          <!-- Composition Override Grid -->
+          <div class="comp-override-grid" style="margin-bottom:12px; display:grid; gap:16px; grid-template-columns:1fr 1fr;">
+            
+            <div>
+              <label>
+                <strong>Call</strong> composition (Inf/Cav/Arc)
+                <span class="tooltip-icon" data-tooltip="Auto‑filled from engine. Edit to override (e.g. 8/12/80). 1‑decimal required.">?</span>
+              </label>
+              <input id="compInput" type="text" placeholder="e.g. 8.0/12.0/80.0" style="margin-top:4px;">
+              <div id="compHint" class="muted" style="margin-top:4px; font-size:0.78rem;"></div>
+            </div>
+
+            <div>
+              <label>
+                <strong>Join</strong> composition (Inf/Cav/Arc)
+                <span class="tooltip-icon" data-tooltip="Auto‑filled from Join formation. Edit to override (e.g. 1/20/79).">?</span>
+              </label>
+              <input id="compInputJoin" type="text" placeholder="e.g. 1.0/20.0/79.0" style="margin-top:4px;">
+              <div id="compHintJoin" class="muted" style="margin-top:4px; font-size:0.78rem;"></div>
+            </div>
+
+          </div>
+
+          <!-- Main Option-A Table -->
+          <div id="optTableWrap" class="table-glass" style="margin-top:0;"></div>
+
+          <!-- Recommended Section -->
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px; margin-bottom:12px; flex-wrap:wrap; gap:12px;">
+                <div style="font-weight:500;">Recommended marches</div>
+                <div id="opt_recommendedDisplay" class="muted" style="margin-top:4px;">…</div>
+                <button id="opt_btnUseRecommended" class="inline-btn btn-optiona btn-primary--compact" style="white-space:nowrap;">Recommended⚡</button>
+            </div>
+
+        </section>
+        <span id="boa_status" class="muted">Loading…</span>
+
+      <!-- Hidden host (unchanged) -->
+      <div id="boa_hidden_host" style="display:none">
+        <!-- … keep your existing hidden inputs/selects here … -->
+        <input id="inf_atk" value="481.6" /><div id="err_inf_atk"></div>
+        <input id="inf_let" value="284.4" /><div id="err_inf_let"></div>
+        <input id="cav_atk" value="501.3" /><div id="err_cav_atk"></div>
+        <input id="cav_let" value="325.4" /><div id="err_cav_let"></div>
+        <input id="arc_atk" value="509.9" /><div id="err_arc_atk"></div>
+        <input id="arc_let" value="479.7" /><div id="err_arc_let"></div>
+        <select id="troopTier">
+          <option value="T6">T6</option><option value="T9">T9</option><option value="T10">T10</option>
+          <option value="T10.TG1" selected>T10.TG1</option><option value="T10.TG2">T10.TG2</option>
+          <option value="T10.TG3">T10.TG3</option><option value="T10.TG4">T10.TG4</option><option value="T10.TG5">T10.TG5</option>
+        </select>
+        <div id="err_troopTier"></div>
+
+        <input id="compInput" value="" /><div id="compHint"></div>
+        <input id="compInputJoin" value="" /><div id="compHintJoin"></div>
+
+        <div id="validationSummary"></div>
+        <ul id="validationList"></ul>
+        <div id="boa_auto_hidden_stash"></div>
+      </div>
+
+      <!-- ===== VISIBLE AREA (Option‑A) ===== -->
+      <div class="oa-flow">
+
+        <!-- (optional) top note – keep empty or use for future hints -->
+        <div class="oa-top"></div>
+
+        <!-- Table area -->
+        <div class="oa-table">
+          <div id="optTableWrap" class="table-glass"></div>
+        </div>
+
+        <!-- Fractions + Inventory (move under table on mobile) -->
+        <div class="oa-bottom">
+          <div class="oa-grid-2" style="margin-top:14px">
+            <div>
+              <h3>Target fractions</h3>
+              <div id="opt_fractionReadout" class="oa-subtle" style="margin-top:6px"></div>
+            </div>
+            <div>
+              <h3>Inventory result</h3>
+              <div id="opt_inventoryReadout" class="oa-subtle" style="white-space:pre-line; margin-top:6px"></div>
+            </div>
+          </div>
+
+          <!-- Keep present for engines that reference it near the plot -->
+          <div id="bestReadout2" class="muted" style="margin-top:8px"></div>
+        </div>
+      </div>
+      <!-- ===== end VISIBLE AREA ===== -->
+
+      <!-- Keep Plotly div “present” but invisible (no display:none) -->
+      <div id="ternaryPlot" style="width:100%; height:1px; opacity:0; overflow:hidden; pointer-events:none;"></div>
+
+    </section>
+
+
+  <!-- Engine + state loader -->
+  <script src="app2.js"></script>
+  <script src="assets/state-sync.js"></script>
+
+  <!-- Autorun (unchanged) -->
+  <script>
+    (function(){
+      'use strict';
+      const INPUT_IDS = ['inf_atk','inf_let','cav_atk','cav_let','arc_atk','arc_let','troopTier','compInput','compInputJoin'];
+      const VALIDATION_IDS = ['validationSummary','validationList','err_inf_atk','err_inf_let','err_cav_atk','err_cav_let','err_arc_atk','err_arc_let','err_troopTier'];
+      const VISIBLE_IDS = ['optTableWrap','opt_fractionReadout','opt_inventoryReadout','ternaryPlot','bestReadout2'];
+
+      function ensureHosts(){
+        let host = document.getElementById('boa_hidden_host');
+        if (!host){ host = document.createElement('div'); host.id='boa_hidden_host'; host.style.display='none'; document.body.appendChild(host); }
+        let stash = document.getElementById('boa_auto_hidden_stash');
+        if (!stash){ stash = document.createElement('div'); stash.id='boa_auto_hidden_stash'; stash.style.display='none'; host.appendChild(stash); }
+        return { stash };
+      }
+      function createHiddenInput(id){ const el=document.createElement('input'); el.id=id; el.type='text'; el.style.display='none'; return el; }
+      function createVisibleContainer(id){ const d=document.createElement('div'); d.id=id; return d; }
+
+      (function installSelfHealingGetEl(){
+        const orig = document.getElementById.bind(document);
+        const { stash } = ensureHosts();
+        document.getElementById = function(id){
+          let el = orig(id);
+          if (!el){
+            if (VISIBLE_IDS.includes(id)){
+              el = createVisibleContainer(id);
+              (document.querySelector('.container .panel') || document.body).appendChild(el);
+            }else{
+              if (id === 'troopTier'){
+                const sel = document.createElement('select'); sel.id=id; sel.style.display='none';
+                ['T6','T9','T10','T10.TG1','T10.TG2','T10.TG3','T10.TG4','T10.TG5'].forEach(v=>{
+                  const o=document.createElement('option'); o.value=v; o.textContent=v; if(v==='T10.TG1') o.selected=true; sel.appendChild(o);
+                });
+                el = sel;
+              }else{
+                el = createHiddenInput(id);
+              }
+              stash.appendChild(el);
+            }
+          }
+          return el;
+        };
+      })();
+
+      function run(){
+        const s = document.getElementById('boa_status');
+        try{
+          const { stash } = ensureHosts();
+          [...INPUT_IDS, ...VALIDATION_IDS].forEach(id=>{ if (!document.getElementById(id)) stash.appendChild(createHiddenInput(id)); });
+          VISIBLE_IDS.forEach(id=>{
+            if (!document.getElementById(id)){
+              (document.querySelector('.container .panel') || document.body).appendChild(createVisibleContainer(id));
+            }
+          });
+
+          // load state & compute
+          window.KingState && typeof KingState.load === 'function' && KingState.load();
+          window.OptionA && typeof OptionA.init === 'function' && OptionA.init();
+          window.OptionA && typeof OptionA.computeAll === 'function' && OptionA.computeAll();
+
+          if (s){ s.textContent=''; s.className=''; }
+        }catch(err){
+          console.error('[Bear Option‑A] failed:', err);
+          if (s){ s.textContent = 'Error: ' + (err?.message||err); s.style.color='#ef4444'; }
+        }
+      }
+
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run);
+      else run();
+      window.runBearOptionA = run;
+    })();
+  </script>
+  <!-- FOOTER AUTO-INSERT -->
+  <script src="assets/footer.js"></script>
+
+  <!-- GLOBAL JS -->
+  <script src="assets/theme-all.js"></script>
+  <script src="assets/anim-all.js"></script>
+  <script src="assets/mobile-all.js"></script>
+  <script src="assets/state-sync.js"></script>
+
+  <!-- PAGE-SPECIFIC JS -->
+  <script src="assets/optiona.js"></script>
+</body>
+</html>

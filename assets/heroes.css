@@ -1,0 +1,102 @@
+/* ===== Group sections (3-col grid per generation) ===== */
+.group{ margin:16px 0 22px; }
+.group-title{ 
+  font-size:18px; 
+  font-weight:800; 
+  margin:0 0 8px;
+  color: var(--silver-mid);
+  background: linear-gradient(180deg, #22d3ee, #7c3aed);
+  -webkit-background-clip: text; background-clip:text; color:transparent;
+}
+
+.group-grid{
+  display:grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+@media (max-width: 1100px){ .group-grid{ grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 640px){  .group-grid{ grid-template-columns: 1fr; } }
+
+/* ===== Much more compact hero cards ===== */
+.hero-card{
+  display:flex; flex-direction:column; gap:8px;
+  background: linear-gradient(180deg, rgba(16,22,35,.58), rgba(9,12,20,.52));
+  border:1px solid #23364d; border-radius:12px; padding:10px;
+  box-shadow: 0 8px 26px rgba(4,10,18,.22), inset 0 1px 0 rgba(255,255,255,.05);
+  transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+  position: relative;
+}
+.hero-card:hover{ transform: translateY(-2px); border-color: rgba(123,97,255,.35); box-shadow: 0 16px 32px rgba(16,20,40,.45); }
+
+/* Header: icon + name to the left, tiny Owned pill in top-right */
+.card-head{ display:flex; align-items:center; gap:8px; padding-right:60px; } /* reserve space for Owned */
+.icon-wrap{ width:22px; height:22px; border-radius:6px;
+  background: radial-gradient(120% 120% at 30% 20%, #ffa60066, #ffcb4744);
+  border:1px solid rgba(255,255,255,.08); display:grid; place-items:center; flex:0 0 22px;
+  font-size:14px; line-height:1;
+}
+.icon-wrap svg{ width:16px; height:16px; fill:#ffb74d; opacity:.95; }
+.header-text{ display:flex; flex-direction:column; gap:2px; min-width:0; }
+.hero-name{
+  font-weight:900; letter-spacing:.2px; line-height:1.1;
+  background: linear-gradient(to bottom,var(--gold-top),var(--gold-mid),var(--gold-bot));
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+  font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.hero-meta{ color: var(--muted); font-size: 12px; }
+
+/* Focus sums line (cyan row under meta) */
+.focus-sums{ font-size:12px; color:#7dd3fc; white-space:normal; line-height:1.2; }
+
+/* Owned pill at top-right (more compact) */
+.own-flag{
+  position:absolute; top:8px; right:8px; display:flex; align-items:center; gap:6px; cursor:pointer; z-index:2;
+}
+.own-flag .switch{ --h:14px; --w:28px; width:var(--w); height:var(--h); border-radius:999px;
+  position:relative; background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.10);
+}
+.own-flag .switch::after{ content:""; position:absolute; inset:2px auto auto 2px;
+  width:calc(var(--h) - 6px); height:calc(var(--h) - 6px); border-radius:50%; background:#fff; transition: transform .18s ease;
+}
+.own-flag input.owned-input{ display:none; }
+.own-flag input.owned-input:checked + .switch{ background: linear-gradient(145deg, var(--ok), #37e5a8); border-color: transparent; }
+.own-flag input.owned-input:checked + .switch::after{ transform: translateX(calc(var(--w) - var(--h))); }
+.own-flag .owned-label{ display:none; } /* extra compact */
+
+/* Rows/controls tighter */
+.row{ display:grid; grid-template-columns: .9fr 2.1fr; gap:8px; align-items:center; }
+.label{ color:var(--muted); font-size: 12px; white-space:nowrap; }
+
+/* Stars & swords smaller */
+.stars{ display:inline-flex; gap:5px; }
+.star{ width:18px; height:18px; cursor:pointer; opacity:.85; transition: transform .1s ease, opacity .1s ease; filter: drop-shadow(0 2px 8px rgba(255,215,0,.22)); }
+.star.active{ opacity:1; transform: translateY(-1px); }
+.swords{ display:inline-flex; gap:5px; }
+.sword{ width:18px; height:18px; opacity:.7; cursor:pointer; transition: transform .1s ease, opacity .1s ease; }
+.sword.active{ opacity:1; transform: translateY(-1px); }
+
+/* Segmented 1–5 (skills) */
+.seg{ display:inline-flex; border:1px solid rgba(255,255,255,.10); border-radius:8px; overflow:hidden; background:#0d1424; }
+.seg button{
+  appearance:none; border:0; background:transparent; color:#cdd3df; padding:6px 7px; font-weight:700; font-size:12px; cursor:pointer;
+}
+.seg button+button{ border-left:1px solid rgba(255,255,255,.08); }
+.seg button.is-active{ background: linear-gradient(145deg, rgba(123,97,255,0.35), rgba(76,226,255,0.22)); color:#fff; }
+
+/* Formation pills (tight) */
+.pills{ display:inline-flex; background: rgba(255,255,255,0.07); padding:3px; border-radius:999px; border: 1px solid rgba(255,255,255,.08); }
+.pill{ border:0; line-height:1; padding:6px 10px; border-radius:999px; color:var(--muted); background:transparent; cursor:pointer; font-weight:700; font-size:12px; }
+.pill[aria-pressed="true"]{ color:var(--ink); background: linear-gradient(145deg, rgba(123,97,255,0.35), rgba(76,226,255,0.22)); }
+
+/* Locked state */
+.hero-card.locked{ opacity:.95; }
+.hero-card.locked .controls *:not(.seg button,.sword,.star,.pill,.switch,.owned-input){ pointer-events:none !important; filter: grayscale(.35) opacity(.65); }
+.hero-card.locked .star, .hero-card.locked .sword, .hero-card.locked .seg button { cursor:not-allowed; }
+
+/* Mobile adjustments: smaller name, wrap lines; sums under title comfortably */
+@media (max-width: 640px){
+  .hero-name{ font-size:14px; }
+  .hero-meta, .focus-sums{ font-size:11px; white-space:normal; }
+  .seg button{ padding:5px 6px; font-size:11px; }
+  .pill{ padding:5px 8px; font-size:11px; }
+}

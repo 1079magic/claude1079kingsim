@@ -1,0 +1,135 @@
+/* assets/anim-all.css — entrance + table + input animations (site-wide) */
+
+/* Respect reduced-motion */
+@media (prefers-reduced-motion: reduce){
+  * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+
+/* Page entrance */
+body.fx-preload { opacity: 0; }
+body.fx-ready {
+  opacity: 1;
+  transition: opacity .35s ease;
+}
+
+/* Nav entrance */
+.nav.fx-enter {
+  transform: translateY(-10px);
+  opacity: 0;
+}
+body.fx-ready .nav.fx-enter {
+  transform: translateY(0);
+  opacity: 1;
+  transition: transform .35s ease, opacity .35s ease;
+}
+
+/* Panels: slide-up + fade-in */
+.panel.fx-enter {
+  transform: translateY(14px);
+  opacity: 0;
+}
+body.fx-ready .panel.fx-enter {
+  transform: translateY(0);
+  opacity: 1;
+  transition: transform .45s cubic-bezier(.2,.9,.2,1), opacity .45s ease;
+}
+
+/* Stagger helper (JS sets --i) */
+.panel.fx-enter {
+  transition-delay: calc(var(--i, 0) * 65ms);
+}
+
+/* Subtle glass shimmer (optional) */
+.panel.fx-shine::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background: linear-gradient(105deg, transparent 0%, rgba(255,255,255,.06) 45%, transparent 80%);
+  transform: translateX(-120%);
+  animation: fx-sweep 2.2s ease-in-out 1;
+  opacity: .0;
+}
+body.fx-ready .panel.fx-shine::after{
+  opacity: .65;
+}
+@keyframes fx-sweep{
+  0%   { transform: translateX(-120%); }
+  60%  { transform: translateX(120%); }
+  100% { transform: translateX(120%); }
+}
+
+/* Inputs: pop-in + focus neon */
+input.fx-enter, select.fx-enter, textarea.fx-enter {
+  transform: translateY(8px);
+  opacity: 0;
+}
+body.fx-ready input.fx-enter,
+body.fx-ready select.fx-enter,
+body.fx-ready textarea.fx-enter {
+  transform: translateY(0);
+  opacity: 1;
+  transition: transform .35s ease, opacity .35s ease;
+  transition-delay: calc(var(--i, 0) * 25ms);
+}
+
+/* Better focus glow that matches the theme */
+input:focus, select:focus, textarea:focus{
+  box-shadow: 0 0 0 3px rgba(34,211,238,.18) !important;
+  border-color: rgba(59,130,246,.65) !important;
+}
+
+/* Table animations (applies to dynamically created tables) */
+table.fx-table {
+  transform: translateY(10px);
+  opacity: 0;
+}
+body.fx-ready table.fx-table{
+  transform: translateY(0);
+  opacity: 1;
+  transition: transform .35s ease, opacity .35s ease;
+}
+
+/* Row stagger: JS adds --ri per row */
+table.fx-table tbody tr{
+  opacity: 0;
+  transform: translateY(8px);
+}
+body.fx-ready table.fx-table tbody tr.fx-row-in{
+  opacity: 1;
+  transform: translateY(0);
+  transition: transform .35s ease, opacity .35s ease;
+  transition-delay: calc(var(--ri, 0) * 45ms);
+}
+
+/* Subtle highlight sweep across newly-rendered tables */
+table.fx-table.fx-sheen::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background: linear-gradient(90deg, transparent 0%, rgba(34,211,238,.08) 45%, transparent 75%);
+  transform: translateX(-120%);
+  animation: fx-table-sheen 1.4s ease-out 1;
+}
+@keyframes fx-table-sheen{
+  0% { transform: translateX(-120%); }
+  100%{ transform: translateX(120%); }
+}
+
+/* Make sure table pseudo element positions correctly */
+table.fx-table{ position: relative; overflow: hidden; border-radius: 12px; }
+
+/* Buttons: instant hover + micro lift */
+.btn, .btn-ok, .btn-primary, .btn-secondary, .btn-outline, .btn-pill, .nav .nav-links a{
+  transition: transform .12s ease, filter .12s ease, box-shadow .12s ease, border-color .12s ease, color .12s ease !important;
+}
+.btn:hover, .btn-ok:hover, .btn-primary:hover, .btn-secondary:hover, .btn-outline:hover, .btn-pill:hover, .nav .nav-links a:hover{
+  transform: translateY(-1px);
+}
+
+/* Click micro “press” */
+.btn:active, .btn-ok:active, .btn-primary:active, .btn-secondary:active, .btn-outline:active, .btn-pill:active, .nav .nav-links a:active{
+  transform: translateY(0);
+  filter: brightness(0.98);
+}

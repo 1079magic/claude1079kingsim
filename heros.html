@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Heroes • KingSim</title>
+  <meta name="viewport" content="width=device-width, initial-scale=0.85, minimum-scale=0.5, maximum-scale=3.0" />
+  <!-- Tell the browser that this page is dark  -->
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0b0f1a">
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#0b0f1a"><!-- keep dark always -->
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+
+  <!-- Shared rails -->
+  <link rel="stylesheet" href="assets/styles.css" />
+  <link rel="stylesheet" href="assets/theme-all.css" />
+  <link rel="stylesheet" href="assets/mobile-all.css" />
+  <link rel="stylesheet" href="assets/anim-all.css" />
+  <!-- Offline shim for file:// tiers.json -->
+  <script src="assets/fetch-shim.js"></script>
+  <!-- Heroes page styles -->
+  <link rel="stylesheet" href="assets/heroes.css" />
+
+  <style>
+    /* Page-local tweaks to match KingSim rails */
+    body{ background: var(--bg);  }
+    .page-spacer{ height: 12px; }
+    .container{ max-width:1180px; margin:24px auto; padding:0 16px; }
+    .h2{ font-size:22px; font-weight:800; margin:0 0 8px; }
+    .muted{ color:var(--muted); }
+  </style>
+</head>
+<body>
+  <!-- NAV -->
+  <div class="nav">
+    <div class="nav-inner">
+      <a class="brand" href="index.html"><span class="brand-badge"></span>KingSim</a>
+      <div class="nav-links">
+        <a href="index.html" data-tab="home">Home</a>
+        <a href="troops.html" data-tab="troops">Troops & Stats</a>
+        <a href="heros.html" data-tab="heroes">Heroes</a>
+        <a href="magic.html" data-tab="magic">Bear Magic</a>
+        <a href="optiona.html" data-tab="optiona">Bear Option‑A</a>
+        <a href="mystic.html" data-tab="mystic">Mystic Trials</a>
+        <a href="pvp.html" data-tab="pvp">PvP</a>
+        <a href="cb.html" data-tab="cb">CB / Turrets</a>
+      </div>
+            <!-- mobile-only CTA cluster; hidden on desktop via your theme CSS -->
+      <div class="nav-ctas">
+        <a class="btn-primary--compact" href="troops.html">🪖</a>
+        <!-- .nav-toggle is injected by theme-all.js on mobile -->
+      </div>
+    </div>
+  </div>
+  <div class="page-spacer"></div>
+
+  <!-- Page content -->
+  <div class="container">
+    <section class="panel panel-glass">
+      <h2 class="h2">🧙‍♂️ Heroes — Build & Battle Effects</h2>
+      <p class="muted" style="margin-top:6px">
+        Select ownership, set level (⭐ 1–5), skill levels (1–5), and widget level (⚔ 1–5).
+        Joiners are merged into the <b>Epic</b> group. Calculations show <b>Battle‑PLUS</b> effects only.
+      </p>
+    </section>
+
+    <!-- Hero cards grid -->
+    <section class="panel panel-glass" id="heroes-panel">
+      <div id="heroGrid" class="hero-grid"></div>
+      <div class="tools" style="display:flex; gap:10px; justify-content:flex-end; margin-top:12px;">
+        <button id="exportHeroes" class="btn">Export selections (JSON)</button>
+        <button id="clearHeroes" class="btn" style="background:linear-gradient(145deg,#ff9080,#ff6b6b);color:#fff;">Clear</button>
+      </div>
+    </section>
+
+    <!-- Summary panel (revealed when at least one hero is owned) -->
+    <section class="panel panel-glass" id="summary-panel" style="display:none">
+      <h3 class="h2" style="display:flex;align-items:center;gap:8px;">📘 Hero Battle Effects Summary</h3>
+      <div id="summaryTotals" class="muted" style="margin:6px 0 12px 0"></div>
+      <div id="summaryTableWrap" class="table-scroll"></div>
+      <h4 style="margin:14px 0 6px 0">Skill & Widget Details</h4>
+      <div id="summaryDetails" class="muted"></div>
+    </section>
+  </div>
+
+
+  <!-- Scripts -->
+  <script src="assets/theme-all.js"></script>
+  <script src="assets/anim-all.js"></script>
+  <script src="assets/mobile-all.js"></script>
+  <!-- Heroes logic -->
+  <script src="assets/heroes.js"></script>
+  <!-- FOOTER AUTO-INSERT -->
+  <script src="assets/footer.js"></script>
+</body>
+</html>

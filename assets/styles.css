@@ -1,0 +1,200 @@
+:root{
+  --bg:#0b0e15;
+  --panel:#121826cc;
+  --text:#e8eaed;
+  --muted:#a8b3c7;
+  --accent:#22d3ee;
+  --accent2:#7c3aed;
+  --border:#243244;
+  --ok:#10b981;
+  --danger:#ef4444;
+
+  /* form controls */
+  --field-bg:#0f172a;
+  --field-bd:#243244;
+  --field-bd-focus:#2f435c;
+}
+
+*{ box-sizing:border-box }
+
+html,body{ height:100% }
+body{
+  margin:0;
+  font-family: ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
+  color:var(--text);
+  background:
+   radial-gradient(1200px 600px at 15% -10%, #111b2a 0%, transparent 60%),
+   radial-gradient(900px 500px at 110% 10%, #0d0b1a 0%, transparent 60%),
+   linear-gradient(180deg, #070910 0%, #0b0e15 100%);
+  overflow-x:hidden;
+}
+
+a{ color: var(--accent); text-decoration:none }
+a:hover{ filter:brightness(1.08) }
+
+.nav{ position: sticky; top:0; z-index:50; backdrop-filter: blur(8px);
+  background: linear-gradient(180deg,#0f1420cc,#0b0e15cc); border-bottom:1px solid #1e2a3b; }
+.nav-inner{ max-width:1260px; margin:auto; padding:12px 16px; display:flex; align-items:center; gap:16px }
+.brand{ display:flex; align-items:center; gap:12px; font-weight:800; letter-spacing:.3px;
+  background: linear-gradient(90deg, #22d3ee 0%, #7c3aed 100%); -webkit-background-clip: text; background-clip:text; color:transparent; }
+.brand-badge{ width:34px; height:34px; border-radius:8px;
+  background: radial-gradient(240% 140% at 10% 20%, #22d3ee, #7c3aed 60%, #0ea5e9);
+  box-shadow: 0 0 16px #22d3ee55, inset 0 0 12px #7c3aed55; }
+.nav-links{ display:flex; gap:12px; flex-wrap:wrap; }
+.nav-links a{ color:#c8d0dd; padding:8px 12px; border-radius:8px; border:1px solid #1e2a3b; background:#0d1220aa; }
+.nav-links a:hover{ border-color:#2d3c52; color:#ffffff }
+
+.container{ max-width:1260px; margin:auto; padding:18px 16px 60px }
+.panel{
+  background: var(--panel);
+  border:1px solid var(--border);
+  border-radius:14px;
+  box-shadow: 0 4px 40px rgba(34,211,238,.05), inset 0 1px 0 rgba(255,255,255,.04);
+  padding:22px; margin-bottom:22px;
+}
+
+.h2{ font-size:1.35rem; margin:0 0 12px 0 }
+.grid-2{ display:grid; grid-template-columns:1fr 1fr; gap:18px }
+.grid-3{ display:grid; grid-template-columns:repeat(3, 1fr); gap:18px }
+@media (max-width:880px){ .grid-2, .grid-3{ grid-template-columns:1fr } }
+
+/* Pretty inputs across the site */
+label{ display:block; color:var(--muted); margin:6px 0 6px }
+input, select, textarea{
+  width:100%; padding:11px 12px; border-radius:10px;
+  border:1px solid var(--field-bd); background:var(--field-bg); color:var(--text);
+  font-size:15px; outline:none; transition: border-color .15s, box-shadow .15s, background .15s;
+}
+input:focus, select:focus, textarea:focus{
+  border-color:var(--field-bd-focus);
+  box-shadow: 0 0 0 3px rgba(34,211,238,.12);
+  background: #111b2f;
+}
+
+.btn{ padding:10px 14px; border-radius:10px; border:1px solid #2a3750; background:#0f172a; color:#c7d0df; cursor:pointer }
+.btn:hover{ border-color:#334764; color:#e5ecf7 }
+.btn-ok{ background:linear-gradient(90deg,#059669,#10b981); border:0; color:white }
+.btn-ok:hover{ filter:brightness(1.05) }
+
+/* Simple table */
+table{ width:100%; border-collapse:collapse; background:#0f1320; border:1px solid #223046; border-radius:10px; overflow:hidden }
+th,td{ padding:10px 12px; border-bottom:1px solid #223046; text-align:center; font-size: 14px; }
+th:first-child, td:first-child{ text-align:center }
+tr:last-child td{ border-bottom:0 }
+
+/* Hide Option‑A plot (functionality stays) when present */
+#ternaryPlot{ display:none !important; }
+
+/* Small success/info badges */
+.badge-done{ color:#10b981; font-weight:700 }
+.badge-info{ color:#93c5fd; font-weight:700 }
+
+/* ==========================================
+   LEGACY NEUTRALIZER for hero (final override)
+   - prevents floats/widths/positions from older CSS
+   ========================================== */
+@media (min-width: 1100px){
+  /* kill legacy floats/positions that can shove things around */
+  .scene-hero .hero-left,
+  .scene-hero .hero-center,
+  .scene-hero .hero-right,
+  .scene-hero .headline,
+  .scene-hero .stats,
+  .scene-hero .glass-slab{
+    float: none !important;
+    position: static !important;
+    max-width: none !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  /* if an old flex rule centered the middle area, neutralize it */
+  .scene-hero .hero-center{ display: block !important; }
+
+  /* make sure the hero grid itself controls spacing */
+  .scene-hero .hero-grid{
+    margin: 0 auto !important;
+    padding: 0 16px !important;   /* keep your 1180 rail gutters */
+    max-width: 1180px !important;
+    box-sizing: border-box !important;
+  }
+}
+
+
+/* =========================================================
+   Header neutralizer (prevents legacy layout from interfering)
+   ========================================================= */
+
+/* Prevent old floats/inline or margins changing header controls */
+.nav .nav-inner .nav-ctas,
+.nav .nav-inner .nav-ctas a.btn-primary--compact,
+.nav .nav-toggle{
+  float: none !important;
+  position: static !important;
+  margin: 0 !important;
+}
+
+/* Header neutralizer: prevent legacy floats/margins from fighting the cluster */
+.nav .nav-inner .nav-ctas,
+.nav .nav-inner .nav-ctas a.btn-primary--compact,
+.nav .nav-inner .nav-ctas .nav-toggle{
+  float:none !important;
+  position:static !important;
+  margin:0 !important;
+}
+
+/* Stop legacy Troops header rules from centering the cluster */
+@media (max-width:640px){
+  .nav .nav-inner{ justify-content: flex-start !important; }
+  .nav .nav-ctas{ margin-left: auto !important; }
+}
+
+/* ── Footer ── */
+.site-footer {
+  margin-top: var(--space-4xl);
+  padding: var(--space-2xl) 0;
+  border-top: 1px solid var(--border-subtle);
+  text-align: center;
+}
+
+.footer-cta {
+  margin-bottom: var(--space-xl);
+}
+
+.footer-cta h3 {
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin-bottom: var(--space-sm);
+}
+
+.footer-cta p {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin-bottom: var(--space-md);
+}
+
+.footer-links {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-lg);
+  margin-top: var(--space-lg);
+  flex-wrap: wrap;
+}
+
+.footer-links a {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  text-decoration: none;
+  transition: color var(--duration-fast);
+}
+
+.footer-links a:hover {
+  color: var(--text-primary);
+}
+
+.footer-credit {
+  color: var(--text-dim);
+  font-size: 0.78rem;
+  margin-top: var(--space-lg);
+  line-height: 1.6;
+}

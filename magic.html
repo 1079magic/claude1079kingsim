@@ -1,0 +1,370 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Bear Magic • KingSim</title>
+  <meta name="viewport" content="width=device-width, initial-scale=0.85, minimum-scale=0.5, maximum-scale=3.0" />
+  <!-- Tell the browser that this page is dark  -->
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0b0f1a">
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#0b0f1a"><!-- keep dark always -->
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+  <!-- Base then Theme (order matters) -->
+  <link rel="stylesheet" href="assets/styles.css" />
+  <link rel="stylesheet" href="assets/theme-all.css" />
+  <link rel="stylesheet" href="assets/mobile-all.css" />
+  <link rel="stylesheet" href="assets/anim-all.css" />
+
+  <script src="assets/fetch-shim.js"></script>
+
+
+  <!-- Page‑scoped styling for Bear Magic -->
+  <style>
+    /* ===== Bear Magic page-scoped rules ===== */
+    body.magic-page { background: var(--bg); color: var(--ink); }
+    .container { max-width: 1180px; margin: 24px auto; padding: 0 16px; }
+    .panel { margin-bottom: 16px; }
+    .panel.panel-glass { padding: 14px; }
+
+    .h2 { font-size: 22px; font-weight: 800; margin: 0 0 8px; }
+    .muted { color: var(--muted); }
+
+    /* --- Brighter tables, better readability --- */
+    /* ===== MATCH OPTION‑A TABLE LOOK IN MAGIC ===== */
+
+    /* Main table container */
+    #callRallyTable table,
+    #joinTableWrap table,
+    #scoreboardTableWrap table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid rgba(255,140,140,0.18);
+      border-radius: 14px;
+      overflow: auto;
+      table-layout: auto;
+      box-shadow: 0 4px 18px rgba(0,0,0,.35);
+    }
+
+    /* Header row */
+    #callRallyTable thead th,
+    #joinTableWrap thead th,
+    #scoreboardTableWrap thead th {
+      text-align: center;
+      padding: 10px;
+      background: linear-gradient(180deg, rgba(18, 80, 18, 0.9), rgba(12, 60, 14, 0.85));
+      color: #ffecec;
+      font-weight: 800;
+      font-size: 14px;
+      letter-spacing: .2px;
+      border-bottom: 1px solid rgba(179, 255, 160, 0.25);
+    }
+
+    /* Table body rows */
+    #callRallyTable tbody td,
+    #joinTableWrap tbody td,
+    #scoreboardTableWrap tbody td {
+      padding: 9px 10px;
+      color: #ffe9e9;
+      border-bottom: 1px solid rgba(255,160,160,.12);
+      font-size: 14px;
+    }
+
+    /* Last row border cleanup */
+    #callRallyTable tbody tr:last-child td,
+    #joinTableWrap tbody tr:last-child td,
+    #scoreboardTableWrap tbody tr:last-child td {
+      border-bottom: 0;
+    }
+
+    /* Mobile adjustments */
+    @media (max-width: 640px){
+      #callRallyTable table,
+      #joinTableWrap table,
+      #scoreboardTableWrap table {
+        table-layout: fixed;
+        width: 100% !important;
+      }
+
+      #callRallyTable th, #callRallyTable td,
+      #joinTableWrap th, #joinTableWrap td,
+      #scoreboardTableWrap th, #scoreboardTableWrap td {
+        padding: 6px 8px !important;
+        font-size: 12px !important;
+        word-wrap: break-word;
+      }
+    }
+    #callRallyTable tbody tr:last-child td,
+    #joinTableWrap tbody tr:last-child td,
+    #scoreboardTableWrap tbody tr:last-child td { border-bottom: 0; }
+
+    /* --- Desktop layout stays the same: two-column table zones --- */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 980px) { .grid-2 { grid-template-columns: 1fr; } }
+
+    /* --- MOBILE FIT: tables must fit the screen --- */
+    /* On mobile, let tables truly fit, reduce font slightly, allow tighter cell padding */
+    @media (max-width: 640px){
+      .magic-page .panel.panel-glass{ padding: 12px; }
+      .magic-page #callRallyTable table,
+      .magic-page #joinTableWrap table,
+      .magic-page #scoreboardTableWrap table{
+        table-layout: fixed;     /* equalize columns so it fits */
+        width: 100% !important;
+      }
+      .magic-page #callRallyTable th, .magic-page #callRallyTable td,
+      .magic-page #joinTableWrap th, .magic-page #joinTableWrap td,
+      .magic-page #scoreboardTableWrap th, .magic-page #scoreboardTableWrap td{
+        padding: 6px 8px !important;
+        font-size: 12px !important;
+        word-wrap: break-word;
+      }
+    }
+
+    /* --- REORDER on mobile: put "Using tier… + Recommended + No marches…" BELOW tables --- */
+    /* We wrap the three logical blocks with ids: bm_topinfo, bm_tables, bm_bottom */
+    .bm-flow { display: grid; gap: 14px; }
+    @media (min-width: 981px){
+      /* desktop — keep original order: topinfo → tables → bottom group */
+      .bm-topinfo{ order: 1; }
+      .bm-tables { order: 2; }
+      .bm-bottom { order: 3; }
+    }
+    @media (max-width: 640px){
+      /* mobile — place tables first, then info, then bottom group */
+      .bm-tables { order: 1; }
+      .bm-topinfo{ order: 2; }
+      .bm-bottom { order: 3; }
+    }
+
+    /* --- Make the "Recommended" button look like primary compact if not already --- */
+    #btnUseRecommended.btn, #btnUseRecommended{
+      background: linear-gradient(90deg,#22d3ee,#60a5fa);
+      color:#05121f; border:0; font-weight:600; padding:8px 12px; border-radius:12px;
+      box-shadow:0 6px 18px rgba(34,211,238,.25);
+      width: auto;
+      display:inline-flex; align-items:center; gap:8px;
+    }
+    #btnUseRecommended:hover{ filter:brightness(1.05); transform: translateY(-1px); }
+    #btnUseRecommended:active{ transform: translateY(0); }
+
+    /* subtle emphasis lines */
+    .magic-subtle{ color:#cdd6e8; }
+  </style>
+</head>
+
+<!-- Add page class for scoping -->
+<body class="magic-page fx-preload">
+
+  <!-- NAV -->
+  <div class="nav">
+    <div class="nav-inner">
+      <a class="brand" href="index.html" aria-label="KingSim Home">
+        <span class="brand-badge"></span>KingSim
+      </a>
+      <div class="nav-links">
+        <a href="index.html">Home</a>
+        <a href="troops.html">Troops &amp; Stats</a>
+        <a href="heros.html" data-tab="heroes">Heroes</a>
+        <a href="magic.html" data-tab="magic" onclick="window.runBearMagic && window.runBearMagic();">Bear Magic</a>
+        <a href="optiona.html">Bear Option‑A</a>
+        <a href="mystic.html">Mystic Trials</a>
+        <a href="pvp.html">PvP</a>
+        <a href="cb.html">CB / Turrets</a>
+      </div>
+      <!-- mobile-only CTA cluster; hidden on desktop via your theme CSS -->
+      <div class="nav-ctas">
+        <a class="btn-primary--compact" href="troops.html">🪖</a>
+        <!-- .nav-toggle is injected by theme-all.js on mobile -->
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <section class="panel panel-glass fx-enter;">
+        <h2 class="h2" style="text-align: center;">🪄🐻 Magic Bear 🐻🪄<br>Damage Calculator</h2>
+        <span id="bm_status" class="muted">Loading…</span>
+
+
+      <!-- Hidden inputs & validation nodes that app1.js expects -->
+      <div id="bm_hidden_host" style="display:none">
+        <!-- (unchanged: all your hidden inputs/selects go here) -->
+        <input id="inf_atk" value="481.6" /><div id="err_inf_atk"></div>
+        <input id="inf_let" value="284.4" /><div id="err_inf_let"></div>
+        <input id="cav_atk" value="501.3" /><div id="err_cav_atk"></div>
+        <input id="cav_let" value="325.4" /><div id="err_cav_let"></div>
+        <input id="arc_atk" value="509.9" /><div id="err_arc_atk"></div>
+        <input id="arc_let" value="479.7" /><div id="err_arc_let"></div>
+
+        <select id="troopTier">
+          <option value="T6">T6</option><option value="T9">T9</option><option value="T10">T10</option>
+          <option value="T10.TG1" selected>T10.TG1</option><option value="T10.TG2">T10.TG2</option>
+          <option value="T10.TG3">T10.TG3</option><option value="T10.TG4">T10.TG4</option><option value="T10.TG5">T10.TG5</option>
+        </select>
+        <div id="err_troopTier"></div>
+
+        <input id="stockInf" value="211539" /><div id="err_stockInf"></div>
+        <input id="stockCav" value="191128" /><div id="err_stockCav"></div>
+        <input id="stockArc" value="312493" /><div id="err_stockArc"></div>
+
+        <input id="rallySize" value="134850" /><div id="err_rallySize"></div>
+        <input id="marchSize" value="65000" /><div id="err_marchSize"></div>
+        <input id="numFormations" value="6" /><div id="err_numFormations"></div>
+
+        <div id="validationSummary"></div>
+        <ul id="validationList"></ul>
+        <div id="bm_auto_hidden_stash"></div>
+      </div>
+
+      <!-- ===== MAGIC CONTENT FLOW ===== -->
+      <div class="bm-flow">
+
+        <!-- (A) TOP INFO (we’ll move this under tables on mobile via CSS order) -->
+        <div id="bm_topinfo" class="bm-topinfo">
+          <div class="magic-subtle" id="selectedTierNote" style="margin-bottom:6px">
+            <!-- e.g., Using tier T10.TG2 — Base ATK 515/1546/2062 -->
+          </div>
+          <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap">
+            <button id="btnUseRecommended" class="btn" type="button">Recommended🪄</button>
+            <div id="recommendedDisplay" class="muted"></div>
+          </div>
+          <div id="bm_qualityNote" class="muted" style="margin-top:6px">
+            <!-- e.g., No marches pass quality gates — showing 6 as entered -->
+          </div>
+        </div>
+
+        <!-- (B) TABLES (call / join) -->
+        <div id="bm_tables" class="bm-tables">
+          <div class="grid" style="margin-top:14px">
+            <div>
+              <div id="callRallyTable" class="table-glass" style="margin-top:10px"></div>
+              <div id="joinTableWrap" class="table-glass" style="margin-top:10px"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- (C) BOTTOM (scoreboard + inventory) -->
+        <div id="bm_bottom" class="bm-bottom">
+          <div class="grid-2" style="margin-top:14px">
+            <div>
+              <h3>Scoreboard</h3>
+              <div id="scoreboardTableWrap" class="table-glass"></div>
+            </div>
+            <div>
+              <h3>Inventory</h3>
+              <div id="inventoryReadout" class="muted" style="white-space:pre-line"></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <!-- ===== end MAGIC CONTENT FLOW ===== -->
+
+      <input id="hiddenLastMode" type="hidden" value="magic12" />
+      <input id="hiddenBestFractions" type="hidden" value="" />
+    </section>
+  </div>
+
+  <!-- Engines + state loader -->
+  <script src="app1.js"></script>
+  <script src="assets/state-sync.js"></script>
+
+  <!-- Self-healing & autorun (unchanged logic) -->
+  <script>
+    (function(){
+      'use strict';
+      const INPUT_IDS = ['inf_atk','inf_let','cav_atk','cav_let','arc_atk','arc_let',
+        'troopTier','stockInf','stockCav','stockArc','rallySize','marchSize','numFormations'];
+      const VALIDATION_IDS = ['validationSummary','validationList',
+        'err_inf_atk','err_inf_let','err_cav_atk','err_cav_let','err_arc_atk','err_arc_let',
+        'err_troopTier','err_stockInf','err_stockCav','err_stockArc','err_rallySize','err_marchSize','err_numFormations'];
+      const VISIBLE_IDS = ['selectedTierNote','fractionReadout','callRallyTable','recommendedDisplay',
+        'joinTableWrap','scoreboardTableWrap','inventoryReadout','bm_qualityNote',
+        'hiddenLastMode','hiddenBestFractions','btnUseRecommended'];
+
+      function ensureHost(){
+        let host = document.getElementById('bm_hidden_host');
+        if (!host){ host = document.createElement('div'); host.id='bm_hidden_host'; host.style.display='none'; document.body.appendChild(host); }
+        let stash = document.getElementById('bm_auto_hidden_stash');
+        if (!stash){ stash = document.createElement('div'); stash.id='bm_auto_hidden_stash'; stash.style.display='none'; host.appendChild(stash); }
+        return { stash };
+      }
+      function createHiddenInput(id){ const el = document.createElement('input'); el.type='text'; el.id=id; el.style.display='none'; return el; }
+      function createVisibleContainer(id){ const el = document.createElement('div'); el.id=id; return el; }
+
+      // Self‑healing getElementById
+      (function installSelfHealingGetEl(){
+        const orig = document.getElementById.bind(document);
+        const { stash } = ensureHost();
+        document.getElementById = function(id){
+          let el = orig(id);
+          if (!el){
+            if (VISIBLE_IDS.includes(id)) {
+              el = createVisibleContainer(id);
+              (document.querySelector('.container .panel') || document.body).appendChild(el);
+            } else {
+              if (id === 'troopTier') {
+                const sel = document.createElement('select'); sel.id=id; sel.style.display='none';
+                ['T6','T9','T10','T10.TG1','T10.TG2','T10.TG3','T10.TG4','T10.TG5'].forEach(v=>{
+                  const o=document.createElement('option'); o.value=v; o.textContent=v; if(v==='T10.TG1') o.selected=true; sel.appendChild(o);
+                });
+                el = sel;
+              } else {
+                el = createHiddenInput(id);
+              }
+              stash.appendChild(el);
+            }
+          }
+          return el;
+        };
+      })();
+
+      function run(){
+        const s = document.getElementById('bm_status');
+        try{
+          const { stash } = ensureHost();
+          [...INPUT_IDS, ...VALIDATION_IDS].forEach(id=>{
+            if (!document.getElementById(id)) stash.appendChild(createHiddenInput(id));
+          });
+          VISIBLE_IDS.forEach(id=>{
+            if (!document.getElementById(id)) {
+              (document.querySelector('.container .panel') || document.body)
+                .appendChild(createVisibleContainer(id));
+          }});
+
+          // Load Troops & Stats
+          if (window.KingState && typeof KingState.load === 'function') KingState.load();
+
+          // Initialize & compute
+          if (window.Magic && typeof Magic.init === 'function') Magic.init();
+          if (window.Magic && typeof Magic.compute === 'function') Magic.compute('magic12');
+
+          if (s){ s.textContent=''; s.className=''; }
+        }catch(err){
+          console.error('[Bear Magic] failed:', err);
+          if (s){ s.textContent = 'Error: ' + (err?.message||err); s.style.color='#ef4444'; }
+        }
+      }
+
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run);
+      else run();
+      window.runBearMagic = run;
+    })();
+  </script>
+
+
+
+
+  <!-- GLOBAL JS -->
+  <script src="assets/theme-all.js"></script>
+  <script src="assets/anim-all.js"></script>
+  <script src="assets/mobile-all.js"></script>
+  <script src="assets/state-sync.js"></script>
+
+  <!-- PAGE-SPECIFIC JS -->
+  <script src="assets/magic.js"></script>
+  <!-- FOOTER AUTO-INSERT -->
+  <script src="assets/footer.js"></script>
+</body>
+</html>
