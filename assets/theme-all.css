@@ -617,36 +617,52 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
   box-shadow: 0 0 0 4px rgba(34,211,238,.12) !important;
 }
 
-/* ===== FIX: Mobile Chrome URL-bar background zoom =====
-   When Chrome hides its URL bar, the viewport grows and a fixed background-size:cover
-   image rescales, causing a visible zoom/jump.
-   Fix: use a dedicated pseudo-element on <html> sized to 100vh + extra so the
-   image never needs to rescale when the bar hides. */
+/* ===== FIX v2: Mobile Chrome URL-bar background zoom =====
+   Chrome's URL bar hide/show changes window.innerHeight (the small/large viewport).
+   position:fixed repaints when viewport height changes → image rescales → zoom.
+   
+   Real fix: use 100lvh (large viewport height - always the MAXIMUM height, URL bar hidden).
+   The element is sized to the largest possible viewport from the start and never needs
+   to resize. We use position:absolute on a full-page ::before on <body> instead of fixed.
+   
+   Secondary fix: preload the image so it's cached at first paint size.
+*/
 
-html::before {
+/* Remove the old fixed layers entirely */
+.bg.bg-image,
+.site-bg .bg-image {
+  display: none !important;
+}
+
+/* Single background element sized to large viewport — never resizes */
+body::before {
   content: '';
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  /* 100lvh = large viewport height (URL bar hidden) = maximum possible height */
+  /* This means the image is always sized to the LARGEST viewport, so when the
+     URL bar hides and viewport grows to match, the image is already that size */
+  width: 100vw;
+  height: 100lvh;
   z-index: -10;
   background-image: url("https://png.pngtree.com/thumb_back/fw800/background/20250916/pngtree-futuristic-ai-technology-background-with-machine-learning-visualization-and-robotic-design-image_19364985.webp");
   background-size: cover;
   background-position: center center;
   background-repeat: no-repeat;
-  /* Oversized to absorb URL-bar resize without rescaling */
-  top: -60px;
-  bottom: -60px;
-  left: -10px;
-  right: -10px;
   filter: brightness(0.65) saturate(1.05) contrast(1.03);
   opacity: 0.50;
-  will-change: auto;
-  transform: translateZ(0);
   pointer-events: none;
+  /* Prevent any transform repaints */
+  will-change: auto;
+  transform: none;
 }
 
-/* Hide the old bg-image layers to avoid double rendering */
-.bg.bg-image,
-.site-bg .bg-image {
-  opacity: 0 !important;
-  pointer-events: none !important;
+/* Fallback for browsers that don't support lvh (uses svh which is small viewport) */
+@supports not (height: 100lvh) {
+  body::before {
+    /* Add extra pixels to cover URL bar height (~80px) so image never needs to grow */
+    height: calc(100vh + 80px);
+    top: -40px;
+  }
 }

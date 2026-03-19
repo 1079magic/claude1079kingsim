@@ -179,11 +179,15 @@
             star.style.cssText = 'cursor:pointer;display:inline-block;';
             star.addEventListener('click', function(e) {
               e.stopPropagation();
-              // Click the star at position val in original card
+              // Directly update card state (works even if DOM element is hidden)
+              card.dataset.level = val;
+              // Also fire the original listener to trigger saveState/computeSummary
               var origStars = card.querySelectorAll('.star');
-              if (origStars[val-1]) origStars[val-1].click();
-              // Refresh sheet to show updated state
-              setTimeout(function(){ refreshSheet(card); }, 30);
+              if (origStars[val-1]) {
+                origStars[val-1].dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true}));
+              }
+              // Refresh sheet after state settles
+              setTimeout(function(){ refreshSheet(card); }, 60);
             });
             container.appendChild(star);
           })(i);
@@ -210,9 +214,15 @@
                 'color:' + (val === currentVal ? '#fff' : '#cdd3df') + ';font-weight:700;font-size:.8rem;cursor:pointer;';
               btn.addEventListener('click', function(e) {
                 e.stopPropagation();
+                // Directly update the seg dataset value
+                var origSeg = card.querySelector('.seg[data-skill="'+skillIdx+'"]');
+                if (origSeg) origSeg.dataset.value = val;
+                // Fire the original button click to trigger saveState/computeSummary
                 var origBtn = card.querySelector('.seg[data-skill="'+skillIdx+'"] button[data-val="'+val+'"]');
-                if (origBtn) origBtn.click();
-                setTimeout(function(){ refreshSheet(card); }, 30);
+                if (origBtn) {
+                  origBtn.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true}));
+                }
+                setTimeout(function(){ refreshSheet(card); }, 60);
               });
               container.appendChild(btn);
             })(v);
@@ -235,8 +245,12 @@
               swd.style.cssText = 'cursor:pointer;display:inline-block;';
               swd.addEventListener('click', function(e) {
                 e.stopPropagation();
-                if (origSwords[val-1]) origSwords[val-1].click();
-                setTimeout(function(){ refreshSheet(card); }, 30);
+                card.dataset.widget = val;
+                var origSwords2 = card.querySelectorAll('.sword');
+                if (origSwords2[val-1]) {
+                  origSwords2[val-1].dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true}));
+                }
+                setTimeout(function(){ refreshSheet(card); }, 60);
               });
               container.appendChild(swd);
             })(i);
