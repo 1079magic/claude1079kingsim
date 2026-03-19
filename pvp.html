@@ -63,6 +63,10 @@
     .img-modal img{max-width:92vw;max-height:92vh;border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,.7);}
     /* Table text wrapping for mobile */
     .pvp-table-wrap{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+    .pvp-import-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+    @media(max-width:650px){.pvp-import-grid{grid-template-columns:1fr;}}
+    .pvp-import-inner-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+    @media(max-width:400px){.pvp-import-inner-grid{grid-template-columns:1fr;}}
     .pvp-table-wrap table{min-width:380px;width:100%;border-collapse:collapse;}
     .pvp-table-wrap td:nth-child(2){white-space:nowrap;}
     /* Manual input side-by-side panels */
@@ -108,7 +112,7 @@
 
       <h3 class="h3" style="margin-bottom:10px">Attacker &amp; Defender Report Import</h3>
       <!-- outer 2-col: left=Attacker&Defender combined, right=Defender-only -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+      <div class="pvp-import-grid" style="margin-bottom:16px">
 
         <!-- ── outer-left: Attacker/Defender combined report ── -->
         <div style="border:1px solid rgba(239,68,68,.3);border-radius:12px;padding:10px;background:rgba(239,68,68,.04)">
@@ -129,7 +133,7 @@
         <!-- ── outer-right: Defender-only + Attacker standalone ── -->
         <div style="border:1px solid rgba(16,185,129,.25);border-radius:12px;padding:10px;background:rgba(16,185,129,.03)">
           <div style="font-size:.65rem;font-weight:700;color:#34d399;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">🛡 Defender Data</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+          <div class="pvp-import-inner-grid" style="margin-bottom:8px">
             <!-- Def Troop Ratio -->
             <div class="import-box" id="def_ratio_box" onclick="document.getElementById('def_ratio_file').click()" style="border-color:rgba(16,185,129,.3)">
               <div class="import-box-row">
