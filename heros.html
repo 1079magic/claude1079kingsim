@@ -93,12 +93,11 @@
   <!-- FOOTER AUTO-INSERT -->
   <script src="assets/footer.js"></script>
 
-  <!-- Mobile hero card bottom-sheet v2 — full controls, live sync -->
+  <!-- Mobile hero card bottom-sheet v3 — full sync with lock awareness -->
   <script>
   (function() {
     if (window.innerWidth > 640) return;
 
-    // Inject overlay
     var overlay = document.createElement('div');
     overlay.className = 'hero-sheet-overlay';
     overlay.innerHTML =
@@ -109,137 +108,202 @@
       '</div>';
     document.body.appendChild(overlay);
 
-    var title = overlay.querySelector('.hero-sheet-title');
-    var body  = overlay.querySelector('.hero-sheet-body');
-    var close = overlay.querySelector('.hero-sheet-close');
-
-    // Keep reference to the currently open card so live updates work
+    var title   = overlay.querySelector('.hero-sheet-title');
+    var body    = overlay.querySelector('.hero-sheet-body');
+    var closeBtn= overlay.querySelector('.hero-sheet-close');
     var activeCard = null;
+
+    // ── Rebuild sheet content from current card state (called on open + after changes)
+    function refreshSheet(card) {
+      body.innerHTML = '';
+
+      var isLocked = card.classList.contains('locked');
+
+      // ── Owned row ──
+      var ownRow = document.createElement('div');
+      ownRow.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #1e2d40;margin-bottom:12px;';
+
+      var ownLabel = document.createElement('span');
+      ownLabel.textContent = 'Owned';
+      ownLabel.style.cssText = 'color:#a9b3c6;font-size:.9rem;font-weight:600;';
+
+      var origChk = card.querySelector('input.owned-input');
+      var toggle  = document.createElement('label');
+      toggle.style.cssText = 'position:relative;display:inline-block;width:46px;height:26px;cursor:pointer;flex-shrink:0;';
+      var toggleChk = document.createElement('input');
+      toggleChk.type = 'checkbox';
+      toggleChk.checked = origChk ? origChk.checked : false;
+      toggleChk.style.cssText = 'opacity:0;width:0;height:0;';
+      var slider = document.createElement('span');
+      slider.style.cssText = 'position:absolute;inset:0;border-radius:26px;transition:.2s;' +
+        'background:' + (toggleChk.checked ? 'linear-gradient(145deg,#10b981,#37e5a8)' : 'rgba(255,255,255,.12)') + ';';
+      var knob = document.createElement('span');
+      knob.style.cssText = 'position:absolute;width:20px;height:20px;border-radius:50%;background:#fff;top:3px;' +
+        'left:' + (toggleChk.checked ? '23px' : '3px') + ';transition:.2s;';
+      slider.appendChild(knob);
+      toggle.appendChild(toggleChk);
+      toggle.appendChild(slider);
+
+      toggleChk.addEventListener('change', function() {
+        if (origChk) {
+          origChk.checked = toggleChk.checked;
+          origChk.dispatchEvent(new Event('change', {bubbles:true}));
+        }
+        slider.style.background = toggleChk.checked ? 'linear-gradient(145deg,#10b981,#37e5a8)' : 'rgba(255,255,255,.12)';
+        knob.style.left = toggleChk.checked ? '23px' : '3px';
+        // Refresh whole sheet so controls show/hide correctly
+        setTimeout(function(){ refreshSheet(card); }, 50);
+      });
+
+      ownRow.appendChild(ownLabel);
+      ownRow.appendChild(toggle);
+      body.appendChild(ownRow);
+
+      if (isLocked) {
+        var lockMsg = document.createElement('div');
+        lockMsg.style.cssText = 'color:#6b7fa3;font-size:.82rem;text-align:center;padding:16px 0;font-style:italic;';
+        lockMsg.textContent = 'Toggle Owned to enable controls';
+        body.appendChild(lockMsg);
+        return;
+      }
+
+      // ── Level (stars) ──
+      var levelRow = buildSheetRow('Level', function(container) {
+        var currentLevel = +(card.dataset.level || 0);
+        for (var i = 1; i <= 5; i++) {
+          (function(val) {
+            var star = document.createElement('span');
+            star.innerHTML = val <= currentLevel
+              ? '<svg width="20" height="20" viewBox="0 0 24 24"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" fill="#ffc107" stroke="#ffc107" stroke-width="1"/></svg>'
+              : '<svg width="20" height="20" viewBox="0 0 24 24"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" fill="none" stroke="#666" stroke-width="1.5"/></svg>';
+            star.style.cssText = 'cursor:pointer;display:inline-block;';
+            star.addEventListener('click', function(e) {
+              e.stopPropagation();
+              // Click the star at position val in original card
+              var origStars = card.querySelectorAll('.star');
+              if (origStars[val-1]) origStars[val-1].click();
+              // Refresh sheet to show updated state
+              setTimeout(function(){ refreshSheet(card); }, 30);
+            });
+            container.appendChild(star);
+          })(i);
+        }
+      });
+      body.appendChild(levelRow);
+
+      // ── Skills (seg buttons) ──
+      card.querySelectorAll('.seg[data-skill]').forEach(function(origSeg) {
+        var skillIdx = origSeg.dataset.skill;
+        // Get skill name from the parent .row label
+        var parentRow = origSeg.closest('.row');
+        var skillName = parentRow ? (parentRow.querySelector('.label') || {}).textContent || ('Skill '+(+skillIdx+1)) : 'Skill';
+        var currentVal = +(origSeg.dataset.value || 0);
+
+        var segRow = buildSheetRow(skillName, function(container) {
+          for (var v = 1; v <= 5; v++) {
+            (function(val) {
+              var btn = document.createElement('button');
+              btn.type = 'button';
+              btn.textContent = val;
+              btn.style.cssText = 'width:32px;height:32px;border-radius:6px;border:1px solid rgba(255,255,255,.1);' +
+                'background:' + (val === currentVal ? 'linear-gradient(145deg,rgba(123,97,255,0.5),rgba(76,226,255,0.35))' : 'transparent') + ';' +
+                'color:' + (val === currentVal ? '#fff' : '#cdd3df') + ';font-weight:700;font-size:.8rem;cursor:pointer;';
+              btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                var origBtn = card.querySelector('.seg[data-skill="'+skillIdx+'"] button[data-val="'+val+'"]');
+                if (origBtn) origBtn.click();
+                setTimeout(function(){ refreshSheet(card); }, 30);
+              });
+              container.appendChild(btn);
+            })(v);
+          }
+        });
+        body.appendChild(segRow);
+      });
+
+      // ── Widget (swords) ──
+      var origSwords = card.querySelectorAll('.sword');
+      if (origSwords.length > 0) {
+        var currentWidget = +(card.dataset.widget || 0);
+        var widgetRow = buildSheetRow('Widget', function(container) {
+          for (var i = 1; i <= 5; i++) {
+            (function(val) {
+              var swd = document.createElement('span');
+              swd.innerHTML = val <= currentWidget
+                ? '<svg width="20" height="20" viewBox="0 0 24 24"><path d="M14.5 2.5L17.5 5.5L8 15H5V12L14.5 2.5Z" fill="#7c3aed" stroke="#7c3aed" stroke-width="1"/><path d="M3 21L5 19" stroke="#7c3aed" stroke-width="2" stroke-linecap="round"/></svg>'
+                : '<svg width="20" height="20" viewBox="0 0 24 24"><path d="M14.5 2.5L17.5 5.5L8 15H5V12L14.5 2.5Z" fill="none" stroke="#555" stroke-width="1.5"/><path d="M3 21L5 19" stroke="#555" stroke-width="2" stroke-linecap="round"/></svg>';
+              swd.style.cssText = 'cursor:pointer;display:inline-block;';
+              swd.addEventListener('click', function(e) {
+                e.stopPropagation();
+                if (origSwords[val-1]) origSwords[val-1].click();
+                setTimeout(function(){ refreshSheet(card); }, 30);
+              });
+              container.appendChild(swd);
+            })(i);
+          }
+        });
+        body.appendChild(widgetRow);
+      }
+
+      // ── Formation pills ──
+      var currentFormation = card.dataset.formation || '';
+      var formRow = buildSheetRow('Formation', function(container) {
+        ['Call','Join'].forEach(function(val) {
+          var pill = document.createElement('button');
+          pill.type = 'button';
+          pill.textContent = val;
+          var isActive = currentFormation === val;
+          pill.style.cssText = 'padding:6px 16px;border-radius:999px;border:1px solid rgba(255,255,255,.12);' +
+            'background:' + (isActive ? 'linear-gradient(145deg,rgba(123,97,255,0.4),rgba(76,226,255,0.25))' : 'transparent') + ';' +
+            'color:' + (isActive ? '#fff' : '#a9b3c6') + ';font-weight:700;font-size:.82rem;cursor:pointer;margin-right:6px;';
+          pill.addEventListener('click', function(e) {
+            e.stopPropagation();
+            var origPill = card.querySelector('.pill[data-val="'+val+'"]');
+            if (origPill) origPill.click();
+            setTimeout(function(){ refreshSheet(card); }, 30);
+          });
+          container.appendChild(pill);
+        });
+      });
+      body.appendChild(formRow);
+
+      // ── Stats preview ──
+      var sumsDiv = document.createElement('div');
+      sumsDiv.style.cssText = 'margin-top:14px;padding:10px 12px;background:rgba(34,211,238,.05);border:1px solid rgba(34,211,238,.15);border-radius:8px;font-size:.82rem;color:#7dd3fc;line-height:1.8;';
+      var cardSums = card.querySelectorAll('.focus-sums');
+      if (cardSums.length) {
+        cardSums.forEach(function(s) {
+          var line = document.createElement('div');
+          line.textContent = s.textContent;
+          sumsDiv.appendChild(line);
+        });
+      } else {
+        sumsDiv.textContent = 'Select level & skills to see stats';
+        sumsDiv.style.color = '#6b7fa3';
+      }
+      body.appendChild(sumsDiv);
+    }
+
+    // Helper: build a labelled row
+    function buildSheetRow(labelText, fillFn) {
+      var row = document.createElement('div');
+      row.style.cssText = 'display:grid;grid-template-columns:.85fr 2.15fr;gap:8px;align-items:center;margin-bottom:10px;';
+      var lbl = document.createElement('div');
+      lbl.textContent = labelText;
+      lbl.style.cssText = 'color:#a9b3c6;font-size:.78rem;white-space:nowrap;';
+      var ctrl = document.createElement('div');
+      ctrl.style.cssText = 'display:flex;align-items:center;gap:4px;flex-wrap:wrap;';
+      fillFn(ctrl);
+      row.appendChild(lbl);
+      row.appendChild(ctrl);
+      return row;
+    }
 
     function openSheet(card) {
       activeCard = card;
       var nameEl = card.querySelector('.hero-name');
       title.textContent = nameEl ? nameEl.textContent : 'Hero';
-
-      body.innerHTML = '';
-
-      // ── Owned toggle ──
-      var ownFlag = card.querySelector('.own-flag');
-      if (ownFlag) {
-        var ownClone = ownFlag.cloneNode(true);
-        ownClone.style.cssText = 'position:static;display:flex;align-items:center;gap:10px;margin-bottom:12px;';
-        // Make the label show "Owned"
-        var ownLabelSpan = document.createElement('span');
-        ownLabelSpan.textContent = 'Owned';
-        ownLabelSpan.style.cssText = 'color:#a9b3c6;font-size:.85rem;';
-        // Sync checkbox
-        var cloneChk = ownClone.querySelector('input.owned-input');
-        var origChk  = card.querySelector('input.owned-input');
-        if (cloneChk && origChk) {
-          cloneChk.checked = origChk.checked;
-          cloneChk.addEventListener('change', function() {
-            origChk.checked = cloneChk.checked;
-            origChk.dispatchEvent(new Event('change', {bubbles:true}));
-          });
-        }
-        body.appendChild(ownClone);
-      }
-
-      // ── All .row elements (Level, Skills, Widget, Formation) ──
-      var rows = card.querySelectorAll('.row');
-      rows.forEach(function(row) {
-        var rowClone = row.cloneNode(true);
-        rowClone.style.cssText = 'display:grid;grid-template-columns:.9fr 2.1fr;gap:8px;align-items:center;margin-bottom:8px;';
-        // Force inner .controls visible
-        var innerControls = rowClone.querySelector('.controls');
-        if (innerControls) innerControls.style.cssText = 'display:flex;align-items:center;gap:4px;flex-wrap:wrap;';
-
-        // ── Stars (level) ──
-        rowClone.querySelectorAll('.star').forEach(function(cloneStar) {
-          var val = parseInt(cloneStar.dataset.value, 10);
-          cloneStar.style.cursor = 'pointer';
-          cloneStar.addEventListener('click', function(e) {
-            e.stopPropagation();
-            // Click the matching star in the original card
-            var origStars = card.querySelectorAll('.star');
-            origStars.forEach(function(s) {
-              if (parseInt(s.dataset.value, 10) === val) s.click();
-            });
-            // Update visual in sheet
-            rowClone.querySelectorAll('.star').forEach(function(s, idx) {
-              s.classList.toggle('active', idx < val);
-            });
-          });
-        });
-
-        // ── Seg buttons (skills) ──
-        var segIdx = rowClone.querySelector('.seg') ? rowClone.querySelector('.seg').dataset.skill : null;
-        rowClone.querySelectorAll('.seg button').forEach(function(cloneBtn) {
-          var val = parseInt(cloneBtn.dataset.val, 10);
-          cloneBtn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            // Find matching seg in original card by skill index
-            if (segIdx !== undefined) {
-              var origSeg = card.querySelector('.seg[data-skill="' + segIdx + '"]');
-              if (origSeg) {
-                var origBtn = origSeg.querySelector('button[data-val="' + val + '"]');
-                if (origBtn) origBtn.click();
-              }
-            }
-            // Update visual in sheet
-            rowClone.querySelectorAll('.seg button').forEach(function(b) {
-              b.classList.toggle('is-active', parseInt(b.dataset.val,10) === val);
-            });
-          });
-        });
-
-        // ── Swords (widget) ──
-        rowClone.querySelectorAll('.sword').forEach(function(cloneSword) {
-          var val = parseInt(cloneSword.dataset.value, 10);
-          cloneSword.style.cursor = 'pointer';
-          cloneSword.addEventListener('click', function(e) {
-            e.stopPropagation();
-            var origSwords = card.querySelectorAll('.sword');
-            origSwords.forEach(function(s) {
-              if (parseInt(s.dataset.value, 10) === val) s.click();
-            });
-            // Update visual
-            rowClone.querySelectorAll('.sword').forEach(function(s, idx) {
-              s.classList.toggle('active', idx < val);
-            });
-          });
-        });
-
-        // ── Formation pills ──
-        rowClone.querySelectorAll('.pill').forEach(function(clonePill) {
-          var val = clonePill.dataset.val;
-          clonePill.addEventListener('click', function(e) {
-            e.stopPropagation();
-            var origPill = card.querySelector('.pill[data-val="' + val + '"]');
-            if (origPill) origPill.click();
-            // Update pressed state
-            rowClone.querySelectorAll('.pill').forEach(function(p) {
-              p.setAttribute('aria-pressed', p.dataset.val === val ? 'true' : 'false');
-            });
-          });
-        });
-
-        body.appendChild(rowClone);
-      });
-
-      // ── Focus-sums live preview (ATK/LET/DEF/HP) ──
-      var sumsDiv = document.createElement('div');
-      sumsDiv.style.cssText = 'margin-top:12px;padding:10px 12px;background:rgba(34,211,238,.05);border:1px solid rgba(34,211,238,.15);border-radius:8px;font-size:.8rem;color:#7dd3fc;line-height:1.7;';
-      sumsDiv.className = 'sheet-sums-preview';
-      // Copy current values from card
-      var cardSums = card.querySelectorAll('.focus-sums');
-      cardSums.forEach(function(s) {
-        var line = document.createElement('div');
-        line.textContent = s.textContent;
-        sumsDiv.appendChild(line);
-      });
-      body.appendChild(sumsDiv);
-
+      refreshSheet(card);
       overlay.classList.add('open');
       document.body.style.overflow = 'hidden';
     }
@@ -250,31 +314,13 @@
       activeCard = null;
     }
 
-    // Refresh sums preview in sheet when original card updates
-    var sumObserver = new MutationObserver(function() {
-      if (!activeCard) return;
-      var preview = overlay.querySelector('.sheet-sums-preview');
-      if (!preview) return;
-      var cardSums = activeCard.querySelectorAll('.focus-sums');
-      preview.innerHTML = '';
-      cardSums.forEach(function(s) {
-        var line = document.createElement('div');
-        line.textContent = s.textContent;
-        preview.appendChild(line);
-      });
-    });
-
-    // Delegate: open sheet on card click, but NOT on overlay or its children
     document.addEventListener('click', function(e) {
       if (overlay.contains(e.target)) return;
       var card = e.target.closest('.hero-card');
-      if (card) {
-        openSheet(card);
-        sumObserver.observe(card, { childList: true, subtree: true, characterData: true });
-      }
+      if (card) openSheet(card);
     });
 
-    close.addEventListener('click', closeSheet);
+    closeBtn.addEventListener('click', closeSheet);
     overlay.addEventListener('click', function(e) {
       if (e.target === overlay) closeSheet();
     });
