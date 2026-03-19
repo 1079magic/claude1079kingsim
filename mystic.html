@@ -110,10 +110,19 @@
 
       <!-- Single OCR import -->
       <div class="import-card panel-glass" style="margin-bottom:12px">
-        <div class="dropzone" id="pve_dz">
-          <button class="btn-secondary" id="pve_browse">📷 Import battle report (Bonus Details)</button>
-          <input id="pve_file" type="file" accept="image/*" style="display:none" />
-          <span class="dz-hint">One image: fills Attacker & Defender stats, tiers, and troops totals (adjust per-type troops if needed)</span>
+        <div class="dropzone" id="pve_dz" style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap">
+          <img src="assets/example_mystic.jpg"
+               style="width:64px;height:46px;object-fit:cover;border-radius:7px;opacity:.6;border:1px solid #2a4060;cursor:pointer;transition:opacity .15s,border-color .15s;flex-shrink:0"
+               onmouseover="this.style.opacity='1';this.style.borderColor='#22d3ee'"
+               onmouseout="this.style.opacity='.6';this.style.borderColor='#2a4060'"
+               onclick="event.stopPropagation();(function(s){var m=document.getElementById('mystic_img_modal');if(!m){m=document.createElement('div');m.id='mystic_img_modal';m.style.cssText='display:flex;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;align-items:center;justify-content:center;cursor:pointer';m.onclick=function(){this.style.display='none'};var i=document.createElement('img');i.style.cssText='max-width:92vw;max-height:92vh;border-radius:10px';m.appendChild(i);document.body.appendChild(m)}document.querySelector('#mystic_img_modal img').src=s;document.getElementById('mystic_img_modal').style.display='flex'}('assets/example_mystic.jpg'))"
+               title="Click to see example image"
+               alt="example" />
+          <div style="flex:1;display:flex;flex-direction:column;gap:6px">
+            <button class="btn-secondary" id="pve_browse">📷 Import battle report (Bonus Details)</button>
+            <input id="pve_file" type="file" accept="image/*" style="display:none" />
+            <span class="dz-hint">One image: fills Attacker &amp; Defender stats, tiers, and troops totals (adjust per-type troops if needed)</span>
+          </div>
         </div>
         <div id="pve_ocr_status" class="dz-hint"></div>
       </div>

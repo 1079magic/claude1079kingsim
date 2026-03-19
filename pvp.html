@@ -52,7 +52,38 @@
     @keyframes spin{to{transform:rotate(360deg);}}
     .spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,.2);border-top-color:#22d3ee;border-radius:50%;animation:spin .8s linear infinite;display:inline-block;}
     .engine-note{font-size:.75rem;color:#6b7fa3;font-style:italic;margin-top:6px;}
+    /* Example image thumbnails inside import boxes */
+    .example-thumb{width:56px;height:40px;object-fit:cover;border-radius:6px;opacity:.6;border:1px solid #2a4060;transition:opacity .15s,border-color .15s;cursor:pointer;flex-shrink:0;}
+    .example-thumb:hover{opacity:1;border-color:#22d3ee;}
+    .import-box-row{display:flex;align-items:flex-start;gap:10px;}
+    .import-box-content{flex:1;display:flex;flex-direction:column;gap:6px;}
+    /* Image lightbox */
+    .img-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;align-items:center;justify-content:center;cursor:pointer;}
+    .img-modal.open{display:flex;}
+    .img-modal img{max-width:92vw;max-height:92vh;border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,.7);}
+    /* Table text wrapping for mobile */
+    .pvp-table-wrap{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+    .pvp-table-wrap table{min-width:380px;width:100%;border-collapse:collapse;}
+    .pvp-table-wrap td:nth-child(2){white-space:nowrap;}
+    /* Manual input side-by-side panels */
+    .manual-panels{display:grid;gap:16px;grid-template-columns:1fr;}
+    @media(min-width:800px){.manual-panels{grid-template-columns:1fr 1fr;}}
+    .manual-panel-header{font-size:.8rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:8px 14px;border-radius:8px 8px 0 0;margin:-12px -12px 12px;color:#fff;}
+    .att-header{background:linear-gradient(90deg,rgba(239,68,68,.25),rgba(239,68,68,.08));}
+    .def-header{background:linear-gradient(90deg,rgba(16,185,129,.2),rgba(16,185,129,.06));}
+    .troops-row{display:grid;gap:6px;grid-template-columns:1fr 1fr;margin-bottom:10px;}
+    @media(min-width:500px){.troops-row{grid-template-columns:1fr 1fr 1fr;}}
+    .troops-total-row{display:grid;gap:6px;grid-template-columns:1fr 1fr;margin-bottom:10px;}
+    .stat-type-block-compact{background:rgba(10,14,24,.45);border:1px solid #1c2d40;border-radius:8px;padding:10px;margin-bottom:8px;}
+    .stat-row-compact{display:grid;grid-template-columns:repeat(2,1fr);gap:5px;}
+    @media(min-width:500px){.stat-row-compact{grid-template-columns:repeat(4,1fr);}}
+    .stat-row-compact label{font-size:.65rem;color:var(--muted);display:block;margin-bottom:2px;}
+    .stat-row-compact input{width:100%;padding:4px 6px;font-size:.76rem;background:rgba(255,255,255,.04);border:1px solid #1e3048;border-radius:5px;color:var(--ink);}
   </style>
+  <!-- Image lightbox modal -->
+  <div class="img-modal" id="img_modal" onclick="this.classList.remove('open')">
+    <img id="img_modal_img" src="" alt="Example" />
+  </div>
 </head>
 <body>
   <div class="nav"><div class="nav-inner">
@@ -78,9 +109,14 @@
       <div style="margin-bottom:20px">
         <h3 class="h3">Attack Report Import</h3>
         <div class="import-box" id="att_box" onclick="document.getElementById('att_file').click()">
-          <div class="import-box-label">Attack Report (Bonus Details)</div>
-          <div class="import-box-hint">Import battle bonus-details image — reads attacker troops &amp; stats from left side</div>
-          <button class="import-btn" onclick="event.stopPropagation();document.getElementById('att_file').click()">📷 Import Image</button>
+          <div class="import-box-row">
+            <img src="assets/example_att_def.jpg" class="example-thumb" title="Example image" onclick="event.stopPropagation();showExample('assets/example_att_def.jpg')" alt="example" />
+            <div class="import-box-content">
+              <div class="import-box-label">Attack Report (Bonus Details)</div>
+              <div class="import-box-hint">Import battle bonus-details image — reads attacker &amp; defender troops + stats</div>
+              <button class="import-btn" onclick="event.stopPropagation();document.getElementById('att_file').click()">📷 Import Image</button>
+            </div>
+          </div>
           <input type="file" id="att_file" accept="image/*" style="display:none" />
           <div class="import-status" id="att_status"></div>
         </div>
@@ -90,23 +126,38 @@
         <h3 class="h3">Defender Data Import</h3>
         <div class="import-row cols3">
           <div class="import-box" id="def_ratio_box" onclick="document.getElementById('def_ratio_file').click()">
-            <div class="import-box-label">Def Troop Ratio</div>
-            <div class="import-box-hint">Troops Total + Troop Type % (shield/horse/crossbow icons)</div>
-            <button class="import-btn" onclick="event.stopPropagation();document.getElementById('def_ratio_file').click()">📷 Import</button>
+            <div class="import-box-row">
+              <img src="assets/example_def_troops.jpg" class="example-thumb" title="Example image" onclick="event.stopPropagation();showExample('assets/example_def_troops.jpg')" alt="example" />
+              <div class="import-box-content">
+                <div class="import-box-label">Def Troop Ratio</div>
+                <div class="import-box-hint">Troops Total + Troop Type % (shield/horse/crossbow icons)</div>
+                <button class="import-btn" onclick="event.stopPropagation();document.getElementById('def_ratio_file').click()">📷 Import</button>
+              </div>
+            </div>
             <input type="file" id="def_ratio_file" accept="image/*" style="display:none" />
             <div class="import-status" id="def_ratio_status"></div>
           </div>
           <div class="import-box" id="def_stats_box" onclick="document.getElementById('def_stats_file').click()">
-            <div class="import-box-label">Def Stat Bonuses</div>
-            <div class="import-box-hint">Defender Stat Bonuses block (Inf/Cav/Arc Atk/Def/Let/HP)</div>
-            <button class="import-btn" onclick="event.stopPropagation();document.getElementById('def_stats_file').click()">📷 Import</button>
+            <div class="import-box-row">
+              <img src="assets/example_def_stats.jpg" class="example-thumb" title="Example image" onclick="event.stopPropagation();showExample('assets/example_def_stats.jpg')" alt="example" />
+              <div class="import-box-content">
+                <div class="import-box-label">Def Stat Bonuses</div>
+                <div class="import-box-hint">Defender Stat Bonuses block (Inf/Cav/Arc Atk/Def/Let/HP)</div>
+                <button class="import-btn" onclick="event.stopPropagation();document.getElementById('def_stats_file').click()">📷 Import</button>
+              </div>
+            </div>
             <input type="file" id="def_stats_file" accept="image/*" style="display:none" />
             <div class="import-status" id="def_stats_status"></div>
           </div>
           <div class="import-box" id="att_extra_box" onclick="document.getElementById('att_extra_file').click()">
-            <div class="import-box-label">Attacker Stats / Troops</div>
-            <div class="import-box-hint">Left side of image — attacker stats &amp; troop amounts</div>
-            <button class="import-btn" onclick="event.stopPropagation();document.getElementById('att_extra_file').click()">📷 Import</button>
+            <div class="import-box-row">
+              <img src="assets/example_att_stats.jpg" class="example-thumb" title="Example image" onclick="event.stopPropagation();showExample('assets/example_att_stats.jpg')" alt="example" />
+              <div class="import-box-content">
+                <div class="import-box-label">Attacker Stats / Troops</div>
+                <div class="import-box-hint">Left side of image — attacker stats &amp; troop amounts</div>
+                <button class="import-btn" onclick="event.stopPropagation();document.getElementById('att_extra_file').click()">📷 Import</button>
+              </div>
+            </div>
             <input type="file" id="att_extra_file" accept="image/*" style="display:none" />
             <div class="import-status" id="att_extra_status"></div>
           </div>
@@ -129,91 +180,97 @@
         <div class="result-best-value" id="pvp_best_val">—</div>
         <div class="result-best-sub" id="pvp_best_sub"></div>
       </div>
-      <div id="pvp_table_wrap" class="table-scroll"></div>
+      <div id="pvp_table_wrap" class="pvp-table-wrap"></div>
       <div style="margin-top:8px"><span class="muted" id="pvp_count"></span></div>
     </section>
 
     <section class="panel panel-glass">
       <h3 class="h3">Manual Input / Review OCR</h3>
-      <div style="display:grid;gap:12px;grid-template-columns:1fr 1fr;margin-bottom:12px">
-        <div><label>Attacker Total Troops</label><input type="number" id="pvp_att_total" step="1000" value="150000" style="width:100%"/></div>
-        <div><label>Attacker Tier</label>
-          <select id="pvp_att_tier" style="width:100%">
-            <option>T6</option><option>T9</option><option selected>T10</option>
-            <option>T10.TG1</option><option>T10.TG2</option><option>T10.TG3</option>
-            <option>T10.TG4</option><option>T10.TG5</option>
-          </select>
-        </div>
-      </div>
-      <div style="display:grid;gap:8px;grid-template-columns:repeat(3,1fr);margin-bottom:12px">
-        <div><label>Att Inf Troops</label><input type="number" id="pvp_att_inf" step="1000" value="0" style="width:100%"/></div>
-        <div><label>Att Cav Troops</label><input type="number" id="pvp_att_cav" step="1000" value="0" style="width:100%"/></div>
-        <div><label>Att Arc Troops</label><input type="number" id="pvp_att_arc" step="1000" value="0" style="width:100%"/></div>
-      </div>
-      <div class="h3" style="margin-bottom:8px">Attacker Stats</div>
-      <div class="stats-grid" style="margin-bottom:16px">
-        <div class="stat-type-block"><div class="stat-type-title">Infantry</div>
-          <div class="stat-row">
-            <div><label>Attack%</label><input type="number" id="pvp_att_inf_atk" step="0.1" value="100"></div>
-            <div><label>Defense%</label><input type="number" id="pvp_att_inf_def" step="0.1" value="100"></div>
-            <div><label>Lethality%</label><input type="number" id="pvp_att_inf_let" step="0.1" value="100"></div>
-            <div><label>Health%</label><input type="number" id="pvp_att_inf_hp" step="0.1" value="100"></div>
-          </div></div>
-        <div class="stat-type-block"><div class="stat-type-title">Cavalry</div>
-          <div class="stat-row">
-            <div><label>Attack%</label><input type="number" id="pvp_att_cav_atk" step="0.1" value="100"></div>
-            <div><label>Defense%</label><input type="number" id="pvp_att_cav_def" step="0.1" value="100"></div>
-            <div><label>Lethality%</label><input type="number" id="pvp_att_cav_let" step="0.1" value="100"></div>
-            <div><label>Health%</label><input type="number" id="pvp_att_cav_hp" step="0.1" value="100"></div>
-          </div></div>
-        <div class="stat-type-block"><div class="stat-type-title">Archers</div>
-          <div class="stat-row">
-            <div><label>Attack%</label><input type="number" id="pvp_att_arc_atk" step="0.1" value="100"></div>
-            <div><label>Defense%</label><input type="number" id="pvp_att_arc_def" step="0.1" value="100"></div>
-            <div><label>Lethality%</label><input type="number" id="pvp_att_arc_let" step="0.1" value="100"></div>
-            <div><label>Health%</label><input type="number" id="pvp_att_arc_hp" step="0.1" value="100"></div>
-          </div></div>
-      </div>
+      <div class="manual-panels">
 
-      <div class="h3" style="margin-bottom:8px">Defender (Fixed from import)</div>
-      <div style="display:grid;gap:12px;grid-template-columns:1fr 1fr;margin-bottom:12px">
-        <div><label>Defender Total Troops</label><input type="number" id="pvp_def_total" step="1000" value="150000" style="width:100%"/></div>
-        <div><label>Defender Tier</label>
-          <select id="pvp_def_tier" style="width:100%">
-            <option>T6</option><option>T9</option><option selected>T10</option>
-            <option>T10.TG1</option><option>T10.TG2</option><option>T10.TG3</option>
-            <option>T10.TG4</option><option>T10.TG5</option>
-          </select>
+        <!-- ── ATTACKER column ── -->
+        <div class="stat-type-block" style="padding:12px">
+          <div class="manual-panel-header att-header">⚔ Attacker</div>
+          <div class="troops-total-row">
+            <div><label>Total Troops</label><input type="number" id="pvp_att_total" step="1000" value="150000" style="width:100%"/></div>
+            <div><label>Tier</label>
+              <select id="pvp_att_tier" style="width:100%">
+                <option>T6</option><option>T9</option><option selected>T10</option>
+                <option>T10.TG1</option><option>T10.TG2</option><option>T10.TG3</option>
+                <option>T10.TG4</option><option>T10.TG5</option>
+              </select>
+            </div>
+          </div>
+          <div class="troops-row">
+            <div><label>Inf Troops</label><input type="number" id="pvp_att_inf" step="1000" value="0" style="width:100%"/></div>
+            <div><label>Cav Troops</label><input type="number" id="pvp_att_cav" step="1000" value="0" style="width:100%"/></div>
+            <div><label>Arc Troops</label><input type="number" id="pvp_att_arc" step="1000" value="0" style="width:100%"/></div>
+          </div>
+          <div class="stat-type-block-compact"><div class="stat-type-title" style="color:#ef4444;font-size:.7rem">Infantry</div>
+            <div class="stat-row-compact">
+              <div><label>Attack%</label><input type="number" id="pvp_att_inf_atk" step="0.1" value="100"></div>
+              <div><label>Defense%</label><input type="number" id="pvp_att_inf_def" step="0.1" value="100"></div>
+              <div><label>Lethality%</label><input type="number" id="pvp_att_inf_let" step="0.1" value="100"></div>
+              <div><label>Health%</label><input type="number" id="pvp_att_inf_hp" step="0.1" value="100"></div>
+            </div></div>
+          <div class="stat-type-block-compact"><div class="stat-type-title" style="color:#ef4444;font-size:.7rem">Cavalry</div>
+            <div class="stat-row-compact">
+              <div><label>Attack%</label><input type="number" id="pvp_att_cav_atk" step="0.1" value="100"></div>
+              <div><label>Defense%</label><input type="number" id="pvp_att_cav_def" step="0.1" value="100"></div>
+              <div><label>Lethality%</label><input type="number" id="pvp_att_cav_let" step="0.1" value="100"></div>
+              <div><label>Health%</label><input type="number" id="pvp_att_cav_hp" step="0.1" value="100"></div>
+            </div></div>
+          <div class="stat-type-block-compact"><div class="stat-type-title" style="color:#ef4444;font-size:.7rem">Archers</div>
+            <div class="stat-row-compact">
+              <div><label>Attack%</label><input type="number" id="pvp_att_arc_atk" step="0.1" value="100"></div>
+              <div><label>Defense%</label><input type="number" id="pvp_att_arc_def" step="0.1" value="100"></div>
+              <div><label>Lethality%</label><input type="number" id="pvp_att_arc_let" step="0.1" value="100"></div>
+              <div><label>Health%</label><input type="number" id="pvp_att_arc_hp" step="0.1" value="100"></div>
+            </div></div>
         </div>
-      </div>
-      <div style="display:grid;gap:8px;grid-template-columns:repeat(3,1fr);margin-bottom:12px">
-        <div><label>Inf Troops</label><input type="number" id="pvp_def_inf" step="1000" value="0" style="width:100%"/></div>
-        <div><label>Cav Troops</label><input type="number" id="pvp_def_cav" step="1000" value="0" style="width:100%"/></div>
-        <div><label>Arc Troops</label><input type="number" id="pvp_def_arc" step="1000" value="0" style="width:100%"/></div>
-      </div>
-      <div class="stats-grid">
-        <div class="stat-type-block"><div class="stat-type-title">Infantry</div>
-          <div class="stat-row">
-            <div><label>Attack%</label><input type="number" id="pvp_def_inf_atk" step="0.1" value="100"></div>
-            <div><label>Defense%</label><input type="number" id="pvp_def_inf_def" step="0.1" value="100"></div>
-            <div><label>Lethality%</label><input type="number" id="pvp_def_inf_let" step="0.1" value="100"></div>
-            <div><label>Health%</label><input type="number" id="pvp_def_inf_hp" step="0.1" value="100"></div>
-          </div></div>
-        <div class="stat-type-block"><div class="stat-type-title">Cavalry</div>
-          <div class="stat-row">
-            <div><label>Attack%</label><input type="number" id="pvp_def_cav_atk" step="0.1" value="100"></div>
-            <div><label>Defense%</label><input type="number" id="pvp_def_cav_def" step="0.1" value="100"></div>
-            <div><label>Lethality%</label><input type="number" id="pvp_def_cav_let" step="0.1" value="100"></div>
-            <div><label>Health%</label><input type="number" id="pvp_def_cav_hp" step="0.1" value="100"></div>
-          </div></div>
-        <div class="stat-type-block"><div class="stat-type-title">Archers</div>
-          <div class="stat-row">
-            <div><label>Attack%</label><input type="number" id="pvp_def_arc_atk" step="0.1" value="100"></div>
-            <div><label>Defense%</label><input type="number" id="pvp_def_arc_def" step="0.1" value="100"></div>
-            <div><label>Lethality%</label><input type="number" id="pvp_def_arc_let" step="0.1" value="100"></div>
-            <div><label>Health%</label><input type="number" id="pvp_def_arc_hp" step="0.1" value="100"></div>
-          </div></div>
-      </div>
+
+        <!-- ── DEFENDER column ── -->
+        <div class="stat-type-block" style="padding:12px">
+          <div class="manual-panel-header def-header">🛡 Defender (Fixed from import)</div>
+          <div class="troops-total-row">
+            <div><label>Total Troops</label><input type="number" id="pvp_def_total" step="1000" value="150000" style="width:100%"/></div>
+            <div><label>Tier</label>
+              <select id="pvp_def_tier" style="width:100%">
+                <option>T6</option><option>T9</option><option selected>T10</option>
+                <option>T10.TG1</option><option>T10.TG2</option><option>T10.TG3</option>
+                <option>T10.TG4</option><option>T10.TG5</option>
+              </select>
+            </div>
+          </div>
+          <div class="troops-row">
+            <div><label>Inf Troops</label><input type="number" id="pvp_def_inf" step="1000" value="0" style="width:100%"/></div>
+            <div><label>Cav Troops</label><input type="number" id="pvp_def_cav" step="1000" value="0" style="width:100%"/></div>
+            <div><label>Arc Troops</label><input type="number" id="pvp_def_arc" step="1000" value="0" style="width:100%"/></div>
+          </div>
+          <div class="stat-type-block-compact"><div class="stat-type-title" style="color:#10b981;font-size:.7rem">Infantry</div>
+            <div class="stat-row-compact">
+              <div><label>Attack%</label><input type="number" id="pvp_def_inf_atk" step="0.1" value="100"></div>
+              <div><label>Defense%</label><input type="number" id="pvp_def_inf_def" step="0.1" value="100"></div>
+              <div><label>Lethality%</label><input type="number" id="pvp_def_inf_let" step="0.1" value="100"></div>
+              <div><label>Health%</label><input type="number" id="pvp_def_inf_hp" step="0.1" value="100"></div>
+            </div></div>
+          <div class="stat-type-block-compact"><div class="stat-type-title" style="color:#10b981;font-size:.7rem">Cavalry</div>
+            <div class="stat-row-compact">
+              <div><label>Attack%</label><input type="number" id="pvp_def_cav_atk" step="0.1" value="100"></div>
+              <div><label>Defense%</label><input type="number" id="pvp_def_cav_def" step="0.1" value="100"></div>
+              <div><label>Lethality%</label><input type="number" id="pvp_def_cav_let" step="0.1" value="100"></div>
+              <div><label>Health%</label><input type="number" id="pvp_def_cav_hp" step="0.1" value="100"></div>
+            </div></div>
+          <div class="stat-type-block-compact"><div class="stat-type-title" style="color:#10b981;font-size:.7rem">Archers</div>
+            <div class="stat-row-compact">
+              <div><label>Attack%</label><input type="number" id="pvp_def_arc_atk" step="0.1" value="100"></div>
+              <div><label>Defense%</label><input type="number" id="pvp_def_arc_def" step="0.1" value="100"></div>
+              <div><label>Lethality%</label><input type="number" id="pvp_def_arc_let" step="0.1" value="100"></div>
+              <div><label>Health%</label><input type="number" id="pvp_def_arc_hp" step="0.1" value="100"></div>
+            </div></div>
+        </div><!-- end def panel -->
+
+      </div><!-- end manual-panels -->
     </section>
   </div>
 
@@ -313,7 +370,7 @@
           const style=win?'color:var(--ink)':'color:var(--ink);opacity:0.75';
           return `<tr style="${style}"><td>${r.rank||i+1}</td><td style="font-weight:600">${r.label||'—'}</td><td>${dI}</td><td>${aI}</td><td>${wCell}</td></tr>`;
         }).join('');
-        tableWrap.innerHTML=`<table style="width:100%;border-collapse:collapse;min-width:480px"><thead><tr style="color:#7dd3fc;font-size:11px;text-transform:uppercase;letter-spacing:.05em"><th style="padding:8px 12px;border-bottom:1px solid rgba(35,54,77,.6);text-align:left">#</th><th style="padding:8px 12px;border-bottom:1px solid rgba(35,54,77,.6);text-align:left">Formation (Inf/Cav/Arc %)</th><th style="padding:8px 12px;border-bottom:1px solid rgba(35,54,77,.6);text-align:right">Est. Def Injuries</th><th style="padding:8px 12px;border-bottom:1px solid rgba(35,54,77,.6);text-align:right">Est. Att Injuries</th><th style="padding:8px 12px;border-bottom:1px solid rgba(35,54,77,.6);text-align:center">Result</th></tr></thead><tbody style="color:var(--ink)">${rows}</tbody></table>`;
+        tableWrap.innerHTML=`<table style="width:100%;border-collapse:collapse"><thead><tr style="color:#7dd3fc;font-size:11px;text-transform:uppercase;letter-spacing:.05em"><th style="padding:8px 12px;border-bottom:1px solid rgba(35,54,77,.6);text-align:left">#</th><th style="padding:8px 12px;border-bottom:1px solid rgba(35,54,77,.6);text-align:left">Formation (Inf/Cav/Arc %)</th><th style="padding:8px 12px;border-bottom:1px solid rgba(35,54,77,.6);text-align:right">Est. Def Injuries</th><th style="padding:8px 12px;border-bottom:1px solid rgba(35,54,77,.6);text-align:right">Est. Att Injuries</th><th style="padding:8px 12px;border-bottom:1px solid rgba(35,54,77,.6);text-align:center">Result</th></tr></thead><tbody style="color:var(--ink)">${rows}</tbody></table>`;
         $('pvp_count').innerHTML='Tested <strong>'+out.totalTested.toLocaleString()+'</strong> formations';
         $('pvp_results').style.display='block';
         $('pvp_results').scrollIntoView({behavior:'smooth',block:'start'});
@@ -335,6 +392,12 @@
       });
     });
   })();
+    // Example image lightbox
+    function showExample(src) {
+      const modal = document.getElementById('img_modal');
+      document.getElementById('img_modal_img').src = src;
+      modal.classList.add('open');
+    }
   </script>
 </body>
 </html>
