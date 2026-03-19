@@ -228,10 +228,11 @@
     // Step 1: Extract troop counts from top 33% (with x-position classification)
     const troops = await extractTroopCounts(img);
 
-    // Step 2: Detect TG level from badge in troop icon zone
-    let tgLevel = 0;
-    try { tgLevel = await detectTGLevel(img, 0, 0.33); } catch(_) {}
-    const tier = buildTierString(tgLevel);
+    // Step 2: Detect TG level per side from badge in troop icon zone
+    let tgLevels = { att: 0, def: 0 };
+    try { tgLevels = await detectTGBothSides(img, 0.20, 0.30); } catch(_) {}
+    const attTier = buildTierString(tgLevels.att);
+    const defTier = buildTierString(tgLevels.def);
 
     // Step 3: Extract stats from full-width bottom 65%
     const { canvas: statCanvas } = toCanvas(img, 1200, 0.33, 1.0);
@@ -239,9 +240,9 @@
     const { attStats, defStats } = parseDualStatLines(statText);
 
     return {
-      attacker: { troops: troops.left,  stats: attStats, tier },
-      defender: { troops: troops.right, stats: defStats, tier },
-      tgLevel,
+      attacker: { troops: troops.left,  stats: attStats, tier: attTier },
+      defender: { troops: troops.right, stats: defStats, tier: defTier },
+      tgLevels,
     };
   }
 
@@ -338,24 +339,13 @@
     try { tgLevel = await detectTGLevel(img, 0, 0.33); } catch(_) {}
     const tier = buildTierString(tgLevel);
 
-    // Stats: left 52% of bottom 65%
-    const { canvas: sc, srcW } = toCanvas(img, 1200, 0.33, 1.0);
-    // Crop left half of stat canvas
-    const halfW = Math.round(sc.width * 0.52);
-    const halfCanvas = document.createElement('canvas');
-    halfCanvas.width = halfW;
-    halfCanvas.height = sc.height;
-    halfCanvas.getContext('2d').drawImage(sc, 0, 0);
-    const statText = await ocrText(halfCanvas);
-
-    // Single-column stat parse for left side
+    // Stats: FULL WIDTH stat zone — parseDualStatLines extracts attacker (left column)
+    // DO NOT crop to left half: cropping truncates the label ("Infantry Attack" → "Infantry")
+    // making matchLabel fail. Full-width text has "+579.2% Infantry Attack +559.9%"
+    // and parseDualStatLines correctly identifies +579.2% as the attacker (before label) value.
+    const { canvas: sc } = toCanvas(img, 1200, 0.33, 1.0);
+    const statText = await ocrText(sc);
     const { attStats } = parseDualStatLines(statText);
-    // Also try plain single-column parse as fallback
-    const { stats: singleStats } = await parseDefStatBonuses._internal(statText);
-    // Merge: prefer dual-column att values, fill gaps with single-column
-    for (const t of ['inf','cav','arc'])
-      for (const s of ['atk','def','let','hp'])
-        if (attStats[t][s] === 0 && singleStats[t][s] !== 0) attStats[t][s] = singleStats[t][s];
 
     return { troops: troops.left, stats: attStats, tier };
   }
@@ -436,7 +426,7 @@
           }
 
         const whiteRatio = whiteCount / Math.max(cnt, 1);
-        if (whiteRatio < 0.08 || whiteCount < 5) continue;
+        if (whiteRatio < 0.03 || whiteCount < 3) continue;  // battle-report badges have lower white ratio
         const aspect = bw / Math.max(bh, 1);
         if (aspect < 0.3 || aspect > 3.0) continue;
 
@@ -491,47 +481,68 @@
   }
 
   /**
-   * Detect TG level from image.
-   * Scans the troop icon zone (top 33% of image by default).
-   * Returns 0 if no TG badge found (= base T10/T9/T6).
+   * Detect TG level per side from the troop icon zone.
+   * Left half of image = attacker badges, right half = defender badges.
+   * Each side votes independently; returns highest agreed TG per side.
+   * Returns { att: 0-5, def: 0-5 } (0 = no badge = T10 base).
    */
-  async function detectTGLevel(img, y0pct = 0, y1pct = 0.33) {
+  async function detectTGBothSides(img, y0pct = 0.20, y1pct = 0.30) {
     const W = img.naturalWidth, H = img.naturalHeight;
     const scanY0 = Math.round(H * y0pct);
     const scanY1 = Math.round(H * y1pct);
+    const midX   = Math.round(W / 2);
 
-    // Get full image pixel data
-    const fullCanvas = document.createElement('canvas');
-    fullCanvas.width = W; fullCanvas.height = H;
-    fullCanvas.getContext('2d').drawImage(img, 0, 0);
-    const imgData = fullCanvas.getContext('2d').getImageData(0, 0, W, H);
+    // Full image pixel data
+    const fc = document.createElement('canvas'); fc.width = W; fc.height = H;
+    fc.getContext('2d').drawImage(img, 0, 0);
+    const imgData = fc.getContext('2d').getImageData(0, 0, W, H);
 
-    const candidates = findBadgeCandidates(imgData, W, H, scanY0, scanY1);
-    if (!candidates.length) return 0;
+    const allCandidates = findBadgeCandidates(imgData, W, H, scanY0, scanY1);
+    if (!allCandidates.length) return { att: 0, def: 0 };
 
-    candidates.sort((a, b) => {
+    // Split candidates by x-position
+    const attCands = allCandidates.filter(c => ((c.x0 + c.x1) / 2) < midX);
+    const defCands = allCandidates.filter(c => ((c.x0 + c.x1) / 2) >= midX);
+
+    // Sort each side by white ratio desc
+    const sortFn = (a, b) => {
       const rc = b.whiteRatio - a.whiteRatio;
       return Math.abs(rc) > 0.05 ? rc : b.goldCount - a.goldCount;
-    });
+    };
+    attCands.sort(sortFn);
+    defCands.sort(sortFn);
 
     const T = await loadTesseract();
     const worker = await T.createWorker('eng', 1, {});
-    try {
-      const top = candidates.slice(0, 3);
-      const allDigits = [], voteCounts = {};
+
+    async function voteSide(cands) {
+      // Collect one reading per icon (up to 3 icons per side = 3 badge candidates)
+      // Then return floor(average), e.g. (3+3+4)/3 = 3.33 → TG3
+      const top = cands.slice(0, 4);  // up to 4 candidates (some icons may have 2 clusters)
+      const digits = [];
       for (const badge of top) {
         const digit = await readBadgeDigit(worker, img, badge);
-        if (digit >= 1 && digit <= 5) {
-          allDigits.push(digit);
-          voteCounts[digit] = (voteCounts[digit]||0)+1;
-          if (voteCounts[digit] >= 2) return digit;  // early exit
-        }
+        if (digit >= 1 && digit <= 5) digits.push(digit);
       }
-      if (!allDigits.length) return 0;
-      return parseInt(Object.entries(voteCounts).sort((a,b)=>b[1]-a[1])[0][0], 10);
+      if (!digits.length) return 0;
+      // Average of all valid readings, floor to nearest integer
+      const avg = digits.reduce((s, d) => s + d, 0) / digits.length;
+      return Math.floor(avg);  // (3+3+4)/3 = 3.33 → 3, (3+3+3)/3 = 3.0 → 3
+    }
+
+    try {
+      const att = await voteSide(attCands);
+      const def = await voteSide(defCands);
+      return { att, def };
     } finally {
       await worker.terminate();
     }
+  }
+
+  /** Legacy single-value detectTGLevel for backward compat */
+  async function detectTGLevel(img, y0pct = 0, y1pct = 0.33) {
+    const r = await detectTGBothSides(img, 0.20, 0.30);
+    return r.att || r.def || 0;
   }
 
   /** Build tier string from base level + TG digit: e.g. "T10.TG3" */
