@@ -454,9 +454,9 @@
         }); // uses battle core + trials  [1](https://tipicoltd-my.sharepoint.com/personal/hadzisejdice_tipico_com/Documents/Datoteke%20aplikacije%20Microsoft%20Copilot%20Chat/optimizer.js)[3](https://tipicoltd-my.sharepoint.com/personal/hadzisejdice_tipico_com/Documents/Datoteke%20aplikacije%20Microsoft%20Copilot%20Chat/rng.js)
 
         // Headline
-        const fi = (out.best.fractions.fi*100).toFixed(1);
-        const fc = (out.best.fractions.fc*100).toFixed(1);
-        const fa = (100 - fi - fc).toFixed(1);
+        const fi = Math.round(out.best.fractions.fi*100);
+        const fc = Math.round(out.best.fractions.fc*100);
+        const fa = Math.max(0, 100 - fi - fc);
         $('bestline').textContent =
           `Best composition ≈ ${fi}/${fc}/${fa} (Inf/Cav/Arc) · Win ≈ ${out.best.winChance}% · `+
           `AtkScore=${Math.round(+out.best.atkScore).toLocaleString()} · DefScore=${Math.round(+out.best.defScore).toLocaleString()} · ${ui.trial}`;
@@ -483,9 +483,9 @@
 
         // Table 2: WHY — attacker Top-10 vs defender fixed
         const def = out.defender;
-        const di = Math.round(def.fractions.fi*100).toFixed(1);
-        const dc = Math.round(def.fractions.fc*100).toFixed(1);
-        const da = (100 - di - dc).toString();
+        const di = Math.round(def.fractions.fi*100);
+        const dc = Math.round(def.fractions.fc*100);
+        const da = Math.max(0, 100 - di - dc);
         const t2 = document.createElement('table');
         const rows = out.top.map(p=>{
           const ti = Math.round(p.fi * total);
@@ -493,9 +493,9 @@
           const ta = Math.max(0, total - ti - tc);
           return `
             <tr>
-              <td>${p.label}</td>
+              <td>${p.label.replace(/(\d+)\.\d+/g,'$1')}</td>
               <td>${Math.round(+p.atkScore).toLocaleString()}</td>
-              <td>${(+di).toFixed(1)}/${(+dc).toFixed(1)}/${(+da).toString()}</td>
+              <td>${di}/${dc}/${da}</td>
               <td>${Math.round(+p.defScore).toLocaleString()}</td>
             </tr>`;
         }).join('');

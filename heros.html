@@ -93,60 +93,153 @@
   <!-- FOOTER AUTO-INSERT -->
   <script src="assets/footer.js"></script>
 
-  <!-- Mobile hero card bottom-sheet — pure UX wiring, no computation -->
+  <!-- Mobile hero card bottom-sheet v2 — full controls, live sync -->
   <script>
   (function() {
     if (window.innerWidth > 640) return;
 
-    // Inject overlay into body
+    // Inject overlay
     var overlay = document.createElement('div');
     overlay.className = 'hero-sheet-overlay';
-    overlay.innerHTML = '<div class="hero-sheet"><button class="hero-sheet-close" aria-label="Close">&times;</button><div class="hero-sheet-title"></div><div class="hero-sheet-body"></div></div>';
+    overlay.innerHTML =
+      '<div class="hero-sheet">' +
+        '<button class="hero-sheet-close" aria-label="Close">&times;</button>' +
+        '<div class="hero-sheet-title"></div>' +
+        '<div class="hero-sheet-body"></div>' +
+      '</div>';
     document.body.appendChild(overlay);
 
-    var sheet = overlay.querySelector('.hero-sheet');
     var title = overlay.querySelector('.hero-sheet-title');
     var body  = overlay.querySelector('.hero-sheet-body');
     var close = overlay.querySelector('.hero-sheet-close');
 
+    // Keep reference to the currently open card so live updates work
+    var activeCard = null;
+
     function openSheet(card) {
+      activeCard = card;
       var nameEl = card.querySelector('.hero-name');
       title.textContent = nameEl ? nameEl.textContent : 'Hero';
 
       body.innerHTML = '';
-      var controls = card.querySelector('.controls');
-      if (controls) {
-        var clone = controls.cloneNode(true);
-        clone.style.display = 'flex';
-        clone.style.flexDirection = 'column';
-        clone.style.gap = '8px';
 
-        // Wire input changes back to original card
-        clone.querySelectorAll('input, select').forEach(function(el) {
-          if (el.id) {
-            el.addEventListener('change', function(e) {
-              var orig = card.querySelector('#' + el.id);
-              if (orig) {
-                orig.value = el.value;
-                if (el.type === 'checkbox') orig.checked = el.checked;
-                orig.dispatchEvent(new Event('change', {bubbles:true}));
-              }
-            });
-          }
-        });
+      // ── Owned toggle ──
+      var ownFlag = card.querySelector('.own-flag');
+      if (ownFlag) {
+        var ownClone = ownFlag.cloneNode(true);
+        ownClone.style.cssText = 'position:static;display:flex;align-items:center;gap:10px;margin-bottom:12px;';
+        // Make the label show "Owned"
+        var ownLabelSpan = document.createElement('span');
+        ownLabelSpan.textContent = 'Owned';
+        ownLabelSpan.style.cssText = 'color:#a9b3c6;font-size:.85rem;';
+        // Sync checkbox
+        var cloneChk = ownClone.querySelector('input.owned-input');
+        var origChk  = card.querySelector('input.owned-input');
+        if (cloneChk && origChk) {
+          cloneChk.checked = origChk.checked;
+          cloneChk.addEventListener('change', function() {
+            origChk.checked = cloneChk.checked;
+            origChk.dispatchEvent(new Event('change', {bubbles:true}));
+          });
+        }
+        body.appendChild(ownClone);
+      }
 
-        // Wire button clicks (stars, swords, seg, pills)
-        clone.querySelectorAll('button, .star, .sword, .pill').forEach(function(btn) {
-          btn.addEventListener('click', function(e) {
+      // ── All .row elements (Level, Skills, Widget, Formation) ──
+      var rows = card.querySelectorAll('.row');
+      rows.forEach(function(row) {
+        var rowClone = row.cloneNode(true);
+        rowClone.style.cssText = 'display:grid;grid-template-columns:.9fr 2.1fr;gap:8px;align-items:center;margin-bottom:8px;';
+        // Force inner .controls visible
+        var innerControls = rowClone.querySelector('.controls');
+        if (innerControls) innerControls.style.cssText = 'display:flex;align-items:center;gap:4px;flex-wrap:wrap;';
+
+        // ── Stars (level) ──
+        rowClone.querySelectorAll('.star').forEach(function(cloneStar) {
+          var val = parseInt(cloneStar.dataset.value, 10);
+          cloneStar.style.cursor = 'pointer';
+          cloneStar.addEventListener('click', function(e) {
             e.stopPropagation();
-            var idx = Array.from(clone.querySelectorAll('button, .star, .sword, .pill')).indexOf(btn);
-            var origBtns = card.querySelectorAll('button, .star, .sword, .pill');
-            if (origBtns[idx]) origBtns[idx].click();
+            // Click the matching star in the original card
+            var origStars = card.querySelectorAll('.star');
+            origStars.forEach(function(s) {
+              if (parseInt(s.dataset.value, 10) === val) s.click();
+            });
+            // Update visual in sheet
+            rowClone.querySelectorAll('.star').forEach(function(s, idx) {
+              s.classList.toggle('active', idx < val);
+            });
           });
         });
 
-        body.appendChild(clone);
-      }
+        // ── Seg buttons (skills) ──
+        var segIdx = rowClone.querySelector('.seg') ? rowClone.querySelector('.seg').dataset.skill : null;
+        rowClone.querySelectorAll('.seg button').forEach(function(cloneBtn) {
+          var val = parseInt(cloneBtn.dataset.val, 10);
+          cloneBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            // Find matching seg in original card by skill index
+            if (segIdx !== undefined) {
+              var origSeg = card.querySelector('.seg[data-skill="' + segIdx + '"]');
+              if (origSeg) {
+                var origBtn = origSeg.querySelector('button[data-val="' + val + '"]');
+                if (origBtn) origBtn.click();
+              }
+            }
+            // Update visual in sheet
+            rowClone.querySelectorAll('.seg button').forEach(function(b) {
+              b.classList.toggle('is-active', parseInt(b.dataset.val,10) === val);
+            });
+          });
+        });
+
+        // ── Swords (widget) ──
+        rowClone.querySelectorAll('.sword').forEach(function(cloneSword) {
+          var val = parseInt(cloneSword.dataset.value, 10);
+          cloneSword.style.cursor = 'pointer';
+          cloneSword.addEventListener('click', function(e) {
+            e.stopPropagation();
+            var origSwords = card.querySelectorAll('.sword');
+            origSwords.forEach(function(s) {
+              if (parseInt(s.dataset.value, 10) === val) s.click();
+            });
+            // Update visual
+            rowClone.querySelectorAll('.sword').forEach(function(s, idx) {
+              s.classList.toggle('active', idx < val);
+            });
+          });
+        });
+
+        // ── Formation pills ──
+        rowClone.querySelectorAll('.pill').forEach(function(clonePill) {
+          var val = clonePill.dataset.val;
+          clonePill.addEventListener('click', function(e) {
+            e.stopPropagation();
+            var origPill = card.querySelector('.pill[data-val="' + val + '"]');
+            if (origPill) origPill.click();
+            // Update pressed state
+            rowClone.querySelectorAll('.pill').forEach(function(p) {
+              p.setAttribute('aria-pressed', p.dataset.val === val ? 'true' : 'false');
+            });
+          });
+        });
+
+        body.appendChild(rowClone);
+      });
+
+      // ── Focus-sums live preview (ATK/LET/DEF/HP) ──
+      var sumsDiv = document.createElement('div');
+      sumsDiv.style.cssText = 'margin-top:12px;padding:10px 12px;background:rgba(34,211,238,.05);border:1px solid rgba(34,211,238,.15);border-radius:8px;font-size:.8rem;color:#7dd3fc;line-height:1.7;';
+      sumsDiv.className = 'sheet-sums-preview';
+      // Copy current values from card
+      var cardSums = card.querySelectorAll('.focus-sums');
+      cardSums.forEach(function(s) {
+        var line = document.createElement('div');
+        line.textContent = s.textContent;
+        sumsDiv.appendChild(line);
+      });
+      body.appendChild(sumsDiv);
+
       overlay.classList.add('open');
       document.body.style.overflow = 'hidden';
     }
@@ -154,13 +247,30 @@
     function closeSheet() {
       overlay.classList.remove('open');
       document.body.style.overflow = '';
+      activeCard = null;
     }
 
-    // Attach to cards (heroes are rendered dynamically, so use delegation)
+    // Refresh sums preview in sheet when original card updates
+    var sumObserver = new MutationObserver(function() {
+      if (!activeCard) return;
+      var preview = overlay.querySelector('.sheet-sums-preview');
+      if (!preview) return;
+      var cardSums = activeCard.querySelectorAll('.focus-sums');
+      preview.innerHTML = '';
+      cardSums.forEach(function(s) {
+        var line = document.createElement('div');
+        line.textContent = s.textContent;
+        preview.appendChild(line);
+      });
+    });
+
+    // Delegate: open sheet on card click, but NOT on overlay or its children
     document.addEventListener('click', function(e) {
+      if (overlay.contains(e.target)) return;
       var card = e.target.closest('.hero-card');
-      if (card && !overlay.contains(e.target)) {
+      if (card) {
         openSheet(card);
+        sumObserver.observe(card, { childList: true, subtree: true, characterData: true });
       }
     });
 
@@ -171,4 +281,3 @@
   })();
   </script>
 </body>
-</html>

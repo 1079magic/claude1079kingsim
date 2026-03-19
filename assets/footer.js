@@ -12,6 +12,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     <!-- Special Thanks card -->
     <div style="background:rgba(15,19,32,.8);border-top:1px solid rgba(35,54,77,.5);padding:18px 20px;text-align:center">
+      <p style="margin:0 0 4px;font-size:.75rem;font-weight:700;color:#7dd3fc;text-transform:uppercase;letter-spacing:.07em">Created by</p>
+      <p style="margin:0 0 10px;font-size:.95rem;font-weight:700;color:#e9eef7;letter-spacing:.02em">Cro_Baby_Shark</p>
       <p style="margin:0 0 6px;font-size:.75rem;font-weight:700;color:#7dd3fc;text-transform:uppercase;letter-spacing:.07em">Special Thanks</p>
       <p style="margin:0;font-size:.82rem;color:#7a8ba4;line-height:1.6">
         BladeXtreme · Deydorian · LoL alliance members<br>
