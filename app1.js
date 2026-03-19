@@ -945,7 +945,11 @@ Stock used: ${used} / ${before}.`;
     if (!TIERS){
       try {
         const res = await fetch("tiers.json", {cache:"no-store"});
-        TIERS = await res.json();
+        const raw = await res.json();
+        // tiers.json stores tier data at raw.troops.tiers — normalize to root level
+        TIERS = (raw && raw.troops && raw.troops.tiers)
+          ? { tiers: raw.troops.tiers }
+          : raw;
       } catch(e){
         console.error("tiers.json failed", e);
         if (location.protocol === "file:") {
