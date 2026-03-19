@@ -205,6 +205,7 @@
           ? defenderBase.troops : null;
         await new Promise(r => setTimeout(r, 5));
         const moR = _mo.scanMysticTrials({
+          trialName: trial,                              // drives per-trial preset + search window
           attackerTotal: attackerBase.totalTroops || 150000,
           attackerStats: {
             attack:    attSt.attack    || { inf:0, cav:0, arc:0 },
@@ -222,9 +223,6 @@
           },
           defenderTier: defenderBase.tier || 'T10',
           defenderTroops: defCO,
-          sparsity: 0.01,
-          infMin: 0.40, infMax: 0.60,
-          cavMin: 0.15, cavMax: 0.20,
           maxTop: 10,
         });
         const top = (moR.top10 || []).map(row => ({

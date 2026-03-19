@@ -1,11 +1,45 @@
-// sim/engine/mysticOptimizer.js
-// Scans attacker formations against fixed Mystic Trials defender (40% Inf / 30% Cav / 30% Arc)
-// Uses battleCore.js for simulation. Rankings are proven correct.
+// sim/engine/mysticOptimizer.js — v2 (preset-anchored, 0.1% step, per-trial windows)
+//
+// STRATEGY: Mirrors the player's real approach —
+//   Start from the per-trial best-known preset formation,
+//   then scan a tight ±6%inf / ±5%cav window around it at 0.1% step.
+//   This produces formations with 1-decimal precision (e.g. 54.3/16.1/29.6)
+//   and stays realistic (no extreme 80/15/5 type suggestions).
+//
+// Per-trial presets and search windows are tuned to match real game presets:
+//   Crystal Cave:    60/20/20 ± (6%inf, 5%cav)  → searches inf[54-66%] cav[15-25%]
+//   Forest of Life:  50/15/35 ± (6%inf, 5%cav)  → searches inf[44-56%] cav[10-20%]
+//   Knowledge Nexus: 50/20/30 ± (6%inf, 5%cav)  → searches inf[44-56%] cav[15-25%]
+//   Molten Fort:     60/15/25 ± (6%inf, 5%cav)  → searches inf[54-66%] cav[10-20%]
+//
+// Scoring: maximise defenderInjured (injure as many defenders as possible).
+//          Tie-break: minimise attackerInjured (survive longer).
+//
+// DEFENDER: Always 40% Infantry / 30% Cavalry / 30% Archer (fixed Mystic Trials formation).
 (function () {
   'use strict';
 
   const DEF_FRACTIONS = { fi: 0.40, fc: 0.30, fa: 0.30 };
-  const SEED = { fi: 0.50, fc: 0.15 }; // Best known formation as seed
+
+  // Per-trial presets and search windows
+  const TRIAL_CONFIG = {
+    'Crystal Cave':       { fi: 0.60, fc: 0.20, wingInf: 0.06, wingCav: 0.05 },
+    'Knowledge Nexus':    { fi: 0.50, fc: 0.20, wingInf: 0.06, wingCav: 0.05 },
+    'Radiant Spire':      { fi: 0.50, fc: 0.15, wingInf: 0.06, wingCav: 0.05 },
+    'Forest of Life':     { fi: 0.50, fc: 0.15, wingInf: 0.06, wingCav: 0.05 },
+    'Molten Fort':        { fi: 0.60, fc: 0.15, wingInf: 0.06, wingCav: 0.05 },
+    'Coliseum-March1-Calv2nd': { fi: 0.50, fc: 0.10, wingInf: 0.06, wingCav: 0.05 },
+    'Coliseum-March2-Calv1st': { fi: 0.40, fc: 0.40, wingInf: 0.06, wingCav: 0.05 },
+  };
+
+  // Default config if trial not found
+  const DEFAULT_CONFIG = { fi: 0.50, fc: 0.20, wingInf: 0.06, wingCav: 0.05 };
+
+  const STEP = 0.001;      // 0.1% step → 1-decimal precision in output labels
+  const ARC_MIN = 0.15;    // Archers never below 15% — they are DPS
+  const CAV_FLOOR = 0.10;  // Cavalry never below 10%
+  const INF_FLOOR = 0.40;  // Infantry never below 40%
+  const INF_CAP   = 0.68;  // Infantry never above 68% (absolute hard cap)
 
   function makeTroops(total, fi, fc) {
     fi = Math.max(0, Math.min(1, fi));
@@ -18,29 +52,32 @@
 
   function formatLabel(fi, fc) {
     const fa = Math.max(0, 1 - fi - fc);
-    return `${Math.round(fi * 100)}/${Math.round(fc * 100)}/${Math.round(fa * 100)}`;
+    // 1 decimal precision to avoid rounding-to-5 or rounding-to-10 artefacts
+    return `${(fi * 100).toFixed(1)}/${(fc * 100).toFixed(1)}/${(fa * 100).toFixed(1)}`;
   }
 
   /**
-   * Scan attacker formations vs fixed 40/30/30 defender.
+   * Scan attacker formations around the per-trial preset.
    * @param {object} opts
+   *   trialName       - trial name (used to look up preset + window)
    *   attackerTotal   - total attacker troops
    *   attackerStats   - { attack, defense, lethality, health } per inf/cav/arc
-   *   attackerTier    - 'T10' etc
+   *   attackerTier    - tier key
    *   defenderTotal   - total defender troops
-   *   defenderStats   - defender stat object (or null for 0% defaults)
+   *   defenderStats   - defender stat object
    *   defenderTier    - tier key
    *   defenderTroops  - optional override {inf,cav,arc}
-   *   sparsity        - step size (default 0.05)
-   *   infMin/infMax   - bounds (default 0.40–0.80)
-   *   cavMin/cavMax   - bounds (default 0.15–0.30)
    *   maxTop          - top N results (default 10)
+   *
+   *   Legacy overrides (still accepted but ignored in favour of preset-anchored logic):
+   *   sparsity, infMin, infMax, cavMin, cavMax
    */
   function scanMysticTrials(opts) {
     const core = window.KingSim && window.KingSim.battleCore;
     if (!core) throw new Error('battleCore not loaded');
 
     const {
+      trialName       = 'Crystal Cave',
       attackerTotal   = 150000,
       attackerStats   = {},
       attackerTier    = 'T10',
@@ -48,19 +85,32 @@
       defenderStats   = {},
       defenderTier    = 'T10',
       defenderTroops: defOverride = null,
-      sparsity  = 0.01,
-      infMin = 0.40, infMax = 0.60,  // Mystic cap: presets are ≤60% inf; arc gets more room
-      cavMin = 0.15, cavMax = 0.20,  // Mystic cap: cav ≤20% so archers get ≥20%
       maxTop = 10,
     } = opts;
 
+    // Resolve per-trial config
+    const cfg = TRIAL_CONFIG[trialName] || DEFAULT_CONFIG;
+
+    // Build search bounds anchored around the preset
+    const infMin = Math.max(INF_FLOOR, parseFloat((cfg.fi - cfg.wingInf).toFixed(3)));
+    const infMax = Math.min(INF_CAP,   parseFloat((cfg.fi + cfg.wingInf).toFixed(3)));
+    const cavMin = Math.max(CAV_FLOOR, parseFloat((cfg.fc - cfg.wingCav).toFixed(3)));
+    const cavMax =                     parseFloat((cfg.fc + cfg.wingCav).toFixed(3));
+
+    // Fixed defender formation (always 40/30/30 for Mystic Trials)
     const defTroops = defOverride || makeTroops(defenderTotal, DEF_FRACTIONS.fi, DEF_FRACTIONS.fc);
+
     const results = [];
 
-    for (let fi = infMin; fi <= infMax + 1e-9; fi += sparsity) {
-      for (let fc = cavMin; fc <= cavMax + 1e-9; fc += sparsity) {
-        const fa = 1 - fi - fc;
-        if (fa < -1e-9 || fi + fc > 1 + 1e-9) continue;
+    for (let fi = infMin; fi <= infMax + 1e-9; fi += STEP) {
+      fi = parseFloat(fi.toFixed(3));
+      for (let fc = cavMin; fc <= cavMax + 1e-9; fc += STEP) {
+        fc = parseFloat(fc.toFixed(3));
+        const fa = parseFloat((1 - fi - fc).toFixed(3));
+
+        // Reject formations outside valid space
+        if (fa < ARC_MIN) continue;
+        if (fi + fc > 1 + 1e-9) continue;
 
         const attTroops = makeTroops(attackerTotal, fi, fc);
 
@@ -71,17 +121,18 @@
         });
 
         results.push({
-          fi: parseFloat(fi.toFixed(4)),
-          fc: parseFloat(fc.toFixed(4)),
-          fa: parseFloat(Math.max(0, fa).toFixed(4)),
+          fi,
+          fc,
+          fa,
           label: formatLabel(fi, fc),
           score: result.defenderInjured,
-          attackerInjured: result.attackerInjured,
-          defenderInjured: result.defenderInjured,
+          attackerInjured:  result.attackerInjured,
+          defenderInjured:  result.defenderInjured,
         });
       }
     }
 
+    // Sort: max defender casualties first; tie-break by min attacker casualties
     results.sort((a, b) => {
       if (b.score !== a.score) return b.score - a.score;
       return a.attackerInjured - b.attackerInjured;
@@ -90,14 +141,22 @@
     const top = results.slice(0, maxTop).map((r, i) => ({ ...r, rank: i + 1 }));
 
     return {
-      best: top[0] || null,
-      top10: top,
-      totalTested: results.length,
+      best:             top[0] || null,
+      top10:            top,
+      totalTested:      results.length,
       defenderFormation: defTroops,
-      defFractions: DEF_FRACTIONS,
+      defFractions:     DEF_FRACTIONS,
+      preset:           { fi: cfg.fi, fc: cfg.fc, fa: parseFloat((1 - cfg.fi - cfg.fc).toFixed(3)) },
+      trialName,
     };
   }
 
+  // Expose the per-trial preset for UI use
+  function getPreset(trialName) {
+    const cfg = TRIAL_CONFIG[trialName] || DEFAULT_CONFIG;
+    return { fi: cfg.fi, fc: cfg.fc, fa: parseFloat((1 - cfg.fi - cfg.fc).toFixed(3)) };
+  }
+
   window.KingSim = window.KingSim || {};
-  window.KingSim.mysticOptimizer = { scanMysticTrials, DEF_FRACTIONS, SEED };
+  window.KingSim.mysticOptimizer = { scanMysticTrials, DEF_FRACTIONS, TRIAL_CONFIG, getPreset };
 })();
