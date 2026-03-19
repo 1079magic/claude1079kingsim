@@ -1,5 +1,5 @@
 {
-  "version": "2026-03-13",
+  "version": "2026-03-20",
   "game": "Kingshot",
   "dynamicText": true,
   "source_notes": {
@@ -1172,6 +1172,611 @@
           }
         }
       }
+    },
+    {
+      "name": "Eric",
+      "troopType": "Infantry",
+      "skills": [
+        {
+          "name": "Holy Warrior",
+          "description": "Reduce total Enemy Squads' Attack",
+          "template": "Eric's holy presence reduces the total Enemy Squads' Attack by {enemyAttackDown_percent}.",
+          "levels": {
+            "Level 1": {
+              "enemyAttackDown_percent": 4
+            },
+            "Level 2": {
+              "enemyAttackDown_percent": 8
+            },
+            "Level 3": {
+              "enemyAttackDown_percent": 12
+            },
+            "Level 4": {
+              "enemyAttackDown_percent": 16
+            },
+            "Level 5": {
+              "enemyAttackDown_percent": 20
+            }
+          }
+        },
+        {
+          "name": "Conviction",
+          "description": "Reduce Squads' Damage Taken",
+          "template": "Eric's conviction reduces Squads' Damage Taken by {damageTakenDown_percent}.",
+          "levels": {
+            "Level 1": {
+              "damageTakenDown_percent": 4
+            },
+            "Level 2": {
+              "damageTakenDown_percent": 8
+            },
+            "Level 3": {
+              "damageTakenDown_percent": 12
+            },
+            "Level 4": {
+              "damageTakenDown_percent": 16
+            },
+            "Level 5": {
+              "damageTakenDown_percent": 20
+            }
+          }
+        },
+        {
+          "name": "Exhortation",
+          "description": "Increase total Squads' Health",
+          "template": "Eric's exhortation increases the total Squads' Health by {healthUp_percent}.",
+          "levels": {
+            "Level 1": {
+              "healthUp_percent": 5
+            },
+            "Level 2": {
+              "healthUp_percent": 10
+            },
+            "Level 3": {
+              "healthUp_percent": 15
+            },
+            "Level 4": {
+              "healthUp_percent": 20
+            },
+            "Level 5": {
+              "healthUp_percent": 25
+            }
+          }
+        }
+      ],
+      "expedition": {
+        "attack_percent": {
+          "\u2b501": 101.581,
+          "\u2b502": 120.445,
+          "\u2b503": 158.175,
+          "\u2b504": 214.77,
+          "\u2b505": 290.23
+        },
+        "defense_percent": {
+          "\u2b501": 101.581,
+          "\u2b502": 120.445,
+          "\u2b503": 158.175,
+          "\u2b504": 214.77,
+          "\u2b505": 290.23
+        },
+        "troop_type_note": "Infantry Attack & Defense"
+      },
+      "widget": {
+        "exclusiveSkills": [
+          {
+            "name": "Vanguard",
+            "description": "Increase Defender Squad Defense",
+            "template": "Eric's Anvil of Truth increases Defender Squad Defense by {defenderDefenseUp_percent}.",
+            "levels": {
+              "\u2694\ufe0f Lv.1": {
+                "defenderDefenseUp_percent": 5
+              },
+              "\u2694\ufe0f Lv.2": {
+                "defenderDefenseUp_percent": 7.5
+              },
+              "\u2694\ufe0f Lv.3": {
+                "defenderDefenseUp_percent": 10
+              },
+              "\u2694\ufe0f Lv.4": {
+                "defenderDefenseUp_percent": 12.5
+              },
+              "\u2694\ufe0f Lv.5": {
+                "defenderDefenseUp_percent": 15
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Jaeger",
+      "troopType": "Archer",
+      "skills": [
+        {
+          "name": "The Tempest",
+          "description": "Chance to increase Squad's damage dealt",
+          "template": "Jaeger's Tempest gives a {procChance_percent} chance of increasing Squad's damage dealt by {effectValue_percent} for 3 turns.",
+          "effectValue_percent": 40,
+          "levels": {
+            "Level 1": {
+              "procChance_percent": 8
+            },
+            "Level 2": {
+              "procChance_percent": 16
+            },
+            "Level 3": {
+              "procChance_percent": 24
+            },
+            "Level 4": {
+              "procChance_percent": 32
+            },
+            "Level 5": {
+              "procChance_percent": 40
+            }
+          }
+        },
+        {
+          "name": "The Resistance",
+          "description": "Chance to reduce total Enemy Squad's Lethality",
+          "template": "Jaeger's Resistance gives a {procChance_percent} chance of reducing the total Enemy Squad's Lethality by {effectValue_percent} for 2 turns.",
+          "effectValue_percent": 50,
+          "levels": {
+            "Level 1": {
+              "procChance_percent": 10
+            },
+            "Level 2": {
+              "procChance_percent": 20
+            },
+            "Level 3": {
+              "procChance_percent": 30
+            },
+            "Level 4": {
+              "procChance_percent": 40
+            },
+            "Level 5": {
+              "procChance_percent": 50
+            }
+          }
+        },
+        {
+          "name": "The Celebration",
+          "description": "Increase total Squad's Health",
+          "template": "Jaeger's Celebration increases the total Squad's Health by {healthUp_percent}.",
+          "levels": {
+            "Level 1": {
+              "healthUp_percent": 5
+            },
+            "Level 2": {
+              "healthUp_percent": 10
+            },
+            "Level 3": {
+              "healthUp_percent": 15
+            },
+            "Level 4": {
+              "healthUp_percent": 20
+            },
+            "Level 5": {
+              "healthUp_percent": 25
+            }
+          }
+        }
+      ],
+      "expedition": {
+        "attack_percent": {
+          "\u2b501": 101.581,
+          "\u2b502": 120.445,
+          "\u2b503": 158.175,
+          "\u2b504": 214.77,
+          "\u2b505": 290.23
+        },
+        "defense_percent": {
+          "\u2b501": 101.581,
+          "\u2b502": 120.445,
+          "\u2b503": 158.175,
+          "\u2b504": 214.77,
+          "\u2b505": 290.23
+        },
+        "troop_type_note": "Archer Attack & Defense"
+      },
+      "widget": {
+        "exclusiveSkills": [
+          {
+            "name": "Hymn to Survival",
+            "description": "Increase Defender Squads' Health",
+            "template": "Jaeger's Wanderwail increases Defender Squads' Health by {defenderHealthUp_percent}.",
+            "levels": {
+              "\u2694\ufe0f Lv.1": {
+                "defenderHealthUp_percent": 5
+              },
+              "\u2694\ufe0f Lv.2": {
+                "defenderHealthUp_percent": 7.5
+              },
+              "\u2694\ufe0f Lv.3": {
+                "defenderHealthUp_percent": 10
+              },
+              "\u2694\ufe0f Lv.4": {
+                "defenderHealthUp_percent": 12.5
+              },
+              "\u2694\ufe0f Lv.5": {
+                "defenderHealthUp_percent": 15
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Rosa",
+      "troopType": "Archer",
+      "skills": [
+        {
+          "name": "Chaos Gambit",
+          "description": "Chance to increase all Squads' Damage Dealt",
+          "template": "Rosa's Chaos Gambit gives a {procChance_percent} chance of increasing all Squads' Damage Dealt by {effectValue_percent}.",
+          "effectValue_percent": 50,
+          "levels": {
+            "Level 1": {
+              "procChance_percent": 10
+            },
+            "Level 2": {
+              "procChance_percent": 20
+            },
+            "Level 3": {
+              "procChance_percent": 30
+            },
+            "Level 4": {
+              "procChance_percent": 40
+            },
+            "Level 5": {
+              "procChance_percent": 50
+            }
+          }
+        },
+        {
+          "name": "Rose of War",
+          "description": "Reduce damage dealt by all enemy squads",
+          "template": "Rosa's Rose of War reduces damage dealt by {enemyDamageDown_percent} for all enemy squads.",
+          "levels": {
+            "Level 1": {
+              "enemyDamageDown_percent": 4
+            },
+            "Level 2": {
+              "enemyDamageDown_percent": 8
+            },
+            "Level 3": {
+              "enemyDamageDown_percent": 12
+            },
+            "Level 4": {
+              "enemyDamageDown_percent": 16
+            },
+            "Level 5": {
+              "enemyDamageDown_percent": 20
+            }
+          }
+        },
+        {
+          "name": "Golden Rhythm",
+          "description": "Increase Archers' total Attack",
+          "template": "Rosa's Golden Rhythm increases Archers' total Attack by {attackUp_percent}.",
+          "levels": {
+            "Level 1": {
+              "attackUp_percent": 6
+            },
+            "Level 2": {
+              "attackUp_percent": 12
+            },
+            "Level 3": {
+              "attackUp_percent": 18
+            },
+            "Level 4": {
+              "attackUp_percent": 24
+            },
+            "Level 5": {
+              "attackUp_percent": 30
+            }
+          }
+        }
+      ],
+      "expedition": {
+        "attack_percent": {
+          "\u2b501": 129.601,
+          "\u2b502": 153.67,
+          "\u2b503": 201.808,
+          "\u2b504": 274.015,
+          "\u2b505": 370.29
+        },
+        "defense_percent": {
+          "\u2b501": 129.601,
+          "\u2b502": 153.67,
+          "\u2b503": 201.808,
+          "\u2b504": 274.015,
+          "\u2b505": 370.29
+        },
+        "troop_type_note": "Archer Attack & Defense"
+      },
+      "widget": {
+        "exclusiveSkills": [
+          {
+            "name": "Perihelion",
+            "description": "Increase Rally Squad's Lethality",
+            "template": "Rosa's Aeolian increases Rally Squad's Lethality by {defenderLethalityUp_percent}.",
+            "levels": {
+              "\u2694\ufe0f Lv.1": {
+                "defenderLethalityUp_percent": 5
+              },
+              "\u2694\ufe0f Lv.2": {
+                "defenderLethalityUp_percent": 7.5
+              },
+              "\u2694\ufe0f Lv.3": {
+                "defenderLethalityUp_percent": 10
+              },
+              "\u2694\ufe0f Lv.4": {
+                "defenderLethalityUp_percent": 12.5
+              },
+              "\u2694\ufe0f Lv.5": {
+                "defenderLethalityUp_percent": 15
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Alcar",
+      "troopType": "Infantry",
+      "skills": [
+        {
+          "name": "Rescuing Hands",
+          "description": "Reduce Infantry and Archer's Damage Taken every 5 turns",
+          "template": "Alcar's Rescuing Hands reduces Infantry and Archer's Damage Taken by {damageTakenDown_percent} every 5 turns for 2 turns.",
+          "levels": {
+            "Level 1": {
+              "damageTakenDown_percent": 14
+            },
+            "Level 2": {
+              "damageTakenDown_percent": 28
+            },
+            "Level 3": {
+              "damageTakenDown_percent": 42
+            },
+            "Level 4": {
+              "damageTakenDown_percent": 56
+            },
+            "Level 5": {
+              "damageTakenDown_percent": 70
+            }
+          }
+        },
+        {
+          "name": "Praetorian Will",
+          "description": "Increase Infantry Damage Dealt; Cavalry and Archer's Damage Dealt",
+          "template": "Alcar's Praetorian Will increases Infantry Damage Dealt by {infantryDamageUp_percent} and Cavalry and Archer's Damage Dealt by {otherDamageUp_percent}.",
+          "levels": {
+            "Level 1": {
+              "infantryDamageUp_percent": 20,
+              "otherDamageUp_percent": 2
+            },
+            "Level 2": {
+              "infantryDamageUp_percent": 40,
+              "otherDamageUp_percent": 4
+            },
+            "Level 3": {
+              "infantryDamageUp_percent": 60,
+              "otherDamageUp_percent": 6
+            },
+            "Level 4": {
+              "infantryDamageUp_percent": 80,
+              "otherDamageUp_percent": 8
+            },
+            "Level 5": {
+              "infantryDamageUp_percent": 100,
+              "otherDamageUp_percent": 10
+            }
+          }
+        },
+        {
+          "name": "Carpe Diem",
+          "description": "Increase Infantry Damage Dealt per attack and target Damage Taken",
+          "template": "Alcar's Carpe Diem increases Infantry Damage Dealt per attack by {infantryDamageUp_percent} and target Damage Taken by {targetDamageTakenUp_percent} for 1 turn.",
+          "levels": {
+            "Level 1": {
+              "infantryDamageUp_percent": 12,
+              "targetDamageTakenUp_percent": 5
+            },
+            "Level 2": {
+              "infantryDamageUp_percent": 24,
+              "targetDamageTakenUp_percent": 10
+            },
+            "Level 3": {
+              "infantryDamageUp_percent": 36,
+              "targetDamageTakenUp_percent": 15
+            },
+            "Level 4": {
+              "infantryDamageUp_percent": 48,
+              "targetDamageTakenUp_percent": 20
+            },
+            "Level 5": {
+              "infantryDamageUp_percent": 60,
+              "targetDamageTakenUp_percent": 25
+            }
+          }
+        }
+      ],
+      "expedition": {
+        "attack_percent": {
+          "\u2b501": 129.601,
+          "\u2b502": 153.67,
+          "\u2b503": 201.808,
+          "\u2b504": 274.015,
+          "\u2b505": 370.29
+        },
+        "defense_percent": {
+          "\u2b501": 129.601,
+          "\u2b502": 153.67,
+          "\u2b503": 201.808,
+          "\u2b504": 274.015,
+          "\u2b505": 370.29
+        },
+        "troop_type_note": "Infantry Attack & Defense"
+      },
+      "widget": {
+        "exclusiveSkills": [
+          {
+            "name": "Flagbearer",
+            "description": "Increase Defender Squads' Health",
+            "template": "Alcar's Praetorian Guard increases Defender Squads' Health by {defenderHealthUp_percent}.",
+            "levels": {
+              "\u2694\ufe0f Lv.1": {
+                "defenderHealthUp_percent": 5
+              },
+              "\u2694\ufe0f Lv.2": {
+                "defenderHealthUp_percent": 7.5
+              },
+              "\u2694\ufe0f Lv.3": {
+                "defenderHealthUp_percent": 10
+              },
+              "\u2694\ufe0f Lv.4": {
+                "defenderHealthUp_percent": 12.5
+              },
+              "\u2694\ufe0f Lv.5": {
+                "defenderHealthUp_percent": 15
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Margot",
+      "troopType": "Cavalry",
+      "skills": [
+        {
+          "name": "Warbringer",
+          "description": "Increase total Squads' Attack",
+          "template": "Margot's Warbringer increases total Squads' Attack by {attackUp_percent}.",
+          "levels": {
+            "Level 1": {
+              "attackUp_percent": 5
+            },
+            "Level 2": {
+              "attackUp_percent": 10
+            },
+            "Level 3": {
+              "attackUp_percent": 15
+            },
+            "Level 4": {
+              "attackUp_percent": 20
+            },
+            "Level 5": {
+              "attackUp_percent": 25
+            }
+          }
+        },
+        {
+          "name": "Subterfuge",
+          "description": "Chance to dodge Normal Attacks",
+          "template": "Margot's Subterfuge grants a {procChance_percent} chance to dodge Normal Attacks.",
+          "levels": {
+            "Level 1": {
+              "procChance_percent": 4
+            },
+            "Level 2": {
+              "procChance_percent": 8
+            },
+            "Level 3": {
+              "procChance_percent": 12
+            },
+            "Level 4": {
+              "procChance_percent": 16
+            },
+            "Level 5": {
+              "procChance_percent": 20
+            }
+          }
+        },
+        {
+          "name": "Sleight Hand",
+          "description": "Chance for extra attack dealing 200% damage",
+          "template": "Margot's Sleight Hand grants a {procChance_percent} chance for an extra attack dealing {effectValue_percent} damage.",
+          "effectValue_percent": 200,
+          "levels": {
+            "Level 1": {
+              "procChance_percent": 120
+            },
+            "Level 2": {
+              "procChance_percent": 140
+            },
+            "Level 3": {
+              "procChance_percent": 160
+            },
+            "Level 4": {
+              "procChance_percent": 180
+            },
+            "Level 5": {
+              "procChance_percent": 200
+            }
+          }
+        }
+      ],
+      "expedition": {
+        "attack_percent": {
+          "\u2b501": 129.601,
+          "\u2b502": 153.67,
+          "\u2b503": 201.808,
+          "\u2b504": 274.015,
+          "\u2b505": 370.29
+        },
+        "defense_percent": {
+          "\u2b501": 129.601,
+          "\u2b502": 153.67,
+          "\u2b503": 201.808,
+          "\u2b504": 274.015,
+          "\u2b505": 370.29
+        },
+        "troop_type_note": "Cavalry Attack & Defense"
+      },
+      "widget": {
+        "stats": {
+          "cavalryLethality_percent": {
+            "Level 1": 18.5,
+            "Level 2": 37.0,
+            "Level 3": 55.5,
+            "Level 4": 74.0,
+            "Level 5": 92.5
+          },
+          "cavalryHealth_percent": {
+            "Level 1": 18.5,
+            "Level 2": 37.0,
+            "Level 3": 55.5,
+            "Level 4": 74.0,
+            "Level 5": 92.5
+          }
+        },
+        "exclusiveSkills": [
+          {
+            "name": "Revel Fang",
+            "description": "Increase Defender Squads' Lethality",
+            "template": "Margot's Revel Fang increases Defender Squads' Lethality by {defenderLethalityUp_percent}.",
+            "levels": {
+              "\u2694\ufe0f Lv.1": {
+                "defenderLethalityUp_percent": 5
+              },
+              "\u2694\ufe0f Lv.2": {
+                "defenderLethalityUp_percent": 7.5
+              },
+              "\u2694\ufe0f Lv.3": {
+                "defenderLethalityUp_percent": 10
+              },
+              "\u2694\ufe0f Lv.4": {
+                "defenderLethalityUp_percent": 12.5
+              },
+              "\u2694\ufe0f Lv.5": {
+                "defenderLethalityUp_percent": 15
+              }
+            }
+          }
+        ]
+      }
     }
   ],
   "joiners": [
@@ -1289,8 +1894,113 @@
               "defenseUp_percent": 10
             }
           }
+        },
+        {
+          "name": "Elixir of Strength",
+          "description": "Chance for all squads' attack to deal 200% damage",
+          "template": "Hilde's Elixir of Strength grants all squads' attacks a {procChance_percent} chance of dealing {effectValue_percent} damage.",
+          "effectValue_percent": 200,
+          "levels": {
+            "Level 1": {
+              "procChance_percent": 120
+            },
+            "Level 2": {
+              "procChance_percent": 140
+            },
+            "Level 3": {
+              "procChance_percent": 160
+            },
+            "Level 4": {
+              "procChance_percent": 180
+            },
+            "Level 5": {
+              "procChance_percent": 200
+            }
+          }
+        },
+        {
+          "name": "Trial by Fire",
+          "description": "Chance to reduce damage taken by 50% for all squads",
+          "template": "Hilde's Trial by Fire grants a {procChance_percent} chance of reducing damage taken by {effectValue_percent} for all squads.",
+          "effectValue_percent": 50,
+          "levels": {
+            "Level 1": {
+              "procChance_percent": 8
+            },
+            "Level 2": {
+              "procChance_percent": 16
+            },
+            "Level 3": {
+              "procChance_percent": 24
+            },
+            "Level 4": {
+              "procChance_percent": 32
+            },
+            "Level 5": {
+              "procChance_percent": 40
+            }
+          }
         }
-      ]
+      ],
+      "expedition": {
+        "attack_percent": {
+          "\u2b501": 84.066,
+          "\u2b502": 99.679,
+          "\u2b503": 130.904,
+          "\u2b504": 177.741,
+          "\u2b505": 240.19
+        },
+        "defense_percent": {
+          "\u2b501": 84.066,
+          "\u2b502": 99.679,
+          "\u2b503": 130.904,
+          "\u2b504": 177.741,
+          "\u2b505": 240.19
+        },
+        "troop_type_note": "Cavalry Attack & Defense"
+      },
+      "widget": {
+        "stats": {
+          "cavalryLethality_percent": {
+            "Level 1": 12.0,
+            "Level 2": 24.0,
+            "Level 3": 36.0,
+            "Level 4": 48.0,
+            "Level 5": 60.0
+          },
+          "cavalryHealth_percent": {
+            "Level 1": 12.0,
+            "Level 2": 24.0,
+            "Level 3": 36.0,
+            "Level 4": 48.0,
+            "Level 5": 60.0
+          }
+        },
+        "exclusiveSkills": [
+          {
+            "name": "Revelation",
+            "description": "Increase Defender Squads' Health",
+            "template": "Hilde's Revelation increases Defender Squads' Health by {defenderHealthUp_percent}.",
+            "levels": {
+              "\u2694\ufe0f Lv.1": {
+                "defenderHealthUp_percent": 5
+              },
+              "\u2694\ufe0f Lv.2": {
+                "defenderHealthUp_percent": 7.5
+              },
+              "\u2694\ufe0f Lv.3": {
+                "defenderHealthUp_percent": 10
+              },
+              "\u2694\ufe0f Lv.4": {
+                "defenderHealthUp_percent": 12.5
+              },
+              "\u2694\ufe0f Lv.5": {
+                "defenderHealthUp_percent": 15
+              }
+            }
+          }
+        ]
+      }
     }
   ]
 }
