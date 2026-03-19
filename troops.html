@@ -56,6 +56,11 @@
     .ocr-host { padding: 14px; border-radius: 12px; }
     .stats-troops-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
     @media(max-width:700px){ .stats-troops-grid { grid-template-columns:1fr; } }
+    /* Ensure nothing overflows on narrow screens */
+    .stats-troops-grid > div { min-width:0; box-sizing:border-box; overflow:hidden; }
+    .grid-2.grid-tro { width:100%; box-sizing:border-box; }
+    .grid-2.grid-tro > div { min-width:0; overflow:hidden; }
+    input { min-width:0; max-width:100%; box-sizing:border-box; }
 
     /* Instant hover everywhere */
     a, .btn, .btn-ok, .btn-primary, .btn-secondary, .btn-outline,
@@ -74,6 +79,65 @@
     .stat-section-inf { border-left: 3px solid #f87171; padding-left: 10px; }
     .stat-section-cav { border-left: 3px solid #f59e0b; padding-left: 10px; }
     .stat-section-arc { border-left: 3px solid #22d3ee; padding-left: 10px; }
+
+  
+    /* Override stat_ocr.js injected import button to match pvp.html import-box style */
+    #troops_import_stats > div,
+    #troops_import_troops > div {
+      background: rgba(14,20,34,.7) !important;
+      border: 1.5px dashed #2a4060 !important;
+      border-radius: 12px !important;
+      padding: 12px 14px !important;
+      width: 100% !important;
+      box-sizing: border-box !important;
+      transition: border-color .15s !important;
+    }
+    #troops_import_stats > div:hover,
+    #troops_import_troops > div:hover {
+      border-color: #22d3ee !important;
+    }
+    /* The label (trigger button) inside */
+    #troops_import_stats label,
+    #troops_import_troops label {
+      background: linear-gradient(90deg,#22d3ee,#60a5fa) !important;
+      color: #05121f !important;
+      border: 0 !important;
+      font-weight: 700 !important;
+      padding: 9px 16px !important;
+      border-radius: 10px !important;
+      font-size: .85rem !important;
+      min-height: 44px !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      gap: 6px !important;
+      cursor: pointer !important;
+      white-space: normal !important;
+      transition: filter .15s !important;
+      width: 100% !important;
+      box-sizing: border-box !important;
+      justify-content: center !important;
+    }
+    #troops_import_stats label:hover,
+    #troops_import_troops label:hover {
+      filter: brightness(1.1) !important;
+      background: linear-gradient(90deg,#22d3ee,#60a5fa) !important;
+      border-color: transparent !important;
+    }
+    /* Keep thumbnail visible but neat */
+    #troops_import_stats img,
+    #troops_import_troops img {
+      width: 44px !important;
+      height: 44px !important;
+      object-fit: cover !important;
+      border-radius: 8px !important;
+      flex-shrink: 0 !important;
+    }
+    /* The row inside import bar: button + thumb side by side */
+    #troops_import_stats > div > div:first-child,
+    #troops_import_troops > div > div:first-child {
+      width: 100% !important;
+      box-sizing: border-box !important;
+    }
 
   </style>
 </head>
@@ -97,9 +161,9 @@
 
   <div class="container">
     <section class="panel panel-glass">
-      <div class="cta-band" style="text-align: center; display: flex; gap: 14px; flex-wrap: wrap; align-items: center; font-size: 18px; justify-content: center; ">
-        <a class="btn-terciary" href="magic.html">Bear Magic</a>
-        <a class="btn-quaternary" href="optiona.html">Bear Option‑A</a>
+      <div style="display:flex;gap:10px;flex-wrap:nowrap;align-items:stretch;justify-content:center;width:100%;box-sizing:border-box;">
+        <a href="magic.html" style="flex:1;min-width:0;min-height:44px;display:flex;align-items:center;justify-content:center;gap:6px;padding:10px 12px;border-radius:12px;background:linear-gradient(95deg,#ffcb47,#ffa600,#ff7e00);color:#0a0f1a;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:.95rem;text-decoration:none;text-align:center;line-height:1.2;box-sizing:border-box;">Bear Magic</a>
+        <a href="optiona.html" style="flex:1;min-width:0;min-height:44px;display:flex;align-items:center;justify-content:center;gap:6px;padding:10px 12px;border-radius:12px;background:linear-gradient(95deg,#5f636a,#a6a9af,#f1f3f6);color:#0a0f1a;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:.95rem;text-decoration:none;text-align:center;line-height:1.2;box-sizing:border-box;">Bear Option&#8209;A</a>
       </div>
     </section>
     <section class="panel panel-glass">
@@ -161,7 +225,7 @@
             </select>
           </div>
           <!-- IMPORTANT: legacy hook class .grid-tro so stat_ocr.js can find this grid -->
-          <div class="grid-2 grid-tro" style="grid-template-columns:1fr 1fr;gap:12px">
+          <div class="grid-2 grid-tro" style="grid-template-columns:1fr 1fr;gap:8px">
             <div style="background:rgba(16,185,129,.07);border:1px solid rgba(16,185,129,.2);border-radius:8px;padding:8px">
               <div style="font-size:.7rem;font-weight:700;color:#10b981;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">📦 Stock</div>
               <label for="stockInf" style="font-size:.68rem;margin:0 0 2px">Infantry</label><input id="stockInf" type="number" min="0" value="211539" />

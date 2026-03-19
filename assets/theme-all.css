@@ -616,3 +616,37 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
   outline-offset: 2px;
   box-shadow: 0 0 0 4px rgba(34,211,238,.12) !important;
 }
+
+/* ===== FIX: Mobile Chrome URL-bar background zoom =====
+   When Chrome hides its URL bar, the viewport grows and a fixed background-size:cover
+   image rescales, causing a visible zoom/jump.
+   Fix: use a dedicated pseudo-element on <html> sized to 100vh + extra so the
+   image never needs to rescale when the bar hides. */
+
+html::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -10;
+  background-image: url("https://png.pngtree.com/thumb_back/fw800/background/20250916/pngtree-futuristic-ai-technology-background-with-machine-learning-visualization-and-robotic-design-image_19364985.webp");
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+  /* Oversized to absorb URL-bar resize without rescaling */
+  top: -60px;
+  bottom: -60px;
+  left: -10px;
+  right: -10px;
+  filter: brightness(0.65) saturate(1.05) contrast(1.03);
+  opacity: 0.50;
+  will-change: auto;
+  transform: translateZ(0);
+  pointer-events: none;
+}
+
+/* Hide the old bg-image layers to avoid double rendering */
+.bg.bg-image,
+.site-bg .bg-image {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
