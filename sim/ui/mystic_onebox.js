@@ -223,7 +223,7 @@
           defenderTier: defenderBase.tier || 'T10',
           defenderTroops: defCO,
           sparsity: 0.01,
-          infMin: 0.40, infMax: 0.80,
+          infMin: 0.40, infMax: 0.65,
           cavMin: 0.15, cavMax: 0.30,
           maxTop: 10,
         });
