@@ -241,7 +241,7 @@
     const num=(id,def=0)=>{const v=parseFloat(String($(`${id}`)?.value||'').replace(',','.'));return isFinite(v)?v:def;};
     function setBox(boxId,statusId,ok,msg){const box=$(boxId),status=$(statusId);if(!box||!status)return;box.classList.toggle('has-data',ok);box.classList.toggle('error',!ok);status.className='import-status '+(ok?'ok':'err');status.textContent=msg;}
     function wireImport(fileId,boxId,statusId,handler){const fileEl=$(fileId);if(!fileEl)return;fileEl.addEventListener('change',async(e)=>{const file=e.target.files[0];if(!file)return;$(statusId).textContent='Reading...';$(statusId).className='import-status';try{await handler(file);}catch(err){setBox(boxId,statusId,false,'OCR failed — '+(err.message||err));const rb=document.createElement('button');rb.className='retry-btn';rb.textContent='[retry]';rb.onclick=()=>{fileEl.value='';fileEl.click();};$(statusId).appendChild(rb);}fileEl.value='';});}
-    function fillStats(prefix,stats){['inf','cav','arc'].forEach(t=>['atk','def','let','hp'].forEach(s=>{const el=$(`${prefix}_${t}_${s}`);if(el&&stats[t]&&stats[t][s]!=null)el.value=stats[t][s];}));}
+    function fillStats(prefix,stats){['inf','cav','arc'].forEach(t=>['atk','def','let','hp'].forEach(s=>{const el=$(`${prefix}_${t}_${s}`);if(el&&stats[t]&&stats[t][s]!=null&&stats[t][s]!==0)el.value=stats[t][s];}));}
 
     wireImport('att_file','att_box','att_status',async(file)=>{
       const ocr=window.KingSim&&window.KingSim.pvpOcr;
@@ -300,7 +300,7 @@
         const _perType=_ai+_ac+_aa;
         const attTotal=_perType>0?_perType:(num('pvp_att_total',0)||150000);
         await new Promise(r=>setTimeout(r,20));
-        const out=opt.scanPvP({attackerTotal:attTotal,attackerStats:readStats('pvp_att'),attackerTier:$('pvp_att_tier').value,defenderTroops:{inf:defInf,cav:defCav,arc:defArc},defenderStats:readStats('pvp_def'),defenderTier:$('pvp_def_tier').value,sparsity:.05,infMin:.40,infMax:.80,cavMin:.15,cavMax:.30,maxTop:10});
+        const out=opt.scanPvP({attackerTotal:attTotal,attackerStats:readStats('pvp_att'),attackerTier:$('pvp_att_tier').value,defenderTroops:{inf:defInf,cav:defCav,arc:defArc},defenderStats:readStats('pvp_def'),defenderTier:$('pvp_def_tier').value,sparsity:.01,infMin:.40,infMax:.80,cavMin:.15,cavMax:.30,maxTop:10});
         const best=out.best;if(!best)throw new Error('No results');
         const fi=best.fi,fc=best.fc;
         const inf=Math.round(fi*attTotal),cav=Math.round(fc*attTotal),arc=Math.max(0,attTotal-inf-cav);

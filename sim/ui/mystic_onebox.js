@@ -22,7 +22,7 @@
   };
 
   // Engine defaults (adaptive optimizer will refine around presets anyway)
-  const DEFAULTS = { battlesPerPoint:120, sparsity:0.05, fiMin:0.40, fiMax:0.80, fcMin:0.15, fcMax:0.30, seed:1337 };
+  const DEFAULTS = { battlesPerPoint:120, sparsity:0.01, fiMin:0.40, fiMax:0.80, fcMin:0.15, fcMax:0.30, seed:1337 };
 
   // Set by OCR when inputs change
   let dirty = false;
@@ -222,7 +222,7 @@
           },
           defenderTier: defenderBase.tier || 'T10',
           defenderTroops: defCO,
-          sparsity: 0.05,
+          sparsity: 0.01,
           infMin: 0.40, infMax: 0.80,
           cavMin: 0.15, cavMax: 0.30,
           maxTop: 10,
@@ -244,13 +244,13 @@
         out = await opt.scanFixedDefenderAdaptive({
           attackerBase, defenderBase, defenderFractions: defFractions,
           trialName: trial, maxTop: 10,
-          battlesPerPoint: 120, sparsity: 0.05,
+          battlesPerPoint: 120, sparsity: 0.01,
           fiMin: 0.40, fiMax: 0.80, fcMin: 0.15, fcMax: 0.30, seed: 1337
         });
       } else if (out == null && window.KingSim?.scanMysticTrial){
         const legacy = await window.KingSim.scanMysticTrial({
           attackerBase, defenderBase, trialName: trial,
-          battlesPerPoint: 120, sparsity: 0.05,
+          battlesPerPoint: 120, sparsity: 0.01,
           fiMin: 0.40, fiMax: 0.80, fcMin: 0.15, fcMax: 0.30, seed: 1337
         });
         const pts = legacy.points || [];

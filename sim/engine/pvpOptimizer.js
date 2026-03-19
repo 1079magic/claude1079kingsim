@@ -41,7 +41,7 @@
       defenderTroops,
       defenderStats   = {},
       defenderTier    = 'T10',
-      sparsity  = 0.05,
+      sparsity  = 0.01,
       infMin = 0.40, infMax = 0.80,
       cavMin = 0.15, cavMax = 0.30,
       maxTop = 10,
