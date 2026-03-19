@@ -21,22 +21,25 @@
 
   const DEF_FRACTIONS = { fi: 0.40, fc: 0.30, fa: 0.30 };
 
-  // Per-trial presets and search windows
+  // Per-trial presets and search windows.
+  // wingCav: tight (0.03) so cavalry stays near preset, archers get more room.
+  // arcMin:  per-trial floor so archers are never squeezed out.
+  //   Derived from: preset arc% - 10pp (e.g. FoL preset=35% → arcMin=25%)
   const TRIAL_CONFIG = {
-    'Crystal Cave':       { fi: 0.60, fc: 0.20, wingInf: 0.06, wingCav: 0.05 },
-    'Knowledge Nexus':    { fi: 0.50, fc: 0.20, wingInf: 0.06, wingCav: 0.05 },
-    'Radiant Spire':      { fi: 0.50, fc: 0.15, wingInf: 0.06, wingCav: 0.05 },
-    'Forest of Life':     { fi: 0.50, fc: 0.15, wingInf: 0.06, wingCav: 0.05 },
-    'Molten Fort':        { fi: 0.60, fc: 0.15, wingInf: 0.06, wingCav: 0.05 },
-    'Coliseum-March1-Calv2nd': { fi: 0.50, fc: 0.10, wingInf: 0.06, wingCav: 0.05 },
-    'Coliseum-March2-Calv1st': { fi: 0.40, fc: 0.40, wingInf: 0.06, wingCav: 0.05 },
+    //                                 preset      wingInf  wingCav  arcMin
+    'Crystal Cave':       { fi: 0.60, fc: 0.20, wingInf: 0.06, wingCav: 0.03, arcMin: 0.15 },
+    'Knowledge Nexus':    { fi: 0.50, fc: 0.20, wingInf: 0.06, wingCav: 0.03, arcMin: 0.20 },
+    'Radiant Spire':      { fi: 0.50, fc: 0.15, wingInf: 0.06, wingCav: 0.03, arcMin: 0.25 },
+    'Forest of Life':     { fi: 0.50, fc: 0.15, wingInf: 0.06, wingCav: 0.03, arcMin: 0.25 },
+    'Molten Fort':        { fi: 0.60, fc: 0.15, wingInf: 0.06, wingCav: 0.03, arcMin: 0.18 },
+    'Coliseum-March1-Calv2nd': { fi: 0.50, fc: 0.10, wingInf: 0.06, wingCav: 0.03, arcMin: 0.25 },
+    'Coliseum-March2-Calv1st': { fi: 0.40, fc: 0.40, wingInf: 0.06, wingCav: 0.03, arcMin: 0.10 },
   };
 
   // Default config if trial not found
-  const DEFAULT_CONFIG = { fi: 0.50, fc: 0.20, wingInf: 0.06, wingCav: 0.05 };
+  const DEFAULT_CONFIG = { fi: 0.50, fc: 0.20, wingInf: 0.06, wingCav: 0.03, arcMin: 0.15 };
 
   const STEP = 0.001;      // 0.1% step → 1-decimal precision in output labels
-  const ARC_MIN = 0.15;    // Archers never below 15% — they are DPS
   const CAV_FLOOR = 0.10;  // Cavalry never below 10%
   const INF_FLOOR = 0.40;  // Infantry never below 40%
   const INF_CAP   = 0.68;  // Infantry never above 68% (absolute hard cap)
@@ -96,6 +99,7 @@
     const infMax = Math.min(INF_CAP,   parseFloat((cfg.fi + cfg.wingInf).toFixed(3)));
     const cavMin = Math.max(CAV_FLOOR, parseFloat((cfg.fc - cfg.wingCav).toFixed(3)));
     const cavMax =                     parseFloat((cfg.fc + cfg.wingCav).toFixed(3));
+    const arcMin =                     cfg.arcMin ?? 0.15;  // per-trial archer floor
 
     // Fixed defender formation (always 40/30/30 for Mystic Trials)
     const defTroops = defOverride || makeTroops(defenderTotal, DEF_FRACTIONS.fi, DEF_FRACTIONS.fc);
@@ -109,7 +113,7 @@
         const fa = parseFloat((1 - fi - fc).toFixed(3));
 
         // Reject formations outside valid space
-        if (fa < ARC_MIN) continue;
+        if (fa < arcMin) continue;
         if (fi + fc > 1 + 1e-9) continue;
 
         const attTroops = makeTroops(attackerTotal, fi, fc);
