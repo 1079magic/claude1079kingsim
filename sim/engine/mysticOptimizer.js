@@ -36,15 +36,15 @@
   const TRIAL_CONFIG = {
     'Forest of Life': {
       fi: 0.50, fc: 0.15,               // preset (used for display)
-      infMin: 0.50, infMax: 0.54,        // search inf 50–54%
-      cavMin: 0.16, cavMax: 0.19,        // search cav 16–19%
-      arcMin: 0.27,                      // arc always ≥27%
+      infMin: 0.50, infMax: 0.54,        // search inf 50–54%  (ceiling → engine picks 54%)
+      cavMin: 0.16, cavMax: 0.17,        // search cav 16–17%  (tight band → stays near 16%)
+      arcMin: 0.29,                      // arc always ≥29%     (keeps arc near 30%)
     },
     'Radiant Spire': {
       fi: 0.50, fc: 0.15,
       infMin: 0.50, infMax: 0.54,
-      cavMin: 0.16, cavMax: 0.19,
-      arcMin: 0.27,
+      cavMin: 0.16, cavMax: 0.17,
+      arcMin: 0.29,
     },
     // Other trials retain the old wing-based approach pending per-trial calibration
     'Crystal Cave': {
