@@ -43,7 +43,8 @@
       defenderTier    = 'T10',
       sparsity  = 0.01,
       infMin = 0.40, infMax = 0.80,
-      cavMin = 0.15, cavMax = 0.30,
+      cavMin = 0.15, cavMax = 0.25,
+      arcMin = 0.10,   // always ≥10% archers — prevents degenerate 80/15/5 type formations
       maxTop = 10,
     } = opts;
 
@@ -55,6 +56,7 @@
       for (let fc = cavMin; fc <= cavMax + 1e-9; fc += sparsity) {
         const fa = 1 - fi - fc;
         if (fa < -1e-9 || fi + fc > 1 + 1e-9) continue;
+        if (fa < arcMin - 1e-9) continue;  // enforce minimum archer fraction
 
         const attTroops = makeTroops(attackerTotal, fi, fc);
 
@@ -77,9 +79,18 @@
       }
     }
 
+    // PvP scoring: WIN first, then among winners sort by most attacker survivors,
+    // among losers sort by most defender damage dealt.
     results.sort((a, b) => {
-      if (b.score !== a.score) return b.score - a.score;
-      return a.attackerInjured - b.attackerInjured;
+      const aWin = a.winner === 'attacker' ? 1 : 0;
+      const bWin = b.winner === 'attacker' ? 1 : 0;
+      if (bWin !== aWin) return bWin - aWin;                          // winners first
+      if (aWin === 1) {
+        // Both win: prefer more attacker survivors (attackerTotal - attackerInjured)
+        const aLeft = (a.score - a.defenderInjured) + a.defenderInjured; // trick: use attacker context
+        return b.attackerInjured - a.attackerInjured;                  // fewer own losses
+      }
+      return b.score - a.score;                                        // both lose: more def damage
     });
 
     const top = results.slice(0, maxTop).map((r, i) => ({ ...r, rank: i + 1 }));

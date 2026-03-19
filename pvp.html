@@ -66,8 +66,7 @@
       <a href="optiona.html" data-tab="optiona">Bear Option-A</a>
       <a href="mystic.html" data-tab="mystic">Mystic Trials</a>
       <a href="pvp.html" data-tab="pvp">PvP</a>
-      <a href="cb.html" data-tab="cb">CB / Turrets</a>
-    </div>
+</div>
     <div class="nav-ctas"><a class="btn-primary--compact" href="troops.html">🪖</a></div>
   </div></div>
   <div class="page-spacer"></div>
@@ -135,7 +134,7 @@
         <table id="pvp_table">
           <thead><tr>
             <th>#</th><th>Formation (Inf/Cav/Arc %)</th>
-            <th>Est. Def Injuries</th><th>Est. Att Injuries</th>
+            <th>Est. Def Injuries</th><th>Est. Att Injuries</th><th>Result</th>
           </tr></thead>
           <tbody id="pvp_tbody"></tbody>
         </table>
@@ -308,14 +307,14 @@
         const _perType=_ai+_ac+_aa;
         const attTotal=_perType>0?_perType:(num('pvp_att_total',0)||150000);
         await new Promise(r=>setTimeout(r,20));
-        const out=opt.scanPvP({attackerTotal:attTotal,attackerStats:readStats('pvp_att'),attackerTier:$('pvp_att_tier').value,defenderTroops:{inf:defInf,cav:defCav,arc:defArc},defenderStats:readStats('pvp_def'),defenderTier:$('pvp_def_tier').value,sparsity:.01,infMin:.40,infMax:.80,cavMin:.15,cavMax:.30,maxTop:10});
+        const out=opt.scanPvP({attackerTotal:attTotal,attackerStats:readStats('pvp_att'),attackerTier:$('pvp_att_tier').value,defenderTroops:{inf:defInf,cav:defCav,arc:defArc},defenderStats:readStats('pvp_def'),defenderTier:$('pvp_def_tier').value,sparsity:.01,infMin:.40,infMax:.80,cavMin:.15,cavMax:.25,arcMin:.10,maxTop:10});
         const best=out.best;if(!best)throw new Error('No results');
         const fi=best.fi,fc=best.fc;
         const inf=Math.round(fi*attTotal),cav=Math.round(fc*attTotal),arc=Math.max(0,attTotal-inf-cav);
         $('pvp_best_val').textContent=best.label;
         $('pvp_best_sub').innerHTML='Infantry: <strong>'+inf.toLocaleString()+'</strong> | Cavalry: <strong>'+cav.toLocaleString()+'</strong> | Archers: <strong>'+arc.toLocaleString()+'</strong><br>Est. defender injuries: <strong>'+best.defenderInjured.toLocaleString()+'</strong>';
         const tbody=$('pvp_tbody');tbody.innerHTML='';
-        (out.top10||[]).forEach((r,i)=>{const tr=document.createElement('tr');const dI=(r.defenderInjured||0).toLocaleString();const aI=(r.attackerInjured||0).toLocaleString();tr.innerHTML='<td>'+(r.rank||i+1)+'</td><td>'+(r.label||'—')+'</td><td>'+dI+'</td><td>'+aI+'</td>';tbody.appendChild(tr);});
+        (out.top10||[]).forEach((r,i)=>{const tr=document.createElement('tr');const dI=(r.defenderInjured||0).toLocaleString();const aI=(r.attackerInjured||0).toLocaleString();const w=r.winner==='attacker'?'<span style="color:#10b981">WIN</span>':'<span style="color:#ef4444">LOSS</span>';tr.innerHTML='<td>'+(r.rank||i+1)+'</td><td>'+(r.label||'—')+'</td><td>'+dI+'</td><td>'+aI+'</td><td>'+w+'</td>';tbody.appendChild(tr);});
         $('pvp_count').innerHTML='Tested <strong>'+out.totalTested.toLocaleString()+'</strong> formations';
         $('pvp_results').style.display='block';
         $('pvp_results').scrollIntoView({behavior:'smooth',block:'start'});
