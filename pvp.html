@@ -264,9 +264,15 @@
         $('pvp_def_total').value=(t.inf||0)+(t.cav||0)+(t.arc||0);
       }
       if(res.defender&&res.defender.stats)fillStats('pvp_def',res.defender.stats);
+      // Auto-fill tier dropdowns from TG badge detection
+      if(res.attacker&&res.attacker.tier){const te=$('pvp_att_tier');if(te)te.value=res.attacker.tier;}
+      if(res.defender&&res.defender.tier){const te=$('pvp_def_tier');if(te)te.value=res.defender.tier;}
       const attTotal=(res.attacker&&res.attacker.troops)?((res.attacker.troops.inf||0)+(res.attacker.troops.cav||0)+(res.attacker.troops.arc||0)):0;
       const defTotal=(res.defender&&res.defender.troops)?((res.defender.troops.inf||0)+(res.defender.troops.cav||0)+(res.defender.troops.arc||0)):0;
-      setBox('att_box','att_status',true,'Both sides imported — Att:'+attTotal.toLocaleString()+' Def:'+defTotal.toLocaleString());
+      const attSC=res.attacker&&res.attacker.stats?Object.values(res.attacker.stats).reduce((a,v)=>a+Object.values(v).filter(x=>x!==0).length,0):0;
+      const defSC=res.defender&&res.defender.stats?Object.values(res.defender.stats).reduce((a,v)=>a+Object.values(v).filter(x=>x!==0).length,0):0;
+      const tgStr=res.tgLevel>0?' | Tier: '+(res.attacker&&res.attacker.tier||'T10'):'';
+      setBox('att_box','att_status',true,'Att: '+attTotal.toLocaleString()+' ('+attSC+'/12 stats) | Def: '+defTotal.toLocaleString()+' ('+defSC+'/12 stats)'+tgStr);
     });
     wireImport('def_ratio_file','def_ratio_box','def_ratio_status',async(file)=>{const ocr=window.KingSim&&window.KingSim.pvpOcr;if(!ocr)throw new Error('pvp_ocr.js not loaded');const res=await ocr.parseDefTroopRatio(file);if(res.troops){$('pvp_def_inf').value=res.troops.inf||0;$('pvp_def_cav').value=res.troops.cav||0;$('pvp_def_arc').value=res.troops.arc||0;$('pvp_def_total').value=res.total||(res.troops.inf||0)+(res.troops.cav||0)+(res.troops.arc||0);setBox('def_ratio_box','def_ratio_status',true,'Def troops: '+(res.total||0).toLocaleString()+' total');}else{setBox('def_ratio_box','def_ratio_status',false,'Could not read ratio — enter manually');}});
     wireImport('def_stats_file','def_stats_box','def_stats_status',async(file)=>{const ocr=window.KingSim&&window.KingSim.pvpOcr;if(!ocr)throw new Error('pvp_ocr.js not loaded');const res=await ocr.parseDefStatBonuses(file);if(res.stats)fillStats('pvp_def',res.stats);setBox('def_stats_box','def_stats_status',true,'Defender stats imported');});
@@ -282,7 +288,9 @@
         $('pvp_att_total').value=(res.troops.inf||0)+(res.troops.cav||0)+(res.troops.arc||0);
       }
       if(res.stats)fillStats('pvp_att',res.stats);
-      setBox('att_extra_box','att_extra_status',true,'Attacker stats imported');
+      if(res.tier){const te=$('pvp_att_tier');if(te)te.value=res.tier;}
+      const tgMsg=res.tier&&res.tier.includes('TG')?' ('+res.tier+')':'';
+      setBox('att_extra_box','att_extra_status',true,'Attacker stats imported'+tgMsg);
     });
 
     function readStats(p){return{attack:{inf:num(`${p}_inf_atk`,0),cav:num(`${p}_cav_atk`,0),arc:num(`${p}_arc_atk`,0)},defense:{inf:num(`${p}_inf_def`,0),cav:num(`${p}_cav_def`,0),arc:num(`${p}_arc_def`,0)},lethality:{inf:num(`${p}_inf_let`,0),cav:num(`${p}_cav_let`,0),arc:num(`${p}_arc_let`,0)},health:{inf:num(`${p}_inf_hp`,0),cav:num(`${p}_cav_hp`,0),arc:num(`${p}_arc_hp`,0)}};}

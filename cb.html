@@ -65,7 +65,7 @@
       <a href="magic.html" data-tab="magic">Bear Magic</a>
       <a href="optiona.html" data-tab="optiona">Bear Option-A</a>
       <a href="mystic.html" data-tab="mystic">Mystic Trials</a>
-      <a href="pvp.html" data-tab="cb">PvP</a>
+      <a href="cb.html" data-tab="cb">PvP</a>
       <a href="cb.html" data-tab="cb">CB / Turrets</a>
     </div>
     <div class="nav-ctas"><a class="btn-primary--compact" href="troops.html">🪖</a></div>
@@ -75,7 +75,7 @@
   <div class="container">
     <section class="panel panel-glass">
       <h2 class="h2">🏰 CB / Turret Attack Simulator</h2>
-      <p class="muted" style="text-align:center;margin:0 0 16px">Import your attack report &amp; defender data to find the best formation.</p>
+      <p class="muted" style="text-align:center;margin:0 0 16px">Import your CB/Turret attack report &amp; defender data to find the best formation.</p>
 
       <div style="margin-bottom:20px">
         <h3 class="h3">Attack Report Import</h3>
@@ -243,48 +243,94 @@
     function wireImport(fileId,boxId,statusId,handler){const fileEl=$(fileId);if(!fileEl)return;fileEl.addEventListener('change',async(e)=>{const file=e.target.files[0];if(!file)return;$(statusId).textContent='Reading...';$(statusId).className='import-status';try{await handler(file);}catch(err){setBox(boxId,statusId,false,'OCR failed — '+(err.message||err));const rb=document.createElement('button');rb.className='retry-btn';rb.textContent='[retry]';rb.onclick=()=>{fileEl.value='';fileEl.click();};$(statusId).appendChild(rb);}fileEl.value='';});}
     function fillStats(prefix,stats){['inf','cav','arc'].forEach(t=>['atk','def','let','hp'].forEach(s=>{const el=$(`${prefix}_${t}_${s}`);if(el&&stats[t]&&stats[t][s]!=null&&stats[t][s]!==0)el.value=stats[t][s];}));}
 
-    wireImport('att_file','att_box','att_status',async(file)=>{const ocr=window.KingSim&&window.KingSim.pvpOcr;if(!ocr)throw new Error('pvp_ocr.js not loaded');const res=await ocr.parseAttackReport(file);if(res.attacker.troops){const t=res.attacker.troops;$('pvp_att_inf').value=t.inf||0;$('pvp_att_cav').value=t.cav||0;$('pvp_att_arc').value=t.arc||0;$('pvp_att_total').value=(t.inf||0)+(t.cav||0)+(t.arc||0);}if(res.attacker.stats)fillStats('pvp_att',res.attacker.stats);setBox('att_box','att_status',true,'Attacker report imported');});
-    wireImport('def_ratio_file','def_ratio_box','def_ratio_status',async(file)=>{const ocr=window.KingSim&&window.KingSim.pvpOcr;if(!ocr)throw new Error('pvp_ocr.js not loaded');const res=await ocr.parseDefTroopRatio(file);if(res.troops){$('pvp_def_inf').value=res.troops.inf||0;$('pvp_def_cav').value=res.troops.cav||0;$('pvp_def_arc').value=res.troops.arc||0;$('pvp_def_total').value=res.total||(res.troops.inf||0)+(res.troops.cav||0)+(res.troops.arc||0);setBox('def_ratio_box','def_ratio_status',true,'Def troops: '+(res.total||0).toLocaleString()+' total');}else{setBox('def_ratio_box','def_ratio_status',false,'Could not read ratio — enter manually');}});
+    wireImport('att_file','att_box','att_status',async(file)=>{
+      const ocr=window.KingSim&&window.KingSim.pvpOcr;
+      if(!ocr)throw new Error('pvp_ocr.js not loaded');
+      const res=await ocr.parseBattleReport(file);
+      // Fill attacker side
+      if(res.attacker&&res.attacker.troops){
+        const t=res.attacker.troops;
+        const el_inf=$('cb_att_inf'),el_cav=$('cb_att_cav'),el_arc=$('cb_att_arc');
+        if(el_inf)el_inf.value=t.inf||0;
+        if(el_cav)el_cav.value=t.cav||0;
+        if(el_arc)el_arc.value=t.arc||0;
+        $('cb_att_total').value=(t.inf||0)+(t.cav||0)+(t.arc||0);
+      }
+      if(res.attacker&&res.attacker.stats)fillStats('pvp_att',res.attacker.stats);
+      // Also fill defender side if present
+      if(res.defender&&res.defender.troops){
+        const t=res.defender.troops;
+        $('cb_def_inf').value=t.inf||0;$('cb_def_cav').value=t.cav||0;$('cb_def_arc').value=t.arc||0;
+        $('cb_def_total').value=(t.inf||0)+(t.cav||0)+(t.arc||0);
+      }
+      if(res.defender&&res.defender.stats)fillStats('pvp_def',res.defender.stats);
+      // Auto-fill tier dropdowns from TG badge detection
+      if(res.attacker&&res.attacker.tier){const te=$('cb_att_tier');if(te)te.value=res.attacker.tier;}
+      if(res.defender&&res.defender.tier){const te=$('cb_def_tier');if(te)te.value=res.defender.tier;}
+      const attTotal=(res.attacker&&res.attacker.troops)?((res.attacker.troops.inf||0)+(res.attacker.troops.cav||0)+(res.attacker.troops.arc||0)):0;
+      const defTotal=(res.defender&&res.defender.troops)?((res.defender.troops.inf||0)+(res.defender.troops.cav||0)+(res.defender.troops.arc||0)):0;
+      const attSC=res.attacker&&res.attacker.stats?Object.values(res.attacker.stats).reduce((a,v)=>a+Object.values(v).filter(x=>x!==0).length,0):0;
+      const defSC=res.defender&&res.defender.stats?Object.values(res.defender.stats).reduce((a,v)=>a+Object.values(v).filter(x=>x!==0).length,0):0;
+      const tgStr=res.tgLevel>0?' | Tier: '+(res.attacker&&res.attacker.tier||'T10'):'';
+      setBox('att_box','att_status',true,'Att: '+attTotal.toLocaleString()+' ('+attSC+'/12 stats) | Def: '+defTotal.toLocaleString()+' ('+defSC+'/12 stats)'+tgStr);
+    });
+    wireImport('def_ratio_file','def_ratio_box','def_ratio_status',async(file)=>{const ocr=window.KingSim&&window.KingSim.pvpOcr;if(!ocr)throw new Error('pvp_ocr.js not loaded');const res=await ocr.parseDefTroopRatio(file);if(res.troops){$('cb_def_inf').value=res.troops.inf||0;$('cb_def_cav').value=res.troops.cav||0;$('cb_def_arc').value=res.troops.arc||0;$('cb_def_total').value=res.total||(res.troops.inf||0)+(res.troops.cav||0)+(res.troops.arc||0);setBox('def_ratio_box','def_ratio_status',true,'Def troops: '+(res.total||0).toLocaleString()+' total');}else{setBox('def_ratio_box','def_ratio_status',false,'Could not read ratio — enter manually');}});
     wireImport('def_stats_file','def_stats_box','def_stats_status',async(file)=>{const ocr=window.KingSim&&window.KingSim.pvpOcr;if(!ocr)throw new Error('pvp_ocr.js not loaded');const res=await ocr.parseDefStatBonuses(file);if(res.stats)fillStats('pvp_def',res.stats);setBox('def_stats_box','def_stats_status',true,'Defender stats imported');});
-    wireImport('att_extra_file','att_extra_box','att_extra_status',async(file)=>{const ocr=window.KingSim&&window.KingSim.pvpOcr;if(!ocr)throw new Error('pvp_ocr.js not loaded');const res=await ocr.parseAttackerStatsTroops(file);if(res.troops){$('pvp_att_inf').value=res.troops.inf||0;$('pvp_att_cav').value=res.troops.cav||0;$('pvp_att_arc').value=res.troops.arc||0;$('pvp_att_total').value=(res.troops.inf||0)+(res.troops.cav||0)+(res.troops.arc||0);}if(res.stats)fillStats('pvp_att',res.stats);setBox('att_extra_box','att_extra_status',true,'Attacker stats imported');});
+    wireImport('att_extra_file','att_extra_box','att_extra_status',async(file)=>{
+      const ocr=window.KingSim&&window.KingSim.pvpOcr;
+      if(!ocr)throw new Error('pvp_ocr.js not loaded');
+      const res=await ocr.parseAttackerStatsTroops(file);
+      if(res.troops){
+        const el_inf=$('cb_att_inf'),el_cav=$('cb_att_cav'),el_arc=$('cb_att_arc');
+        if(el_inf)el_inf.value=res.troops.inf||0;
+        if(el_cav)el_cav.value=res.troops.cav||0;
+        if(el_arc)el_arc.value=res.troops.arc||0;
+        $('cb_att_total').value=(res.troops.inf||0)+(res.troops.cav||0)+(res.troops.arc||0);
+      }
+      if(res.stats)fillStats('pvp_att',res.stats);
+      if(res.tier){const te=$('cb_att_tier');if(te)te.value=res.tier;}
+      const tgMsg=res.tier&&res.tier.includes('TG')?' ('+res.tier+')':'';
+      setBox('att_extra_box','att_extra_status',true,'Attacker stats imported'+tgMsg);
+    });
 
     function readStats(p){return{attack:{inf:num(`${p}_inf_atk`,0),cav:num(`${p}_cav_atk`,0),arc:num(`${p}_arc_atk`,0)},defense:{inf:num(`${p}_inf_def`,0),cav:num(`${p}_cav_def`,0),arc:num(`${p}_arc_def`,0)},lethality:{inf:num(`${p}_inf_let`,0),cav:num(`${p}_cav_let`,0),arc:num(`${p}_arc_let`,0)},health:{inf:num(`${p}_inf_hp`,0),cav:num(`${p}_cav_hp`,0),arc:num(`${p}_arc_hp`,0)}};}
 
-    $('pvp_run_btn').addEventListener('click',async()=>{
-      const btn=$('pvp_run_btn'),status=$('pvp_run_status');
+    $('cb_run_btn').addEventListener('click',async()=>{
+      const btn=$('cb_run_btn'),status=$('cb_run_status');
       btn.disabled=true;btn.innerHTML='<span class="spinner"></span> Running...';status.textContent='';
       try{
         const opt=window.KingSim&&window.KingSim.pvpOptimizer;
         if(!opt)throw new Error('pvpOptimizer not loaded');
-        const defInf=num('pvp_def_inf',0),defCav=num('pvp_def_cav',0),defArc=num('pvp_def_arc',0);
+        const defInf=num('cb_def_inf',0),defCav=num('cb_def_cav',0),defArc=num('cb_def_arc',0);
         const defTotal=defInf+defCav+defArc;
         if(defTotal===0)throw new Error('Defender troops are 0. Import or enter defender troop counts.');
-                const _ai=num('cb_att_inf',0),_ac=num('cb_att_cav',0),_aa=num('cb_att_arc',0);
+        const _ai=num('cb_att_inf',0),_ac=num('cb_att_cav',0),_aa=num('cb_att_arc',0);
         const _perType=_ai+_ac+_aa;
         const attTotal=_perType>0?_perType:(num('cb_att_total',0)||150000);
         await new Promise(r=>setTimeout(r,20));
-        const out=opt.scanPvP({attackerTotal:attTotal,attackerStats:readStats('pvp_att'),attackerTier:$('pvp_att_tier').value,defenderTroops:{inf:defInf,cav:defCav,arc:defArc},defenderStats:readStats('pvp_def'),defenderTier:$('pvp_def_tier').value,sparsity:.01,infMin:.40,infMax:.80,cavMin:.15,cavMax:.30,maxTop:10});
+        const out=opt.scanPvP({attackerTotal:attTotal,attackerStats:readStats('pvp_att'),attackerTier:$('cb_att_tier').value,defenderTroops:{inf:defInf,cav:defCav,arc:defArc},defenderStats:readStats('pvp_def'),defenderTier:$('cb_def_tier').value,sparsity:.01,infMin:.40,infMax:.80,cavMin:.15,cavMax:.30,maxTop:10});
         const best=out.best;if(!best)throw new Error('No results');
         const fi=best.fi,fc=best.fc;
         const inf=Math.round(fi*attTotal),cav=Math.round(fc*attTotal),arc=Math.max(0,attTotal-inf-cav);
-        $('pvp_best_val').textContent=best.label;
-        $('pvp_best_sub').innerHTML='Infantry: <strong>'+inf.toLocaleString()+'</strong> | Cavalry: <strong>'+cav.toLocaleString()+'</strong> | Archers: <strong>'+arc.toLocaleString()+'</strong><br>Est. defender injuries: <strong>'+best.defenderInjured.toLocaleString()+'</strong>';
-        const tbody=$('pvp_tbody');tbody.innerHTML='';
+        $('cb_best_val').textContent=best.label;
+        $('cb_best_sub').innerHTML='Infantry: <strong>'+inf.toLocaleString()+'</strong> | Cavalry: <strong>'+cav.toLocaleString()+'</strong> | Archers: <strong>'+arc.toLocaleString()+'</strong><br>Est. defender injuries: <strong>'+best.defenderInjured.toLocaleString()+'</strong>';
+        const tbody=$('cb_tbody');tbody.innerHTML='';
         (out.top10||[]).forEach(r=>{const tr=document.createElement('tr');tr.innerHTML='<td>'+r.rank+'</td><td>'+r.label+'</td><td>'+r.defenderInjured.toLocaleString()+'</td><td>'+r.attackerInjured.toLocaleString()+'</td>';tbody.appendChild(tr);});
-        $('pvp_count').innerHTML='Tested <strong>'+out.totalTested.toLocaleString()+'</strong> formations';
-        $('pvp_results').style.display='block';
-        $('pvp_results').scrollIntoView({behavior:'smooth',block:'start'});
+        $('cb_count').innerHTML='Tested <strong>'+out.totalTested.toLocaleString()+'</strong> formations';
+        $('cb_results').style.display='block';
+        $('cb_results').scrollIntoView({behavior:'smooth',block:'start'});
         status.textContent='Done';status.style.color='#10b981';
       }catch(e){status.textContent='Error: '+(e.message||e);status.style.color='#ef4444';}
       finally{btn.disabled=false;btn.innerHTML='&#9654; Run Simulation';}
     });
-    ['cb_att_inf','cb_att_cav','cb_att_arc'].forEach(id=>{
+    // Auto-update total when per-type troop counts change
+    ['pvp_att_inf','pvp_att_cav','pvp_att_arc'].forEach(id=>{
       const el=$(id); if(el) el.addEventListener('input',()=>{
         const t=num('cb_att_inf',0)+num('cb_att_cav',0)+num('cb_att_arc',0);
         if(t>0)$('cb_att_total').value=t;
       });
     });
-    ['cb_def_inf','cb_def_cav','cb_def_arc'].forEach(id=>{
+    ['pvp_def_inf','pvp_def_cav','pvp_def_arc'].forEach(id=>{
       const el=$(id); if(el) el.addEventListener('input',()=>{
         const t=num('cb_def_inf',0)+num('cb_def_cav',0)+num('cb_def_arc',0);
         if(t>0)$('cb_def_total').value=t;

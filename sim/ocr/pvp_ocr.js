@@ -225,17 +225,23 @@
   async function parseBattleReport(file) {
     const img = await fileToImage(file);
 
-    // Step 1: Extract troop counts from top 33%
+    // Step 1: Extract troop counts from top 33% (with x-position classification)
     const troops = await extractTroopCounts(img);
 
-    // Step 2: Extract stats from full-width bottom 65%
+    // Step 2: Detect TG level from badge in troop icon zone
+    let tgLevel = 0;
+    try { tgLevel = await detectTGLevel(img, 0, 0.33); } catch(_) {}
+    const tier = buildTierString(tgLevel);
+
+    // Step 3: Extract stats from full-width bottom 65%
     const { canvas: statCanvas } = toCanvas(img, 1200, 0.33, 1.0);
     const statText = await ocrText(statCanvas);
     const { attStats, defStats } = parseDualStatLines(statText);
 
     return {
-      attacker: { troops: troops.left,  stats: attStats },
-      defender: { troops: troops.right, stats: defStats },
+      attacker: { troops: troops.left,  stats: attStats, tier },
+      defender: { troops: troops.right, stats: defStats, tier },
+      tgLevel,
     };
   }
 
@@ -327,6 +333,11 @@
     // Troops: left side of top 33%
     const troops = await extractTroopCounts(img);
 
+    // TG detection
+    let tgLevel = 0;
+    try { tgLevel = await detectTGLevel(img, 0, 0.33); } catch(_) {}
+    const tier = buildTierString(tgLevel);
+
     // Stats: left 52% of bottom 65%
     const { canvas: sc, srcW } = toCanvas(img, 1200, 0.33, 1.0);
     // Crop left half of stat canvas
@@ -346,7 +357,7 @@
       for (const s of ['atk','def','let','hp'])
         if (attStats[t][s] === 0 && singleStats[t][s] !== 0) attStats[t][s] = singleStats[t][s];
 
-    return { troops: troops.left, stats: attStats };
+    return { troops: troops.left, stats: attStats, tier };
   }
 
   // Internal helper for single-column stat parsing (reused above)
@@ -362,6 +373,173 @@
     }
     return { stats };
   };
+
+
+  /* ── TG BADGE DETECTION (ported from stat_ocr.js v10.1) ──────────
+   * Gold-cluster flood-fill approach:
+   *   1. Scan troop icon zone for gold pixel clusters (the badge ring)
+   *   2. Filter clusters that contain WHITE pixels inside (the digit)
+   *   3. OCR each candidate as a single digit with whitelist "12345"
+   *   4. Majority vote → TG level 1-5, or 0 (= no badge = base T10/T9/T6)
+   * Works on the battle report image troop icon area (top 33%).
+   * ─────────────────────────────────────────────────────────────── */
+
+  function isGoldPx(r, g, b) {
+    return r > 160 && g > 100 && b < 110 && (r - b) > 70;
+  }
+  function isWhitePx(r, g, b) {
+    return r > 220 && g > 220 && b > 210;
+  }
+
+  function findBadgeCandidates(imgData, W, H, scanY0, scanY1) {
+    const px = imgData.data;
+    const visited = new Uint8Array(W * H);
+    const candidates = [];
+
+    for (let y = scanY0; y < scanY1; y++) {
+      for (let x = 0; x < W; x++) {
+        const idx = y * W + x;
+        if (visited[idx]) continue;
+        const i = idx * 4;
+        if (!isGoldPx(px[i], px[i+1], px[i+2])) continue;
+
+        // Flood-fill gold cluster
+        const queue = [idx];
+        visited[idx] = 1;
+        let cnt = 0, mnX = x, mxX = x, mnY = y, mxY = y;
+
+        while (queue.length) {
+          const cur = queue.pop();
+          const cy = (cur / W) | 0, cx = cur % W;
+          cnt++;
+          if (cx < mnX) mnX = cx; if (cx > mxX) mxX = cx;
+          if (cy < mnY) mnY = cy; if (cy > mxY) mxY = cy;
+          for (const [dx, dy] of [[-1,0],[1,0],[0,-1],[0,1]]) {
+            const nx = cx+dx, ny = cy+dy;
+            if (nx<0||nx>=W||ny<0||ny>=H) continue;
+            const ni = ny*W+nx;
+            if (visited[ni]) continue;
+            const np = ni*4;
+            if (isGoldPx(px[np], px[np+1], px[np+2])) { visited[ni]=1; queue.push(ni); }
+          }
+        }
+
+        const bw = mxX-mnX+1, bh = mxY-mnY+1;
+        if (cnt < 80 || cnt > 2500 || bw < 12 || bw > 70 || bh < 12 || bh > 70) continue;
+
+        // Count white pixels inside bounding box
+        let whiteCount = 0;
+        for (let wy=mnY; wy<=mxY; wy++)
+          for (let wx=mnX; wx<=mxX; wx++) {
+            const wi=(wy*W+wx)*4;
+            if (isWhitePx(px[wi],px[wi+1],px[wi+2])) whiteCount++;
+          }
+
+        const whiteRatio = whiteCount / Math.max(cnt, 1);
+        if (whiteRatio < 0.08 || whiteCount < 5) continue;
+        const aspect = bw / Math.max(bh, 1);
+        if (aspect < 0.3 || aspect > 3.0) continue;
+
+        candidates.push({ goldCount:cnt, whiteCount, whiteRatio, x0:mnX, y0:mnY, x1:mxX, y1:mxY, w:bw, h:bh });
+      }
+    }
+    return candidates;
+  }
+
+  async function readBadgeDigit(tWorker, img, badge) {
+    const W = img.naturalWidth, H = img.naturalHeight;
+    const results = [];
+
+    for (const [padXF, padYF] of [[0.3, 0.2],[0.5, 0.3]]) {
+      const padX = Math.round(badge.w * padXF), padY = Math.round(badge.h * padYF);
+      const x0 = Math.max(0, badge.x0-padX), y0 = Math.max(0, badge.y0-padY);
+      const x1 = Math.min(W-1, badge.x1+padX), y1 = Math.min(H-1, badge.y1+padY);
+      const cw = x1-x0+1, ch = y1-y0+1;
+      if (cw < 8 || ch < 8) continue;
+
+      // Build B&W canvas: white pixels → black (digit), else → white
+      const sc = document.createElement('canvas'); sc.width=cw; sc.height=ch;
+      const sctx = sc.getContext('2d');
+      sctx.drawImage(img, x0, y0, cw, ch, 0, 0, cw, ch);
+      const sd = sctx.getImageData(0, 0, cw, ch); const spx = sd.data;
+      for (let pi=0; pi<spx.length; pi+=4) {
+        const v = isWhitePx(spx[pi],spx[pi+1],spx[pi+2]) ? 0 : 255;
+        spx[pi]=spx[pi+1]=spx[pi+2]=v; spx[pi+3]=255;
+      }
+      sctx.putImageData(sd, 0, 0);
+
+      const SCALE=8;
+      const oc = document.createElement('canvas'); oc.width=cw*SCALE; oc.height=ch*SCALE;
+      const octx=oc.getContext('2d'); octx.imageSmoothingEnabled=false;
+      octx.drawImage(sc, 0, 0, oc.width, oc.height);
+
+      for (const psm of [10, 7]) {
+        try {
+          await tWorker.setParameters({ tessedit_pageseg_mode: String(psm), tessedit_char_whitelist: '12345' });
+          const { data:{text} } = await tWorker.recognize(oc.toDataURL('image/png'));
+          const d = text.trim().replace(/[^1-5]/g,'');
+          if (d.length >= 1) results.push(parseInt(d[0], 10));
+        } catch(_) {}
+      }
+    }
+
+    if (!results.length) return 0;
+    const counts = {};
+    for (const d of results) counts[d] = (counts[d]||0)+1;
+    const sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+    return (sorted[0][1]>=2||sorted.length===1) ? parseInt(sorted[0][0],10) : 0;
+  }
+
+  /**
+   * Detect TG level from image.
+   * Scans the troop icon zone (top 33% of image by default).
+   * Returns 0 if no TG badge found (= base T10/T9/T6).
+   */
+  async function detectTGLevel(img, y0pct = 0, y1pct = 0.33) {
+    const W = img.naturalWidth, H = img.naturalHeight;
+    const scanY0 = Math.round(H * y0pct);
+    const scanY1 = Math.round(H * y1pct);
+
+    // Get full image pixel data
+    const fullCanvas = document.createElement('canvas');
+    fullCanvas.width = W; fullCanvas.height = H;
+    fullCanvas.getContext('2d').drawImage(img, 0, 0);
+    const imgData = fullCanvas.getContext('2d').getImageData(0, 0, W, H);
+
+    const candidates = findBadgeCandidates(imgData, W, H, scanY0, scanY1);
+    if (!candidates.length) return 0;
+
+    candidates.sort((a, b) => {
+      const rc = b.whiteRatio - a.whiteRatio;
+      return Math.abs(rc) > 0.05 ? rc : b.goldCount - a.goldCount;
+    });
+
+    const T = await loadTesseract();
+    const worker = await T.createWorker('eng', 1, {});
+    try {
+      const top = candidates.slice(0, 3);
+      const allDigits = [], voteCounts = {};
+      for (const badge of top) {
+        const digit = await readBadgeDigit(worker, img, badge);
+        if (digit >= 1 && digit <= 5) {
+          allDigits.push(digit);
+          voteCounts[digit] = (voteCounts[digit]||0)+1;
+          if (voteCounts[digit] >= 2) return digit;  // early exit
+        }
+      }
+      if (!allDigits.length) return 0;
+      return parseInt(Object.entries(voteCounts).sort((a,b)=>b[1]-a[1])[0][0], 10);
+    } finally {
+      await worker.terminate();
+    }
+  }
+
+  /** Build tier string from base level + TG digit: e.g. "T10.TG3" */
+  function buildTierString(tgLevel) {
+    // Base tier is always T10 for battle-report images (shows "Lv 10.0")
+    // tgLevel 0 = plain T10, 1-5 = T10.TG1..TG5
+    return (tgLevel >= 1 && tgLevel <= 5) ? `T10.TG${tgLevel}` : 'T10';
+  }
 
   /* ── Public API ─────────────────────────────────────────────────── */
   window.KingSim = window.KingSim || {};
