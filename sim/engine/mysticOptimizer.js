@@ -49,8 +49,8 @@
       defenderTier    = 'T10',
       defenderTroops: defOverride = null,
       sparsity  = 0.01,
-      infMin = 0.40, infMax = 0.65,  // Mystic Trials cap: all trial presets are ≤65% infantry
-      cavMin = 0.15, cavMax = 0.30,
+      infMin = 0.40, infMax = 0.60,  // Mystic cap: presets are ≤60% inf; arc gets more room
+      cavMin = 0.15, cavMax = 0.20,  // Mystic cap: cav ≤20% so archers get ≥20%
       maxTop = 10,
     } = opts;
 
