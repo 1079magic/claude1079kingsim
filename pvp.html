@@ -110,12 +110,13 @@
       <h2 class="h2">⚔ PvP Attack Simulator 🏰</h2>
       <p class="muted" style="text-align:center;margin:0 0 16px">Used for PvP battles and CB / Turret attacks — import data to find the best formation.</p>
 
-      <h3 class="h3" style="margin-bottom:10px">Attacker &amp; Defender Report Import</h3>
+      <h2 class="h2" style="margin-bottom:10px">Attacker &amp; Defender Report Import</h3>
       <!-- outer 2-col: left=Attacker&Defender combined, right=Defender-only -->
       <div class="pvp-import-grid" style="margin-bottom:16px">
 
         <!-- ── outer-left: Attacker/Defender combined report ── -->
         <div style="border:1px solid rgba(239,68,68,.3);border-radius:12px;padding:10px;background:rgba(239,68,68,.04)">
+          <div style="font-size:.95rem;font-weight:700;color:#f87171;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">IMPORT AFTER BATTLE</div>
           <div style="font-size:.65rem;font-weight:700;color:#f87171;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">⚔ Attacker / Defender</div>
           <div class="import-box" id="att_box" onclick="document.getElementById('att_file').click()" style="border-color:rgba(239,68,68,.35)">
             <div class="import-box-row">
@@ -132,6 +133,7 @@
 
         <!-- ── outer-right: Defender-only + Attacker standalone ── -->
         <div style="border:1px solid rgba(16,185,129,.25);border-radius:12px;padding:10px;background:rgba(16,185,129,.03)">
+          <div style="font-size:.95rem;font-weight:700;color:#34d399;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">IMPORT AFTER SCOUT</div>
           <div style="font-size:.65rem;font-weight:700;color:#34d399;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">🛡 Defender Data</div>
           <div class="pvp-import-inner-grid" style="margin-bottom:8px">
             <!-- Def Troop Ratio -->
