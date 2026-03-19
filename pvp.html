@@ -103,65 +103,72 @@
 
   <div class="container">
     <section class="panel panel-glass">
-      <h2 class="h2">⚔ PvP Attack Simulator</h2>
-      <p class="muted" style="text-align:center;margin:0 0 16px">Import your attack report &amp; defender data to find the best formation.</p>
+      <h2 class="h2">⚔ PvP Attack Simulator 🏰</h2>
+      <p class="muted" style="text-align:center;margin:0 0 16px">Used for PvP battles and CB / Turret attacks — import data to find the best formation.</p>
 
-      <div style="margin-bottom:20px">
-        <h3 class="h3">Attack Report Import</h3>
-        <div class="import-box" id="att_box" onclick="document.getElementById('att_file').click()">
-          <div class="import-box-row">
-            <img src="assets/example_att_def.jpg" class="example-thumb" title="Example image" onclick="event.stopPropagation();showExample('assets/example_att_def.jpg')" alt="example" />
-            <div class="import-box-content">
-              <div class="import-box-label">Attack Report (Bonus Details)</div>
-              <div class="import-box-hint">Import battle bonus-details image — reads attacker &amp; defender troops + stats</div>
-              <button class="import-btn" onclick="event.stopPropagation();document.getElementById('att_file').click()">📷 Import Image</button>
+      <h3 class="h3" style="margin-bottom:10px">Attacker &amp; Defender Report Import</h3>
+      <!-- outer 2-col: left=Attacker&Defender combined, right=Defender-only -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+
+        <!-- ── outer-left: Attacker/Defender combined report ── -->
+        <div style="border:1px solid rgba(239,68,68,.3);border-radius:12px;padding:10px;background:rgba(239,68,68,.04)">
+          <div style="font-size:.65rem;font-weight:700;color:#f87171;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">⚔ Attacker / Defender</div>
+          <div class="import-box" id="att_box" onclick="document.getElementById('att_file').click()" style="border-color:rgba(239,68,68,.35)">
+            <div class="import-box-row">
+              <img src="assets/example_att_def.jpg" class="example-thumb" title="Example image" onclick="event.stopPropagation();showExample('assets/example_att_def.jpg')" alt="example" />
+              <div class="import-box-content">
+                <div class="import-box-label" style="color:#f87171">Attacker &amp; Defender Stats/Troops</div>
+                <div class="import-box-hint">Battle Bonus Details — fills both sides at once</div>
+              </div>
             </div>
+            <input type="file" id="att_file" accept="image/*" style="display:none" />
+            <div class="import-status" id="att_status"></div>
           </div>
-          <input type="file" id="att_file" accept="image/*" style="display:none" />
-          <div class="import-status" id="att_status"></div>
         </div>
-      </div>
 
-      <div>
-        <h3 class="h3">Defender Data Import</h3>
-        <div class="import-row cols3">
-          <div class="import-box" id="def_ratio_box" onclick="document.getElementById('def_ratio_file').click()">
-            <div class="import-box-row">
-              <img src="assets/example_def_troops.jpg" class="example-thumb" title="Example image" onclick="event.stopPropagation();showExample('assets/example_def_troops.jpg')" alt="example" />
-              <div class="import-box-content">
-                <div class="import-box-label">Def Troop Ratio</div>
-                <div class="import-box-hint">Troops Total + Troop Type % (shield/horse/crossbow icons)</div>
-                <button class="import-btn" onclick="event.stopPropagation();document.getElementById('def_ratio_file').click()">📷 Import</button>
+        <!-- ── outer-right: Defender-only + Attacker standalone ── -->
+        <div style="border:1px solid rgba(16,185,129,.25);border-radius:12px;padding:10px;background:rgba(16,185,129,.03)">
+          <div style="font-size:.65rem;font-weight:700;color:#34d399;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">🛡 Defender Data</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+            <!-- Def Troop Ratio -->
+            <div class="import-box" id="def_ratio_box" onclick="document.getElementById('def_ratio_file').click()" style="border-color:rgba(16,185,129,.3)">
+              <div class="import-box-row">
+                <img src="assets/example_def_troops.jpg" class="example-thumb" title="Example" onclick="event.stopPropagation();showExample('assets/example_def_troops.jpg')" alt="example" />
+                <div class="import-box-content">
+                  <div class="import-box-label" style="color:#34d399">Defender Troops</div>
+                  <div class="import-box-hint">Troops Total + Troop Type %</div>
+                </div>
               </div>
+              <input type="file" id="def_ratio_file" accept="image/*" style="display:none" />
+              <div class="import-status" id="def_ratio_status"></div>
             </div>
-            <input type="file" id="def_ratio_file" accept="image/*" style="display:none" />
-            <div class="import-status" id="def_ratio_status"></div>
-          </div>
-          <div class="import-box" id="def_stats_box" onclick="document.getElementById('def_stats_file').click()">
-            <div class="import-box-row">
-              <img src="assets/example_def_stats.jpg" class="example-thumb" title="Example image" onclick="event.stopPropagation();showExample('assets/example_def_stats.jpg')" alt="example" />
-              <div class="import-box-content">
-                <div class="import-box-label">Def Stat Bonuses</div>
-                <div class="import-box-hint">Defender Stat Bonuses block (Inf/Cav/Arc Atk/Def/Let/HP)</div>
-                <button class="import-btn" onclick="event.stopPropagation();document.getElementById('def_stats_file').click()">📷 Import</button>
+            <!-- Def Stat Bonuses -->
+            <div class="import-box" id="def_stats_box" onclick="document.getElementById('def_stats_file').click()" style="border-color:rgba(16,185,129,.3)">
+              <div class="import-box-row">
+                <img src="assets/example_def_stats.jpg" class="example-thumb" title="Example" onclick="event.stopPropagation();showExample('assets/example_def_stats.jpg')" alt="example" />
+                <div class="import-box-content">
+                  <div class="import-box-label" style="color:#34d399">Defender Stats</div>
+                  <div class="import-box-hint">Def Stat Bonuses block</div>
+                </div>
               </div>
+              <input type="file" id="def_stats_file" accept="image/*" style="display:none" />
+              <div class="import-status" id="def_stats_status"></div>
             </div>
-            <input type="file" id="def_stats_file" accept="image/*" style="display:none" />
-            <div class="import-status" id="def_stats_status"></div>
           </div>
-          <div class="import-box" id="att_extra_box" onclick="document.getElementById('att_extra_file').click()">
+          <!-- Attacker Stats/Troops (inside Defender panel, red label to show it updates ATT) -->
+          <div class="import-box" id="att_extra_box" onclick="document.getElementById('att_extra_file').click()" style="border-color:rgba(239,68,68,.25)">
             <div class="import-box-row">
-              <img src="assets/example_att_stats.jpg" class="example-thumb" title="Example image" onclick="event.stopPropagation();showExample('assets/example_att_stats.jpg')" alt="example" />
+              <img src="assets/example_att_stats.jpg" class="example-thumb" title="Example" onclick="event.stopPropagation();showExample('assets/example_att_stats.jpg')" alt="example" />
               <div class="import-box-content">
-                <div class="import-box-label">Attacker Stats / Troops</div>
-                <div class="import-box-hint">Left side of image — attacker stats &amp; troop amounts</div>
-                <button class="import-btn" onclick="event.stopPropagation();document.getElementById('att_extra_file').click()">📷 Import</button>
+                <div class="import-box-label" style="color:#f87171">Attacker Stats / Troops</div>
+                <div class="import-box-hint">Left side only — your stats &amp; troop amounts</div>
               </div>
             </div>
             <input type="file" id="att_extra_file" accept="image/*" style="display:none" />
             <div class="import-status" id="att_extra_status"></div>
           </div>
         </div>
+
       </div>
 
       <div style="margin-top:20px">

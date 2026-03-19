@@ -79,6 +79,12 @@
     @media (max-width: 640px){
       .table-scroll th, .table-scroll td{ padding: 7px 8px; }
     }
+    .import-box{background:rgba(14,20,34,.7);border:1.5px dashed #2a4060;border-radius:12px;padding:12px;cursor:pointer;transition:border-color .15s;display:flex;flex-direction:column;gap:6px;}
+    .import-box:hover{border-color:#22d3ee;}
+    .import-box-label{font-size:.72rem;font-weight:700;color:#7dd3fc;letter-spacing:.04em;text-transform:uppercase;}
+    .import-box-hint{font-size:.72rem;color:var(--muted);}
+    .btn-run{background:linear-gradient(90deg,#22d3ee,#60a5fa);color:#05121f;border:0;font-weight:700;padding:10px 20px;border-radius:12px;font-size:.88rem;cursor:pointer;display:inline-flex;align-items:center;gap:6px;box-shadow:0 6px 18px rgba(34,211,238,.22);}
+    @media(max-width:600px){div[style*="grid-template-columns:1fr 1fr 1fr"]{grid-template-columns:1fr!important;}}
   </style>
 </head>
 <body>
@@ -108,45 +114,48 @@
     <section class="panel panel-glass">
       <h2 class="h2" style="text-align: center;">🧭 Mystic Trials(PvE) 🧭<br>Battle Simulator</h2>
 
-      <!-- Single OCR import -->
-      <div class="import-card panel-glass" style="margin-bottom:12px">
-        <div class="dropzone" id="pve_dz" style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap">
-          <img src="assets/example_mystic.jpg"
-               style="width:64px;height:46px;object-fit:cover;border-radius:7px;opacity:.6;border:1px solid #2a4060;cursor:pointer;transition:opacity .15s,border-color .15s;flex-shrink:0"
-               onmouseover="this.style.opacity='1';this.style.borderColor='#22d3ee'"
-               onmouseout="this.style.opacity='.6';this.style.borderColor='#2a4060'"
-               onclick="event.stopPropagation();(function(s){var m=document.getElementById('mystic_img_modal');if(!m){m=document.createElement('div');m.id='mystic_img_modal';m.style.cssText='display:flex;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;align-items:center;justify-content:center;cursor:pointer';m.onclick=function(){this.style.display='none'};var i=document.createElement('img');i.style.cssText='max-width:92vw;max-height:92vh;border-radius:10px';m.appendChild(i);document.body.appendChild(m)}document.querySelector('#mystic_img_modal img').src=s;document.getElementById('mystic_img_modal').style.display='flex'}('assets/example_mystic.jpg'))"
-               title="Click to see example image"
-               alt="example" />
-          <div style="flex:1;display:flex;flex-direction:column;gap:6px">
-            <button class="btn-secondary" id="pve_browse">📷 Import battle report (Bonus Details)</button>
-            <input id="pve_file" type="file" accept="image/*" style="display:none" />
-            <span class="dz-hint">One image: fills Attacker &amp; Defender stats, tiers, and troops totals (adjust per-type troops if needed)</span>
-          </div>
-        </div>
-        <div id="pve_ocr_status" class="dz-hint"></div>
-      </div>
+      <!-- 3-col grid: Import | Trial | Run — all IDs kept for JS hooks -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:4px">
 
-      <!-- Simulation parameters (user can tweak; engine will auto-refine anyway) -->
-      <!-- Controls row: Trial + Run button inline -->
-      <div class="grid-2" style="align-items:center; gap:12px">
-        <div style="display:flex; align-items:end; gap:10px; flex-wrap:wrap">
-          <div>
-            <label for="mt_trial">Mystic Trial</label>
-            <select id="mt_trial">
-              <option value="Crystal Cave">Crystal Cave</option>
-              <option value="Forest of Life">Forest of Life</option>
-              <option value="Knowledge Nexus">Knowledge Nexus</option>
-              <option value="Molten Fort">Molten Fort</option>
-            </select>
+        <!-- col 1: import box (dashed, clickable) -->
+        <div class="import-box" id="pve_dz"
+             style="min-height:80px;gap:6px;cursor:pointer;padding:12px"
+             onclick="document.getElementById('pve_file').click()">
+          <div style="display:flex;align-items:flex-start;gap:8px">
+            <img src="assets/example_mystic.jpg"
+                 style="width:44px;height:32px;object-fit:cover;border-radius:5px;opacity:.6;border:1px solid #2a4060;cursor:pointer;flex-shrink:0;transition:opacity .15s"
+                 onmouseover="this.style.opacity='1';this.style.borderColor='#22d3ee'"
+                 onmouseout="this.style.opacity='.6';this.style.borderColor='#2a4060'"
+                 onclick="event.stopPropagation();(function(s){var m=document.getElementById('mystic_img_modal');if(!m){m=document.createElement('div');m.id='mystic_img_modal';m.style.cssText='display:flex;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;align-items:center;justify-content:center;cursor:pointer';m.onclick=function(){this.style.display='none'};var i=document.createElement('img');i.style.cssText='max-width:92vw;max-height:92vh;border-radius:10px';m.appendChild(i);document.body.appendChild(m)}document.querySelector('#mystic_img_modal img').src=s;document.getElementById('mystic_img_modal').style.display='flex'}('assets/example_mystic.jpg'))"
+                 title="Click to see example" alt="example" />
+            <div>
+              <div class="import-box-label">Battle Report Import</div>
+              <div class="import-box-hint">Click box to import Bonus Details screenshot</div>
+            </div>
           </div>
-
-          <!-- Inline actions -->
-          <div style="display:flex; align-items:center; gap:8px; margin-bottom: 2px;">
-            <button id="mt_run" class="btn-secondary">Run Simulation</button>
-            <span id="mt_status" class="muted">Idle</span>
-          </div>
+          <!-- keep pve_browse for JS; hide it visually since whole box is clickable -->
+          <button id="pve_browse" style="display:none"></button>
+          <input id="pve_file" type="file" accept="image/*" style="display:none" onclick="event.stopPropagation()" />
+          <div id="pve_ocr_status" style="font-size:.75rem;min-height:14px;color:#10b981"></div>
         </div>
+
+        <!-- col 2: trial selector -->
+        <div style="display:flex;flex-direction:column;justify-content:center;gap:6px">
+          <label for="mt_trial" style="font-size:.72rem;font-weight:700;color:#7dd3fc;text-transform:uppercase;letter-spacing:.04em;margin:0">Mystic Trial</label>
+          <select id="mt_trial" style="width:100%">
+            <option value="Crystal Cave">Crystal Cave</option>
+            <option value="Forest of Life">Forest of Life</option>
+            <option value="Knowledge Nexus">Knowledge Nexus</option>
+            <option value="Molten Fort">Molten Fort</option>
+          </select>
+        </div>
+
+        <!-- col 3: run button + status -->
+        <div style="display:flex;flex-direction:column;justify-content:center;gap:8px">
+          <button id="mt_run" class="btn-run" style="font-size:.88rem;padding:10px 16px;min-height:42px">▶ Run Simulation</button>
+          <span id="mt_status" class="muted" style="font-size:.78rem">Idle</span>
+        </div>
+
       </div>
     </section>
 
