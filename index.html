@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <title>KingSim • Futuristic Battle Lab</title>
-  <meta name="viewport" content="width=device-width, initial-scale=0.85, minimum-scale=0.5, maximum-scale=3.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <!-- Tell the browser that this page is dark  -->
   <meta name="color-scheme" content="dark">
   <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0b0f1a">
@@ -13,6 +13,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
   <!-- Base + theme + home -->
+  <link rel="stylesheet" href="assets/fonts.css" />
   <link rel="stylesheet" href="assets/styles.css" />
   <link rel="stylesheet" href="assets/theme-all.css" />
   <link rel="stylesheet" href="assets/home-futuro.css" />
@@ -55,120 +56,110 @@
 
   <!-- SCENE 1: PROMISE (hero) -->
   <section class="scene scene-hero fx-reveal" id="hero" aria-label="Hero">
-        <div class="hero-grid container">
-          <div class="hero-left">
-            <!-- HERO 1 -->
-            <h1 class="headline">
-              <span class="line gold">#1079</span>
-              <span class="line gold">MAGIC</span>
-              <span class="line silver">ENHANCED</span>
-            </h1>
-          </div>
-        </div>
     <div class="hero-grid container">
-      <!-- HERO 1 & 2 (left lane: headline + pills) -->
+      <!-- HERO LEFT: Headline + Pills + CTAs -->
       <div class="hero-left">
-        <!-- HERO 2 -->
-        <ul class="stats">
-          <li class="stat">
-            <div class="pill">
-              <div class="stat-value" data-count-to="23">0</div>
-              <div class="stat-sub">Positive Feedback</div>
-            </div>
-          </li>
-          <li class="stat">
-            <div class="pill">
-              <div class="stat-value" data-count-to="132" data-suffix="+">0</div>
-              <div class="stat-sub">Mystic Scans</div>
-            </div>
-          </li>
-          <li class="stat">
-            <div class="pill">
-              <div class="stat-value" data-count-to="35" data-suffix="+">0</div>
-              <div class="stat-sub">Power Users</div>
-            </div>
-          </li>
+        <h1 class="headline">
+          <span class="line silver">YOUR</span>
+          <span class="line gold">BATTLE</span>
+          <span class="line gold">BRAIN</span>
+        </h1>
+        <p class="lead" style="margin:16px 0 20px;font-size:1.05rem;line-height:1.65;color:#c8d4e8;max-width:420px;">
+          <strong style="color:#e9eef7">Stop guessing. Start winning.</strong><br>
+          1079 KingSim is the free, on-device battle simulator built by KingShot players, for KingShot players. Import one screenshot — get the exact formation to march.
+        </p>
+        <ul class="stats" style="display:flex;flex-wrap:wrap;gap:10px;list-style:none;padding:0;margin:0 0 22px">
+          <li><div class="pill" style="padding:10px 20px;border-radius:40px;background:#1b1f2a;border:1px solid #2a2e3a;">
+            <div class="stat-value" style="font-size:20px;font-weight:800;color:#22d3ee">7 Simulators</div>
+            <div class="stat-sub" style="font-size:.78rem;color:#a9b3c6">One app, every battle mode</div>
+          </div></li>
+          <li><div class="pill" style="padding:10px 20px;border-radius:40px;background:#1b1f2a;border:1px solid #2a2e3a;">
+            <div class="stat-value" style="font-size:20px;font-weight:800;color:#10b981">0 Servers</div>
+            <div class="stat-sub" style="font-size:.78rem;color:#a9b3c6">100% private, runs in your browser</div>
+          </div></li>
+          <li><div class="pill" style="padding:10px 20px;border-radius:40px;background:#1b1f2a;border:1px solid #2a2e3a;">
+            <div class="stat-value" style="font-size:20px;font-weight:800;color:#ffa600">Free Forever</div>
+            <div class="stat-sub" style="font-size:.78rem;color:#a9b3c6">No login. No paywall. No nonsense.</div>
+          </div></li>
         </ul>
+        <div class="cta-row" style="display:flex;gap:10px;flex-wrap:wrap">
+          <a class="btn-primary" href="pvp.html" style="min-height:44px;padding:10px 22px;font-size:1rem;">PvP Simulator</a>
+          <a class="btn-secondary" href="mystic.html" style="min-height:44px;padding:10px 22px;font-size:1rem;">Mystic Trials</a>
+          <a class="btn-secondary" href="magic.html" style="min-height:44px;padding:10px 22px;font-size:1rem;">Bear Magic</a>
+        </div>
       </div>
 
-      <!-- HERO 3 (center slab) -->
+      <!-- HERO CENTER: Module slab -->
       <div class="hero-center">
         <div class="glass-slab" aria-hidden="true">
           <div class="slab-content">
-            <!-- Optional loop video
-            <video class="slab-video" autoplay muted loop playsinline>
-              <source src="assets/hero-loop.webm" type="video/webm" />
-              <source src="assets/hero-loop.mp4" type="video/mp4" />
-            </video>
-            -->
-
-            <!-- Module carousel -->
             <div class="slab-carousel" role="tablist" aria-label="KingSim modules">
               <button class="tab is-active" data-target="#tab-troops" role="tab" aria-selected="true">Troops</button>
-              <button class="tab" data-target="#tab-heros"  role="tab" aria-selected="false">Heros</button>
+              <button class="tab" data-target="#tab-heros"  role="tab" aria-selected="false">Heroes</button>
               <button class="tab" data-target="#tab-magic"  role="tab" aria-selected="false">Magic</button>
-              <button class="tab" data-target="#tab-opt"    role="tab" aria-selected="false">Option‑A</button>
+              <button class="tab" data-target="#tab-opt"    role="tab" aria-selected="false">Option&#8209;A</button>
               <button class="tab" data-target="#tab-mystic" role="tab" aria-selected="false">Mystic</button>
-              <button class="tab" data-target="#tab-pvp" role="tab" aria-selected="false">PvP</button>
-
+              <button class="tab" data-target="#tab-pvp"    role="tab" aria-selected="false">PvP</button>
             </div>
-
             <div class="slab-panels">
               <div class="panel is-visible" id="tab-troops">
-                <h4>🪖 Troops &amp; Stats</h4>
-                <p>OCR Engine imports stats for ATK/DEF/LET/HP. Tier‑aware. Values sync across pages.</p>
-                <a class="link-arrow" href="troops.html">Open</a>
+                <h4>Troops &amp; Stats</h4>
+                <p>Your stats, always ready. Input your Infantry, Cavalry, and Archer bonuses once — every simulator on the site reads them automatically. OCR screenshot fills them in instantly.</p>
+                <a class="link-arrow" href="troops.html">Open Troops &amp; Stats</a>
               </div>
               <div class="panel" id="tab-heros">
-                <h4>�🧙‍♂️ Heroes &amp; Abilities</h4>
-                <p>Select ownership, set level (⭐ 1–5), skill levels (1–5), and widget level (⚔ 1–5). Joiners are merged into the Epic group. Calculations show Battle‑PLUS effects only.</p>
-                <a class="link-arrow" href="heros.html">Open</a>
+                <h4>Heroes &amp; Abilities</h4>
+                <p>Know your lineup before the battle. Browse every hero's battle effects, set ownership and skill levels, and see exactly what combat bonuses your formation gets.</p>
+                <a class="link-arrow" href="heros.html">Open Heroes</a>
               </div>
               <div class="panel" id="tab-magic">
-                <h4>🐻 Bear Magic</h4>
-                <p>A balanced simulation engine that tests all formation combinations to find the best 10 call/join ratios with highest total score.</p>
-                <p>Reduces archers in CALL rally to maximize JOIN rally archer count (you join 2× per 5‑min window = 2× damage!)</p>
-                <a class="link-arrow" href="magic.html">Open</a>
+                <h4>Bear Magic</h4>
+                <p>Double your bear damage. The Bear Magic calculator finds the optimal CALL + JOIN formation split to maximise total damage output — 2&times; damage from the same troops per 5-minute window.</p>
+                <a class="link-arrow" href="magic.html">Open Bear Magic</a>
               </div>
               <div class="panel" id="tab-opt">
-                <h4>🐻 Bear Option‑A</h4>
-                <p>Uses your input Attack/Lethality stats to calculate optimal call formation and plots it on an interactive ternary chart for visual analysis.</p>
-                <p>Maximizes ARCHER in CALL (your strongest stat), equal Cav/Arch in JOINs, fill rest with Infantry to reach 65k cap</p>
-                <a class="link-arrow" href="optiona.html">Open</a>
+                <h4>Bear Option&#8209;A</h4>
+                <p>When Magic isn't enough, Option-A delivers. Uses your actual Attack and Lethality stats to calculate the mathematically perfect archer-heavy CALL formation.</p>
+                <a class="link-arrow" href="optiona.html">Open Option&#8209;A</a>
               </div>
               <div class="panel" id="tab-mystic">
-                <h4>🧭 Mystic Trials</h4>
-                <p>Drop one Bonus/Stat Details image—get best compositions for your strike!</p>
-                <a class="link-arrow" href="mystic.html">Open</a>
+                <h4>Mystic Trials</h4>
+                <p>Never waste a Mystic march again. Import your Battle Details screenshot, select the trial, hit Run. The engine returns the exact split to maximise defender casualties.</p>
+                <a class="link-arrow" href="mystic.html">Open Mystic Trials</a>
               </div>
               <div class="panel" id="tab-pvp">
-                <h4>⚔ PvP</h4>
-                <p>A dedicated PvP planner with attacker/defender stat matrices, counter picks, and live “what‑if” swaps will land here. It will reuse your shared Troops & Stats and present crisp, table‑first recommendations.</p>
-                <a class="link-arrow" href="pvp.html">Open</a>
-              </div>
-              <div class="panel" id="tab-cb">
-                <h4>⚔/🛡 CB/Turret</h4>
-                <p>Dedicated calculators for Castle Battle and turret interactions will land here. The module will use your shared Troops & Stats and present clear setup tables.</p> </div>
+                <h4>PvP Simulator</h4>
+                <p>Scout. Calculate. Strike. Import attacker + defender stats and the engine ranks every viable formation — winners on top, sorted by fewest own losses.</p>
+                <a class="link-arrow" href="pvp.html">Open PvP</a>
               </div>
             </div>
           </div>
         </div>
+      </div>
 
-      <!-- HERO 4 (right narrative & CTAs) -->
+      <!-- HERO RIGHT: Secondary narrative -->
       <div class="hero-right">
         <h2 class="block-title">
-          <span class="line silver">NEW</span>
-          <span class="line gold">MYSTIC</span>
-          <span class="line gold">ENGINE</span>
+          <span class="line silver">DATA</span>
+          <span class="line gold">WINS</span>
+          <span class="line gold">BATTLES</span>
         </h2>
-        <p class="lead">
-          Import Bonus‑Details once and run precise, on‑device simulations. Optimized planners, high‑accuracy Mystic Trials, and table‑first UX—no noise, just results.
+        <p class="lead" style="color:#c8d4e8;line-height:1.65;margin:14px 0 20px">
+          Every formation ranked. Every stat counted. Import once — march with certainty.
         </p>
-
-        <div class="cta-row">
-          <a class="btn-primary" href="mystic.html">Mystic Trials</a>
-          <a class="btn-secondary" href="magic.html">Bear Magic</a>
-          <a class="btn-secondary" href="optiona.html">Bear Option‑A</a>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div style="border-left:3px solid #22d3ee;padding:10px 14px;background:rgba(34,211,238,.05);border-radius:0 8px 8px 0">
+            <div style="font-weight:700;color:#e9eef7;font-size:.95rem">OCR Screenshot Import</div>
+            <div style="color:#a9b3c6;font-size:.82rem;margin-top:3px">Drop any Battle Details screenshot — stats fill instantly</div>
+          </div>
+          <div style="border-left:3px solid #ffa600;padding:10px 14px;background:rgba(255,166,0,.05);border-radius:0 8px 8px 0">
+            <div style="font-weight:700;color:#e9eef7;font-size:.95rem">Hundreds of Formations Tested</div>
+            <div style="color:#a9b3c6;font-size:.82rem;margin-top:3px">Engine ranks every valid split at your exact stats</div>
+          </div>
+          <div style="border-left:3px solid #10b981;padding:10px 14px;background:rgba(16,185,129,.05);border-radius:0 8px 8px 0">
+            <div style="font-weight:700;color:#e9eef7;font-size:.95rem">100% Client-Side</div>
+            <div style="color:#a9b3c6;font-size:.82rem;margin-top:3px">Nothing leaves your device. No accounts. No tracking.</div>
+          </div>
         </div>
       </div>
     </div>
@@ -177,57 +168,56 @@
   <!-- SCENE 2: MODULES -->
   <section class="scene scene-modules fx-reveal container" id="modules" aria-label="Modules">
     <div class="feature-strip">
-      <article class="feature card" data-target="#tab-troops" tabindex="0">
-        <h3 class="f-title">Troops &amp; Stats</h3>
-        <p class="f-copy">OCR Engine imports stats for ATK/DEF/LET/HP. Tier‑aware. Values sync across pages.</p>
-        <a class="link-arrow2" href="troops.html">Open</a>
+
+      <article class="feature card" tabindex="0" style="border-top:3px solid var(--c-accent,#22d3ee)">
+        <h3 class="f-title">Mystic Trials</h3>
+        <p class="f-copy"><em>The preset that wins your trial.</em> The engine starts from each trial's game-validated preset formation, then searches around it at fine precision. No more wrong splits — import once, get the exact formation.</p>
+        <a class="link-arrow2" href="mystic.html">Run Mystic Sim</a>
       </article>
 
-      <article class="feature card" data-target="#tab-magic" tabindex="0">
-        <h3 class="f-title">Bear Magic</h3>
-        <p class="f-copy">A balanced simulation engine that tests all formation combinations to find the best 10 call/join ratios with highest total score.</p>
-        <p class="f-copy">Reduces archers in CALL rally to maximize JOIN rally archer count (you join 2× per 5‑min window = 2× damage!)</p>
-        <a class="link-arrow2" href="magic.html">Open</a>
+      <article class="feature card" tabindex="0" style="border-top:3px solid var(--c-warning,#f59e0b)">
+        <h3 class="f-title">PvP &amp; CB Battles</h3>
+        <p class="f-copy"><em>Two import paths. Zero guesswork.</em> Already fought the defender? One screenshot fills everything. Scouting first? Three separate imports cover troop ratio, stat bonuses, and your own stats. Formation rankings update live.</p>
+        <a class="link-arrow2" href="pvp.html">Plan Your Attack</a>
       </article>
 
-      <article class="feature card" data-target="#tab-opt" tabindex="0">
-        <h3 class="f-title">Bear Option‑A</h3>
-        <p class="f-copy">Uses your input Attack/Lethality stats to calculate optimal call formation and plots it on an interactive ternary chart for visual analysis.</p>
-        <p class="f-copy">Maximizes ARCHER in CALL (your strongest stat), equal Cav/Arch in JOINs, fill rest with Infantry to reach 65k cap</p>
-        <a class="link-arrow2" href="optiona.html">Open</a>
+      <article class="feature card" tabindex="0" style="border-top:3px solid var(--c-success,#10b981)">
+        <h3 class="f-title">Bear Mode</h3>
+        <p class="f-copy"><em>Bear Magic + Option-A together.</em> Bear Magic optimises call/join ratios for maximum total score. Option-A calculates the mathematically perfect archer-heavy call from your own stats. Use both — they cover different tactical approaches.</p>
+        <a class="link-arrow2" href="magic.html">Maximise Bear Damage</a>
       </article>
+
     </div>
   </section>
 
   <!-- SCENE 3: STORY -->
   <section class="scene scene-story fx-reveal container" id="story" aria-label="Story">
     <div class="story-track">
-      <article class="beat">
+      <article class="beat" style="border-left:3px solid var(--c-warning,#f59e0b);padding-left:18px">
         <h3>Import</h3>
-        <p>Drop one Bonus Details image—stats, tiers, and totals appear instantly.</p>
+        <p>Take a screenshot from KingShot. <strong style="color:#ffa600">Drop it into any import box.</strong> Stats, troop tiers, and formation ratios fill in automatically — no typing, no errors.</p>
       </article>
-      <article class="beat">
-        <h3>Optimize</h3>
-        <p>Find the best INF/CAV/ARC split with live counters and crisp tables.</p>
+      <article class="beat" style="border-left:3px solid var(--c-accent,#22d3ee);padding-left:18px">
+        <h3>Simulate</h3>
+        <p>Hit Run. The engine scans <strong style="color:#22d3ee">hundreds of formations</strong> anchored to your exact stats and the defender's composition. Every combination ranked by damage output and troop survival.</p>
       </article>
-      <article class="beat">
+      <article class="beat" style="border-left:3px solid var(--c-success,#10b981);padding-left:18px">
         <h3>Dominate</h3>
-        <p>Make call/join choices with confidence. Scoreboards and inventory tell the rest.</p>
+        <p>You march with certainty. The formation you send is the mathematically optimal one for that exact matchup. Fewer losses. More kills. <strong style="color:#10b981">Repeatable results.</strong></p>
       </article>
     </div>
-
   </section>
 
   <!-- OUTRO CTA -->
   <section class="scene scene-outro fx-reveal container" id="outro" aria-label="Get Started">
     <div class="cta-band">
       <div class="band-left">
-        <h3>Built for speed. Designed for clarity.</h3>
-        <p>Everything runs on‑device. No servers. No waiting. Just results.</p>
+        <h3>Your next battle starts here.</h3>
+        <p>Everything on-device. No servers. No waiting. Just results.</p>
       </div>
       <div class="band-right">
-        <a class="btn-secondary" href="troops.html">Prepare Troops</a>
-        <a class="btn-primary" href="mystic.html">Start Now</a>
+        <a class="btn-primary" href="pvp.html" style="min-height:44px">Start with PvP</a>
+        <a class="btn-secondary" href="mystic.html" style="min-height:44px">Mystic Trials</a>
       </div>
     </div>
   </section>
@@ -235,24 +225,24 @@
   <!-- PATREON THANK-YOU CARD -->
   <section style="padding:40px 16px;background:linear-gradient(135deg,rgba(255,100,40,.06) 0%,rgba(124,58,237,.06) 100%);border-top:1px solid rgba(255,255,255,.06)">
     <div style="max-width:680px;margin:0 auto;text-align:center">
-      <div style="font-size:2rem;margin-bottom:12px">🏆</div>
-      <h3 style="font-size:1.3rem;font-weight:800;color:#e9eef7;margin:0 0 10px;letter-spacing:-.01em">
+      <div style="font-size:2rem;margin-bottom:12px">&#127942;</div>
+      <h3 style="font-family:'Rajdhani',sans-serif;font-size:1.5rem;font-weight:800;color:#e9eef7;margin:0 0 10px;letter-spacing:-.01em">
         Thanks for using 1079KingSim! You are a Champion.
       </h3>
       <p style="color:#a9b3c6;font-size:.9rem;line-height:1.65;margin:0 0 20px">
         This tool is free for all, built with love for the Kingshot community.<br>
-        If it helps your game, consider buying me a coffee — or a glass of Cognac (VS / VSOP / XO 🥃).
+        If it helps your game, consider supporting on Patreon.
       </p>
       <a href="https://www.patreon.com/15651923/join" target="_blank" rel="noopener noreferrer"
          style="display:inline-flex;align-items:center;gap:8px;background:linear-gradient(90deg,#ff6428,#e53e00);color:#fff;font-weight:700;font-size:.9rem;padding:12px 28px;border-radius:14px;text-decoration:none;box-shadow:0 6px 24px rgba(255,100,40,.3);transition:filter .15s,transform .15s;min-height:48px"
          onmouseover="this.style.filter='brightness(1.1)';this.style.transform='translateY(-2px)'"
          onmouseout="this.style.filter='';this.style.transform=''">
-        ❤️ Support on Patreon
+        Support on Patreon
       </a>
     </div>
   </section>
 
-  <!-- FOOTER AUTO-INSERT -->
+    <!-- FOOTER AUTO-INSERT -->
   <script src="assets/footer.js"></script>
 
   <!-- Scripts -->

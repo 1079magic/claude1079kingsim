@@ -500,3 +500,28 @@ html, body{ overflow-x: hidden; }
     border-color:#23364d !important;
   }
 }
+
+/* ===== v2 Home Page Visual Polish ===== */
+
+/* Feature cards: lift on hover + glow */
+.feature.card {
+  transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+}
+.feature.card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-glow-cyan, 0 0 18px rgba(34,211,238,.25));
+}
+
+/* Story beats: accent stripe */
+.beat {
+  transition: transform .2s ease;
+}
+.beat:hover {
+  transform: translateX(4px);
+}
+
+/* Patreon card gold shimmer */
+@keyframes gold-shimmer {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255,198,48,.3); }
+  50%       { box-shadow: 0 0 0 8px rgba(255,198,48,0); }
+}

@@ -1,0 +1,16 @@
+/* assets/fonts.css — KingSim web fonts */
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600&display=swap');
+
+body {
+  font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6,
+.headline, .h2, .h3,
+.btn, .btn-ok, .btn-primary, .btn-secondary, .btn-outline,
+.btn-terciary, .btn-quaternary, .btn-run, .btn-primary--compact,
+.nav .nav-links a,
+.f-title, .block-title, .group-title,
+.import-box-label, .stat-type-title, .result-best-label {
+  font-family: 'Rajdhani', ui-sans-serif, system-ui, sans-serif;
+}

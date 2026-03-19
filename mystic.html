@@ -3,13 +3,14 @@
 <head>
   <meta charset="utf-8" />
   <title>Mystic Trials • KingSim</title>
-  <meta name="viewport" content="width=device-width, initial-scale=0.85, minimum-scale=0.5, maximum-scale=3.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <!-- Tell the browser that this page is dark  -->
   <meta name="color-scheme" content="dark">
   <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0b0f1a">
   <meta name="theme-color" media="(prefers-color-scheme: light)" content="#0b0f1a"><!-- keep dark always -->
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <!-- Shared theme and helpers -->
+  <link rel="stylesheet" href="assets/fonts.css" />
   <link rel="stylesheet" href="assets/styles.css" />
   <link rel="stylesheet" href="assets/theme-all.css" />
   <link rel="stylesheet" href="assets/anim-all.css" />
@@ -85,6 +86,15 @@
     .import-box-hint{font-size:.72rem;color:var(--muted);}
     .btn-run{background:linear-gradient(90deg,#22d3ee,#60a5fa);color:#05121f;border:0;font-weight:700;padding:10px 20px;border-radius:12px;font-size:.88rem;cursor:pointer;display:inline-flex;align-items:center;gap:6px;box-shadow:0 6px 18px rgba(34,211,238,.22);}
     @media(max-width:600px){div[style*="grid-template-columns:1fr 1fr 1fr"]{grid-template-columns:1fr!important;}}
+  
+    /* v2 mystic page upgrades */
+    .grid-3 { align-items: stretch !important; }
+    .import-card.panel-glass { border-left: 3px solid var(--c-accent, #22d3ee); }
+    
+    /* WIN/LOSS row highlighting */
+    tr.row-win td { background: rgba(16,185,129,.06) !important; }
+    tr.row-loss td { background: rgba(239,68,68,.04) !important; }
+
   </style>
 </head>
 <body>
@@ -493,5 +503,21 @@
   <script src="assets/theme-all.js"></script>
   <script src="assets/anim-all.js"></script>
   <script src="assets/mobile-all.js"></script>
+
+  <script>
+  // v2: smooth scroll to results after sim completes
+  (function(){
+    var origRun = window.ksMysticRun;
+    var mt_run = document.getElementById('mt_run');
+    if (mt_run) {
+      mt_run.addEventListener('click', function() {
+        setTimeout(function() {
+          var results = document.getElementById('mt_results') || document.getElementById('results_table');
+          if (results) results.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 200);
+      });
+    }
+  })();
+  </script>
 </body>
 </html>

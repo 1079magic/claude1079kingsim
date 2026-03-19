@@ -100,3 +100,110 @@
   .seg button{ padding:5px 6px; font-size:11px; }
   .pill{ padding:5px 8px; font-size:11px; }
 }
+/* ===== v2 Hero Card Visual Upgrades (all screen sizes) ===== */
+.hero-card {
+  background: linear-gradient(180deg, rgba(18,26,42,.72), rgba(12,18,32,.68)) !important;
+  border-color: #2d4a6a !important;
+}
+.hero-card:hover {
+  border-color: rgba(34,211,238,.4) !important;
+  box-shadow: 0 0 18px rgba(34,211,238,.25) !important;
+}
+.hero-card.owned-card,
+.hero-card:has(.owned-input:checked) {
+  border-color: rgba(34,211,238,.3) !important;
+  background: linear-gradient(180deg, rgba(22,36,58,.8), rgba(12,20,38,.75)) !important;
+}
+
+.star.active {
+  filter: drop-shadow(0 2px 10px rgba(255,215,0,.45)) !important;
+}
+.seg button.is-active {
+  background: linear-gradient(145deg, rgba(123,97,255,0.5), rgba(76,226,255,0.35)) !important;
+}
+
+/* Export button — btn-secondary style */
+#exportHeroes {
+  background: linear-gradient(90deg,#22d3ee,#60a5fa) !important;
+  color: #05121f !important;
+  border: 0 !important;
+  font-weight: 700 !important;
+  min-height: 44px !important;
+}
+/* Clear button — danger style */
+#clearHeroes {
+  background: linear-gradient(90deg,#ef4444,#dc2626) !important;
+  color: #fff !important;
+  border: 0 !important;
+  min-height: 44px !important;
+}
+
+/* ===== Mobile: compact cards + bottom-sheet ===== */
+@media (max-width: 640px) {
+  .group-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+  }
+
+  .hero-card {
+    padding: 8px 10px !important;
+    cursor: pointer !important;
+    position: relative !important;
+  }
+  .hero-card .controls { display: none !important; }
+  .hero-card .focus-sums { display: none !important; }
+  .hero-name { font-size: 12px !important; }
+  .hero-meta { font-size: 10px !important; }
+
+  /* Edit badge */
+  .hero-card::after {
+    content: '✎ Edit';
+    position: absolute;
+    bottom: 6px; right: 8px;
+    font-size: 10px;
+    color: var(--muted, #a9b3c6);
+    font-weight: 600;
+  }
+
+  /* Bottom sheet overlay */
+  .hero-sheet-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.55);
+    z-index: 9000;
+    display: none;
+    align-items: flex-end;
+  }
+  .hero-sheet-overlay.open { display: flex; }
+  .hero-sheet {
+    background: linear-gradient(180deg, rgba(16,22,35,.97), rgba(9,12,20,.99));
+    border: 1px solid #23364d;
+    border-radius: 20px 20px 0 0;
+    width: 100%;
+    max-height: 85vh;
+    overflow-y: auto;
+    padding: 16px;
+    padding-bottom: 32px;
+    position: relative;
+    transform: translateY(100%);
+    transition: transform .25s ease;
+  }
+  .hero-sheet-overlay.open .hero-sheet {
+    transform: translateY(0);
+  }
+  .hero-sheet-close {
+    position: absolute; top: 12px; right: 14px;
+    background: none; border: none;
+    color: var(--muted, #a9b3c6);
+    font-size: 22px; cursor: pointer; z-index: 1;
+    min-width: 44px; min-height: 44px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .hero-sheet-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.3rem; font-weight: 700;
+    color: var(--ink, #e9eef7);
+    margin: 0 44px 14px 0;
+  }
+  /* Show controls inside sheet */
+  .hero-sheet-body .controls { display: flex !important; flex-direction: column; gap: 8px; }
+}

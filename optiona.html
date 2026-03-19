@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <title>Bear Option‑A • KingSim</title>
-  <meta name="viewport" content="width=device-width, initial-scale=0.85, minimum-scale=0.5, maximum-scale=3.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <!-- Tell the browser that this page is dark  -->
   <meta name="color-scheme" content="dark">
   <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0b0f1a">
@@ -11,6 +11,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
   <!-- Base then Theme (order matters) -->
+  <link rel="stylesheet" href="assets/fonts.css" />
   <link rel="stylesheet" href="assets/styles.css" />
   <link rel="stylesheet" href="assets/theme-all.css" />
   <link rel="stylesheet" href="assets/mobile-all.css" />
@@ -104,6 +105,14 @@
 
     /* Optional: small emphasis lines in readouts */
     .oa-subtle{ color:#cdd6e8; }
+  
+    /* v2 optiona: horizontal scroll */
+    #scoreboardTableWrap, #callRallyTable, #joinTableWrap {
+      overflow-x: auto !important;
+      -webkit-overflow-scrolling: touch !important;
+      width: 100% !important;
+    }
+
   </style>
 </head>
 <body class="optiona-page fx-preload">

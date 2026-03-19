@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <title>Heroes • KingSim</title>
-  <meta name="viewport" content="width=device-width, initial-scale=0.85, minimum-scale=0.5, maximum-scale=3.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <!-- Tell the browser that this page is dark  -->
   <meta name="color-scheme" content="dark">
   <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0b0f1a">
@@ -12,6 +12,7 @@
 
 
   <!-- Shared rails -->
+  <link rel="stylesheet" href="assets/fonts.css" />
   <link rel="stylesheet" href="assets/styles.css" />
   <link rel="stylesheet" href="assets/theme-all.css" />
   <link rel="stylesheet" href="assets/mobile-all.css" />
@@ -91,5 +92,83 @@
   <script src="assets/heroes.js"></script>
   <!-- FOOTER AUTO-INSERT -->
   <script src="assets/footer.js"></script>
+
+  <!-- Mobile hero card bottom-sheet — pure UX wiring, no computation -->
+  <script>
+  (function() {
+    if (window.innerWidth > 640) return;
+
+    // Inject overlay into body
+    var overlay = document.createElement('div');
+    overlay.className = 'hero-sheet-overlay';
+    overlay.innerHTML = '<div class="hero-sheet"><button class="hero-sheet-close" aria-label="Close">&times;</button><div class="hero-sheet-title"></div><div class="hero-sheet-body"></div></div>';
+    document.body.appendChild(overlay);
+
+    var sheet = overlay.querySelector('.hero-sheet');
+    var title = overlay.querySelector('.hero-sheet-title');
+    var body  = overlay.querySelector('.hero-sheet-body');
+    var close = overlay.querySelector('.hero-sheet-close');
+
+    function openSheet(card) {
+      var nameEl = card.querySelector('.hero-name');
+      title.textContent = nameEl ? nameEl.textContent : 'Hero';
+
+      body.innerHTML = '';
+      var controls = card.querySelector('.controls');
+      if (controls) {
+        var clone = controls.cloneNode(true);
+        clone.style.display = 'flex';
+        clone.style.flexDirection = 'column';
+        clone.style.gap = '8px';
+
+        // Wire input changes back to original card
+        clone.querySelectorAll('input, select').forEach(function(el) {
+          if (el.id) {
+            el.addEventListener('change', function(e) {
+              var orig = card.querySelector('#' + el.id);
+              if (orig) {
+                orig.value = el.value;
+                if (el.type === 'checkbox') orig.checked = el.checked;
+                orig.dispatchEvent(new Event('change', {bubbles:true}));
+              }
+            });
+          }
+        });
+
+        // Wire button clicks (stars, swords, seg, pills)
+        clone.querySelectorAll('button, .star, .sword, .pill').forEach(function(btn) {
+          btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            var idx = Array.from(clone.querySelectorAll('button, .star, .sword, .pill')).indexOf(btn);
+            var origBtns = card.querySelectorAll('button, .star, .sword, .pill');
+            if (origBtns[idx]) origBtns[idx].click();
+          });
+        });
+
+        body.appendChild(clone);
+      }
+      overlay.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeSheet() {
+      overlay.classList.remove('open');
+      document.body.style.overflow = '';
+    }
+
+    // Attach to cards (heroes are rendered dynamically, so use delegation)
+    document.addEventListener('click', function(e) {
+      var card = e.target.closest('.hero-card');
+      if (card && !overlay.contains(e.target)) {
+        openSheet(card);
+      }
+    });
+
+    close.addEventListener('click', closeSheet);
+    overlay.addEventListener('click', function(e) {
+      if (e.target === overlay) closeSheet();
+    });
+  })();
+  </script>
 </body>
 </html>

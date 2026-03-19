@@ -133,3 +133,67 @@ table.fx-table{ position: relative; overflow: hidden; border-radius: 12px; }
   transform: translateY(0);
   filter: brightness(0.98);
 }
+/* ===== PHASE 2 Animations — added in v2 upgrade ===== */
+
+/* Pulse glow for import success */
+@keyframes pulse-glow {
+  0%   { box-shadow: 0 0 0 0 rgba(16,185,129,.6); }
+  50%  { box-shadow: 0 0 0 10px rgba(16,185,129,0); }
+  100% { box-shadow: 0 0 0 0 rgba(16,185,129,0); }
+}
+.import-box.has-data { animation: pulse-glow .6s ease; }
+
+/* Shimmer skeleton */
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg,#1a2236 25%,#243044 50%,#1a2236 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: var(--r-sm, 6px);
+}
+
+/* Slide in up for result panels */
+@keyframes slide-in-up {
+  from { transform: translateY(20px); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+.slide-in-up { animation: slide-in-up .35s cubic-bezier(.2,.9,.2,1) forwards; }
+
+/* Bounce in for win badge */
+@keyframes bounce-in {
+  0%   { transform: scale(0.5); opacity: 0; }
+  70%  { transform: scale(1.1); }
+  100% { transform: scale(1); opacity: 1; }
+}
+.bounce-in { animation: bounce-in .4s ease forwards; }
+
+/* Toast notification */
+.toast {
+  position: fixed; bottom: 80px; right: 16px;
+  padding: 10px 18px; border-radius: var(--r-md, 10px);
+  font-size: .85rem; font-weight: 600; z-index: 9000;
+  opacity: 0; transform: translateY(8px);
+  transition: opacity .2s, transform .2s; pointer-events: none;
+}
+.toast.show { opacity: 1; transform: translateY(0); }
+.toast.success { background: #0d2e20; border: 1px solid var(--c-success, #10b981); color: #6ee7b7; }
+.toast.error   { background: #2e0d0d; border: 1px solid var(--c-danger, #ef4444); color: #fca5a5; }
+
+/* Page transition */
+@keyframes fadeOut { to { opacity: 0; } }
+@keyframes fadeIn  { from { opacity: 0; } }
+body.page-exit { animation: fadeOut .15s ease forwards; }
+
+/* Scroll-reveal for panels */
+.fx-reveal-item {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity .45s ease, transform .45s cubic-bezier(.2,.9,.2,1);
+}
+.fx-reveal-item.in-view {
+  opacity: 1;
+  transform: translateY(0);
+}

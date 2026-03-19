@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <title>Troops &amp; Stats • KingSim</title>
-  <meta name="viewport" content="width=device-width, initial-scale=0.85, minimum-scale=0.5, maximum-scale=3.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <!-- Tell the browser that this page is dark  -->
   <meta name="color-scheme" content="dark">
   <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0b0f1a">
@@ -11,6 +11,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
   <!-- Base then Theme (order matters) -->
+  <link rel="stylesheet" href="assets/fonts.css" />
   <link rel="stylesheet" href="assets/styles.css" />
   <link rel="stylesheet" href="assets/theme-all.css" />
   <link rel="stylesheet" href="assets/anim-all.css" />
@@ -62,6 +63,18 @@
       transition: color .12s ease, background-color .12s ease,
                   border-color .12s ease, box-shadow .12s ease, filter .12s ease;
     }
+  
+    /* v2 troop type accent lines */
+    .grid-stats .panel:nth-child(1),
+    [id*="inf"], .inf-block { border-left: 3px solid #f87171 !important; }
+    [id*="cav"], .cav-block { border-left: 3px solid #f59e0b !important; }
+    [id*="arc"], .arc-block { border-left: 3px solid #22d3ee !important; }
+
+    /* stat sub-blocks */
+    .stat-section-inf { border-left: 3px solid #f87171; padding-left: 10px; }
+    .stat-section-cav { border-left: 3px solid #f59e0b; padding-left: 10px; }
+    .stat-section-arc { border-left: 3px solid #22d3ee; padding-left: 10px; }
+
   </style>
 </head>
 <body>

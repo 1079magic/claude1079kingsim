@@ -515,3 +515,104 @@ html, body{ overflow-x:hidden; }
     border-color:#23364d !important;
   }
 }
+
+/* ===== DESIGN SYSTEM v2 — Spacing, Color, Radius, Shadow tokens ===== */
+:root {
+  /* Spacing scale */
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-6:24px; --sp-8:32px;
+
+  /* Semantic colors */
+  --c-success:#10b981; --c-danger:#ef4444; --c-warning:#f59e0b;
+  --c-att:#f87171; --c-def:#34d399; --c-accent:#22d3ee; --c-accent2:#7c3aed;
+
+  /* Border radius */
+  --r-sm:6px; --r-md:10px; --r-lg:14px; --r-xl:20px;
+
+  /* Shadows */
+  --shadow-sm:0 2px 8px rgba(0,0,0,.3);
+  --shadow-md:0 4px 20px rgba(0,0,0,.4);
+  --shadow-glow-cyan:0 0 18px rgba(34,211,238,.25);
+  --shadow-glow-gold:0 0 18px rgba(255,198,48,.22);
+}
+
+/* ===== Unified button system v2 ===== */
+.btn,
+.btn-ok, .btn-primary, .btn-secondary, .btn-outline,
+.btn-terciary, .btn-quaternary, .btn-ghost, .btn-run,
+.btn-primary--compact {
+  min-height: 44px;
+  border-radius: var(--r-md);
+  font-family: 'Rajdhani', ui-sans-serif, sans-serif;
+  font-weight: 700;
+  letter-spacing: .04em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: filter .12s ease, box-shadow .12s ease, transform .12s ease;
+  position: relative;
+  overflow: hidden;
+  text-decoration: none;
+}
+
+/* .btn-primary — cyan gradient */
+.btn-primary, .btn-ok {
+  background: linear-gradient(90deg,#22d3ee,#60a5fa);
+  color: #05121f;
+  border: 0;
+  box-shadow: 0 6px 18px rgba(34,211,238,.25);
+  padding: 10px 22px;
+}
+.btn-primary:hover, .btn-ok:hover { filter: brightness(1.12); }
+
+/* .btn-secondary — glass dark */
+.btn-secondary {
+  background: #0f172a;
+  border: 1px solid #243244;
+  color: #dce8fb;
+  padding: 10px 22px;
+}
+.btn-secondary:hover { filter: brightness(1.15); border-color: #3b5f86; }
+
+/* .btn-danger — red gradient */
+.btn-danger {
+  background: linear-gradient(90deg,#ef4444,#dc2626);
+  color: #fff;
+  border: 0;
+  padding: 10px 22px;
+}
+.btn-danger:hover { filter: brightness(1.1); }
+
+/* .btn-ghost — transparent outline */
+.btn-ghost {
+  background: transparent;
+  border: 1px solid var(--c-accent);
+  color: var(--c-accent);
+  padding: 10px 22px;
+}
+.btn-ghost:hover { background: rgba(34,211,238,.08); }
+
+/* Active nav link — upgraded */
+.nav .nav-links a.active,
+.nav .nav-links a.is-active {
+  background: rgba(34,211,238,.12) !important;
+  border-color: rgba(34,211,238,.4) !important;
+  color: #fff !important;
+  font-weight: 600 !important;
+}
+
+/* Panel glass upgrade */
+.panel-glass {
+  backdrop-filter: blur(12px) saturate(1.4) !important;
+  border: 1px solid rgba(255,255,255,.06) !important;
+}
+
+/* Table row hover */
+tbody tr:hover { background: rgba(255,255,255,.03); }
+
+/* Global input focus glow */
+input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 2px solid var(--c-accent);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(34,211,238,.12) !important;
+}

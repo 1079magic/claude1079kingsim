@@ -101,3 +101,68 @@
     document.body.classList.add('nav-seen');
   }, { once: true });
 })();
+// ===== v2: Scroll-reveal for panels =====
+(() => {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+  document.addEventListener('DOMContentLoaded', () => {
+    // Scroll-reveal
+    const revealItems = document.querySelectorAll('.panel, .feature.card, .beat, .hero-card');
+    if (!revealItems.length) return;
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('in-view');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.08 });
+
+    revealItems.forEach((el, i) => {
+      el.classList.add('fx-reveal-item');
+      el.style.transitionDelay = Math.min(i * 40, 300) + 'ms';
+      observer.observe(el);
+    });
+
+    // Sticky Run CTA for simulator pages on mobile
+    const runBtn = document.querySelector('.btn-run, #mt_run, #pvp_run_btn, #btnMagic12, #btnRecompute');
+    if (runBtn && window.innerWidth < 640) {
+      const stickyBar = document.createElement('div');
+      stickyBar.id = 'sticky-run-bar';
+      stickyBar.style.cssText = 'position:fixed;bottom:0;left:0;right:0;padding:10px 16px;' +
+        'background:rgba(11,15,26,.95);border-top:1px solid #223148;z-index:500;' +
+        'display:none;backdrop-filter:blur(8px);';
+
+      const stickyBtn = document.createElement('button');
+      stickyBtn.textContent = runBtn.textContent || 'Run Simulation';
+      stickyBtn.style.cssText = 'width:100%;min-height:44px;border-radius:10px;border:0;' +
+        'background:linear-gradient(90deg,#22d3ee,#60a5fa);color:#05121f;' +
+        'font-family:Rajdhani,sans-serif;font-weight:700;font-size:1rem;cursor:pointer;';
+      stickyBtn.addEventListener('click', () => runBtn.click());
+      stickyBar.appendChild(stickyBtn);
+      document.body.appendChild(stickyBar);
+
+      const btnObserver = new IntersectionObserver((entries) => {
+        const visible = entries[0].isIntersecting;
+        stickyBar.style.display = visible ? 'none' : 'block';
+      }, { threshold: 0.5 });
+      btnObserver.observe(runBtn);
+    }
+  });
+})();
+
+// ===== v2: Page transition on internal links =====
+(() => {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest('a[href]');
+    if (!a) return;
+    const href = a.getAttribute('href');
+    if (!href || href.startsWith('#') || href.startsWith('http') ||
+        href.startsWith('mailto') || a.target === '_blank') return;
+    e.preventDefault();
+    document.body.classList.add('page-exit');
+    setTimeout(() => { window.location.href = href; }, 150);
+  });
+})();
