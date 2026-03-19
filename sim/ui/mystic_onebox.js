@@ -196,6 +196,50 @@
       const opt = window.KingSim?._optimizer;
       let out;
 
+      // ── NEW battleCore engine (validated, correct formation ordering) ──
+      const _mo = window.KingSim && window.KingSim.mysticOptimizer;
+      if (_mo && _mo.scanMysticTrials) {
+        const attSt = attackerBase.stats || {};
+        const defSt = defenderBase.stats || {};
+        const defCO = defenderBase.troops && ((defenderBase.troops.inf||0)+(defenderBase.troops.cav||0)+(defenderBase.troops.arc||0))>0
+          ? defenderBase.troops : null;
+        await new Promise(r => setTimeout(r, 5));
+        const moR = _mo.scanMysticTrials({
+          attackerTotal: attackerBase.totalTroops || 150000,
+          attackerStats: {
+            attack:    attSt.attack    || { inf:0, cav:0, arc:0 },
+            defense:   attSt.defense   || { inf:0, cav:0, arc:0 },
+            lethality: attSt.lethality || { inf:0, cav:0, arc:0 },
+            health:    attSt.health    || { inf:0, cav:0, arc:0 },
+          },
+          attackerTier: attackerBase.tier || 'T10',
+          defenderTotal: defenderBase.totalTroops || 150000,
+          defenderStats: {
+            attack:    defSt.attack    || { inf:0, cav:0, arc:0 },
+            defense:   defSt.defense   || { inf:0, cav:0, arc:0 },
+            lethality: defSt.lethality || { inf:0, cav:0, arc:0 },
+            health:    defSt.health    || { inf:0, cav:0, arc:0 },
+          },
+          defenderTier: defenderBase.tier || 'T10',
+          defenderTroops: defCO,
+          sparsity: 0.05,
+          infMin: 0.40, infMax: 0.80,
+          cavMin: 0.15, cavMax: 0.30,
+          maxTop: 10,
+        });
+        const top = (moR.top10 || []).map(row => ({
+          fi: row.fi, fc: row.fc, fa: row.fa, label: row.label,
+          winPct: null, atkScore: row.defenderInjured, defScore: row.attackerInjured,
+        }));
+        out = {
+          best: moR.best ? { fractions: { fi: moR.best.fi, fc: moR.best.fc, fa: moR.best.fa } } : null,
+          top, points: top,
+          defender: { fractions: defFractions, troops: defCO || {} },
+          totalTested: moR.totalTested,
+        };
+      }
+      // ── Legacy fallback ───────────────────────────────────────────
+      else 
       if (opt?.scanFixedDefenderAdaptive){
         out = await opt.scanFixedDefenderAdaptive({
           attackerBase, defenderBase, defenderFractions: defFractions,
@@ -203,7 +247,7 @@
           battlesPerPoint: 120, sparsity: 0.05,
           fiMin: 0.40, fiMax: 0.80, fcMin: 0.15, fcMax: 0.30, seed: 1337
         });
-      } else if (window.KingSim?.scanMysticTrial){
+      } else if (out == null && window.KingSim?.scanMysticTrial){
         const legacy = await window.KingSim.scanMysticTrial({
           attackerBase, defenderBase, trialName: trial,
           battlesPerPoint: 120, sparsity: 0.05,
@@ -235,7 +279,7 @@
         // fallback to engine best if no rows (shouldn’t happen)
         bestFractions = out.best?.fractions || { fi:0.5, fc:0.25, fa:0.25 };
       }
-      const scanned = Array.isArray(out.points) ? out.points.length : rows.length;
+      const scanned = out.totalTested || (Array.isArray(out.points) ? out.points.length : rows.length);
 
       // render old headline + table, then the scoreboard
       renderBestLineAndTable(bestFractions, totals, trial, { atkScore: rows[0]?.atkScore, defScore: rows[0]?.defScore });

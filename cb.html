@@ -155,6 +155,11 @@
           </select>
         </div>
       </div>
+      <div style="display:grid;gap:8px;grid-template-columns:repeat(3,1fr);margin-bottom:12px">
+        <div><label>Att Inf Troops</label><input type="number" id="cb_att_inf" step="1000" value="0" style="width:100%"/></div>
+        <div><label>Att Cav Troops</label><input type="number" id="cb_att_cav" step="1000" value="0" style="width:100%"/></div>
+        <div><label>Att Arc Troops</label><input type="number" id="cb_att_arc" step="1000" value="0" style="width:100%"/></div>
+      </div>
       <div class="h3" style="margin-bottom:8px">Attacker Stats</div>
       <div class="stats-grid" style="margin-bottom:16px">
         <div class="stat-type-block"><div class="stat-type-title">Infantry</div>
@@ -254,7 +259,9 @@
         const defInf=num('pvp_def_inf',0),defCav=num('pvp_def_cav',0),defArc=num('pvp_def_arc',0);
         const defTotal=defInf+defCav+defArc;
         if(defTotal===0)throw new Error('Defender troops are 0. Import or enter defender troop counts.');
-        const attTotal=num('pvp_att_total',0)||150000;
+                const _ai=num('cb_att_inf',0),_ac=num('cb_att_cav',0),_aa=num('cb_att_arc',0);
+        const _perType=_ai+_ac+_aa;
+        const attTotal=_perType>0?_perType:(num('cb_att_total',0)||150000);
         await new Promise(r=>setTimeout(r,20));
         const out=opt.scanPvP({attackerTotal:attTotal,attackerStats:readStats('pvp_att'),attackerTier:$('pvp_att_tier').value,defenderTroops:{inf:defInf,cav:defCav,arc:defArc},defenderStats:readStats('pvp_def'),defenderTier:$('pvp_def_tier').value,sparsity:.05,infMin:.40,infMax:.80,cavMin:.15,cavMax:.30,maxTop:10});
         const best=out.best;if(!best)throw new Error('No results');
@@ -270,6 +277,18 @@
         status.textContent='Done';status.style.color='#10b981';
       }catch(e){status.textContent='Error: '+(e.message||e);status.style.color='#ef4444';}
       finally{btn.disabled=false;btn.innerHTML='&#9654; Run Simulation';}
+    });
+    ['cb_att_inf','cb_att_cav','cb_att_arc'].forEach(id=>{
+      const el=$(id); if(el) el.addEventListener('input',()=>{
+        const t=num('cb_att_inf',0)+num('cb_att_cav',0)+num('cb_att_arc',0);
+        if(t>0)$('cb_att_total').value=t;
+      });
+    });
+    ['cb_def_inf','cb_def_cav','cb_def_arc'].forEach(id=>{
+      const el=$(id); if(el) el.addEventListener('input',()=>{
+        const t=num('cb_def_inf',0)+num('cb_def_cav',0)+num('cb_def_arc',0);
+        if(t>0)$('cb_def_total').value=t;
+      });
     });
   })();
   </script>

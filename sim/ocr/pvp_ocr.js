@@ -1,9 +1,12 @@
-// sim/ocr/pvp_ocr.js — PvP OCR module
-// Reads troop AMOUNTS (not %) from attack reports and stat bonus blocks
+// sim/ocr/pvp_ocr.js — PvP OCR v2
+// Handles 3 distinct image formats:
+//   1. Battle Report (dual-column Stat Bonuses): left=att, right=def troops+stats
+//   2. Defender Stat Bonuses (single-column, right-aligned green values)
+//   3. Defender Troop Ratio (popup with 1.1M total + shield/horse/crossbow %)
 (function () {
   'use strict';
 
-  /* ── Tesseract loader (shared singleton) ─────────────────────────── */
+  /* ── Tesseract loader ───────────────────────────────────────────── */
   const CDN = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
   let _tPromise = null, _worker = null;
   function loadTesseract() {
@@ -11,7 +14,9 @@
     _tPromise = new Promise((res, rej) => {
       if (window.Tesseract) { res(window.Tesseract); return; }
       const s = document.createElement('script');
-      s.src = CDN; s.onload = () => res(window.Tesseract); s.onerror = () => rej(new Error('Tesseract load failed'));
+      s.src = CDN;
+      s.onload = () => res(window.Tesseract);
+      s.onerror = () => rej(new Error('Tesseract load failed'));
       document.head.appendChild(s);
     });
     return _tPromise;
@@ -24,7 +29,7 @@
     return _worker;
   }
 
-  /* ── Image helpers ───────────────────────────────────────────────── */
+  /* ── Canvas helpers ─────────────────────────────────────────────── */
   function fileToImage(file) {
     return new Promise((res, rej) => {
       const url = URL.createObjectURL(file);
@@ -35,22 +40,10 @@
     });
   }
 
-  function cropCanvas(img, x, y, w, h, targetW = 800) {
-    const scaleX = img.naturalWidth / img.naturalWidth; // 1:1 if not resized
-    const c = document.createElement('canvas');
-    c.width  = Math.round(w * (targetW / img.naturalWidth));
-    c.height = Math.round(h * (targetW / img.naturalWidth));
-    const ctx = c.getContext('2d');
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
-    ctx.drawImage(img, x, y, w, h, 0, 0, c.width, c.height);
-    return c;
-  }
-
-  function fullCanvas(img, targetW = 1200) {
+  function toCanvas(img, targetW = 1200) {
     const scale = targetW / img.naturalWidth;
     const c = document.createElement('canvas');
-    c.width  = targetW;
+    c.width = targetW;
     c.height = Math.round(img.naturalHeight * scale);
     const ctx = c.getContext('2d');
     ctx.imageSmoothingEnabled = true;
@@ -59,7 +52,19 @@
     return c;
   }
 
-  async function ocrCanvas(canvas) {
+  function cropCanvas(img, x, y, w, h, targetW = 900) {
+    const scale = targetW / w;
+    const c = document.createElement('canvas');
+    c.width  = Math.round(w  * scale);
+    c.height = Math.round(h  * scale);
+    const ctx = c.getContext('2d');
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(img, x, y, w, h, 0, 0, c.width, c.height);
+    return c;
+  }
+
+  async function ocrFull(canvas) {
     const w = await getWorker();
     await w.setParameters({ tessedit_pageseg_mode: '6' });
     const { data } = await w.recognize(canvas.toDataURL('image/png'));
@@ -73,152 +78,207 @@
     };
   }
 
-  /* ── Parsers ─────────────────────────────────────────────────────── */
-
-  // Parse a number like "12,450" or "1.1M" → integer
+  /* ── Number / percentage parsers ────────────────────────────────── */
   function parseAmount(s) {
     if (!s) return null;
-    s = String(s).replace(/[^\d.,KkMm]/g, '');
-    const m = s.match(/([\d,\.]+)\s*([KkMm]?)/);
-    if (!m) return null;
-    let n = parseFloat(m[1].replace(/,/g, ''));
-    if (!isFinite(n)) return null;
-    const suffix = m[2].toLowerCase();
-    if (suffix === 'k') n *= 1000;
-    if (suffix === 'm') n *= 1000000;
-    return Math.round(n);
+    s = String(s).trim();
+    // Handle abbreviated: 1.1M, 2.5K, etc.
+    const mAbbr = s.match(/^([\d,\.]+)\s*([KkMmBb])/);
+    if (mAbbr) {
+      const n = parseFloat(mAbbr[1].replace(/,/g, ''));
+      if (!isFinite(n)) return null;
+      const mul = { k:1e3, m:1e6, b:1e9 }[mAbbr[2].toLowerCase()] || 1;
+      return Math.round(n * mul);
+    }
+    const m = s.replace(/[^\d]/g, '');
+    const n = parseInt(m, 10);
+    return isFinite(n) && n > 0 ? n : null;
   }
 
-  // Parse a percentage "+123.4%" → 123.4
   function parsePct(s) {
     if (!s) return null;
-    const m = String(s).replace(/O/g, '0').match(/([+\-]?\d{1,4}(?:[.,]\d{1,2})?)\s*%/);
-    return m ? parseFloat(m[1].replace(',', '.')) : null;
+    const clean = String(s).replace(/[Oo]/g, '0').replace(/,/, '.');
+    const m = clean.match(/([+-]?\d{1,4}(?:\.\d{1,2})?)\s*%/);
+    return m ? parseFloat(m[1]) : null;
   }
 
-  // Match stat label → key like 'inf_atk'
-  const STAT_RE = {
-    infantry: /\bin[a-z]{0,5}try\b/i,
-    cavalry:  /\bcav[a-z]{0,4}ry\b/i,
-    archer:   /\barc?h[a-z]*\b/i,
-    attack:   /\battack\b/i,
-    defense:  /\bdefense\b/i,
-    leth:     /\bletha?lit[yv]\b/i,
-    health:   /\bhealth\b/i,
-  };
-
-  function matchStatLabel(text) {
-    const t = String(text);
-    const type = STAT_RE.infantry.test(t) ? 'inf'
-               : STAT_RE.cavalry.test(t)  ? 'cav'
-               : STAT_RE.archer.test(t)   ? 'arc' : null;
-    const stat = STAT_RE.attack.test(t)  ? 'atk'
-               : STAT_RE.defense.test(t) ? 'def'
-               : STAT_RE.leth.test(t)    ? 'let'
-               : STAT_RE.health.test(t)  ? 'hp'  : null;
-    return (type && stat) ? `${type}_${stat}` : null;
+  /* ── Stat label matcher ─────────────────────────────────────────── */
+  const LABEL_MAP = [
+    [/\binf[a-z]*.*att/i,   'inf', 'atk'],
+    [/\binf[a-z]*.*def/i,   'inf', 'def'],
+    [/\binf[a-z]*.*leth/i,  'inf', 'let'],
+    [/\binf[a-z]*.*hea/i,   'inf', 'hp' ],
+    [/\bcav[a-z]*.*att/i,   'cav', 'atk'],
+    [/\bcav[a-z]*.*def/i,   'cav', 'def'],
+    [/\bcav[a-z]*.*leth/i,  'cav', 'let'],
+    [/\bcav[a-z]*.*hea/i,   'cav', 'hp' ],
+    [/\barc?h[a-z]*.*att/i, 'arc', 'atk'],
+    [/\barc?h[a-z]*.*def/i, 'arc', 'def'],
+    [/\barc?h[a-z]*.*leth/i,'arc', 'let'],
+    [/\barc?h[a-z]*.*hea/i, 'arc', 'hp' ],
+  ];
+  function matchLabel(txt) {
+    for (const [re, type, stat] of LABEL_MAP) {
+      if (re.test(txt)) return { type, stat };
+    }
+    return null;
   }
 
-  /* ── Parse stat bonuses block from raw text ──────────────────────── */
-  function parseStatBlock(text) {
+  /* ── Parse stat block from ordered lines ────────────────────────── */
+  // Handles both "Label   +123.4%" (same line) and label on one line, value on next
+  function parseStatLines(lines) {
     const stats = {
       inf: { atk: 0, def: 0, let: 0, hp: 0 },
       cav: { atk: 0, def: 0, let: 0, hp: 0 },
       arc: { atk: 0, def: 0, let: 0, hp: 0 },
     };
-    const lines = text.split('\n');
-    for (let i = 0; i < lines.length - 1; i++) {
-      const label = lines[i].trim();
-      const key = matchStatLabel(label);
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const key = matchLabel(line);
       if (!key) continue;
-      // look for pct value on same or next line
-      const [type, stat] = key.split('_');
-      let pct = parsePct(label);
-      if (pct == null) pct = parsePct(lines[i + 1]);
-      if (pct != null) stats[type][stat] = pct;
+      // Try to find pct on same line or next line
+      let pct = parsePct(line);
+      if (pct == null && i + 1 < lines.length) pct = parsePct(lines[i + 1]);
+      if (pct != null) stats[key.type][key.stat] = pct;
     }
     return stats;
   }
 
-  /* ── Parse troop amounts (numbers under icons) ───────────────────── */
-  // Returns {inf, cav, arc} by scanning for 3 large numbers in sequence
-  function parseTroopAmounts(text) {
-    const nums = [];
-    for (const line of text.split('\n')) {
-      const cleaned = line.trim().replace(/[^\d,]/g, '');
-      const n = parseAmount(cleaned);
-      if (n != null && n > 100) nums.push(n);
-      if (nums.length === 3) break;
-    }
-    if (nums.length < 3) return null;
-    return { inf: nums[0], cav: nums[1], arc: nums[2] };
-  }
-
-  /* ── Parse Troop Type Ratio (%s under shield/horse/crossbow) ────── */
-  function parseTroopRatio(text) {
-    const pcts = [];
-    const re = /(\d{1,3}(?:[.,]\d{1,2})?)\s*%/g;
-    let m;
-    while ((m = re.exec(text)) !== null) {
-      pcts.push(parseFloat(m[1].replace(',', '.')));
-      if (pcts.length === 3) break;
-    }
-    if (pcts.length < 2) return null;
-    const inf = pcts[0] || 0;
-    const cav = pcts[1] || 0;
-    const arc = pcts[2] || Math.max(0, 100 - inf - cav);
-    return { inf, cav, arc };
-  }
-
-  /* ── Parse Troops Total ──────────────────────────────────────────── */
-  function parseTroopsTotal(text) {
-    // Look for "Troops Total: 1.1M" or "139,010"
-    const m = text.match(/(?:troops?\s*total[:\s]*)?([\d,\.]+\s*[KkMm]?)/i);
-    if (!m) return null;
-    return parseAmount(m[1]);
-  }
-
-  /* ── Public API ─────────────────────────────────────────────────── */
-
-  /**
-   * Parse an Attack Report image (left=attacker, right=defender).
-   * Reads troop AMOUNTS (not %) from left side.
-   */
-  async function parseAttackReport(file) {
+  /* ── PARSER 1: Battle Report (dual-column) ──────────────────────── */
+  // Both attacker (left/red) and defender (right/green) troops + stats
+  async function parseBattleReport(file) {
     const img = await fileToImage(file);
-    const canvas = fullCanvas(img, 1200);
-    const { text, words } = await ocrCanvas(canvas);
+    const W = img.naturalWidth, H = img.naturalHeight;
+    const mid = W * 0.47; // column split point
 
-    const W = canvas.width, H = canvas.height;
-    const midX = W * 0.5;
+    // Crop left side for attacker
+    const leftCanvas  = cropCanvas(img, 0,   0, mid,   H, 900);
+    const rightCanvas = cropCanvas(img, mid, 0, W-mid, H, 900);
 
-    // Left half = attacker
-    const leftWords = words.filter(w => w.bbox.x0 < midX);
-    const leftText = leftWords.sort((a, b) => a.bbox.y0 - b.bbox.y0).map(w => w.text).join('\n');
+    const [leftOcr, rightOcr] = await Promise.all([ocrFull(leftCanvas), ocrFull(rightCanvas)]);
 
-    const attTroops = parseTroopAmounts(leftText);
-    const attStats  = parseStatBlock(leftText);
+    const leftLines  = leftOcr.text.split('\n').map(l => l.trim()).filter(Boolean);
+    const rightLines = rightOcr.text.split('\n').map(l => l.trim()).filter(Boolean);
+
+    // Extract troop amounts: look for 3 numbers in the 100-999999 range close together
+    function extractTroopAmounts(lines) {
+      const nums = [];
+      for (const line of lines) {
+        const cleaned = line.replace(/[^0-9,]/g, '');
+        const n = parseAmount(cleaned);
+        if (n != null && n >= 100 && n <= 9999999) {
+          nums.push(n);
+          if (nums.length === 3) break;
+        }
+      }
+      if (nums.length < 3) return null;
+      return { inf: nums[0], cav: nums[1], arc: nums[2] };
+    }
+
+    const attTroops = extractTroopAmounts(leftLines);
+    const defTroops = extractTroopAmounts(rightLines);
+    const attStats  = parseStatLines(leftLines);
+    const defStats  = parseStatLines(rightLines);
 
     return {
-      attacker: {
-        troops: attTroops,
-        stats: attStats,
-      },
-      rawText: text,
+      attacker: { troops: attTroops, stats: attStats },
+      defender: { troops: defTroops, stats: defStats },
     };
   }
 
-  /**
-   * Parse Def Troop Ratio image.
-   * Reads Troops Total + Troop Type Ratio (%) 
-   */
+  /* ── PARSER 2: Defender Stat Bonuses (single-column) ───────────── */
+  // The defender-only stat screen: all values right-aligned, no left column
+  async function parseDefStatBonuses(file) {
+    const img = await fileToImage(file);
+    const canvas = toCanvas(img, 1200);
+    const { text } = await ocrFull(canvas);
+    const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+
+    // In this layout each line is "Infantry Attack    +794.7%"
+    // So parseStatLines handles it directly (same line label + value)
+    const stats = parseStatLines(lines);
+
+    // Also look for enemy penalties
+    let letPenalty = 0, hpPenalty = 0;
+    for (const line of lines) {
+      if (/enemy.*leth/i.test(line)) {
+        const p = parsePct(line);
+        if (p != null) letPenalty = p;
+      }
+      if (/enemy.*health/i.test(line)) {
+        const p = parsePct(line);
+        if (p != null) hpPenalty = p;
+      }
+    }
+
+    return { stats, enemyLetPenalty: letPenalty, enemyHpPenalty: hpPenalty, rawText: text };
+  }
+
+  /* ── PARSER 3: Defender Troop Ratio (popup screen) ─────────────── */
+  // Shows "Troops Total: 1.1M" and a popup with "64.18%  35.81%  0%"
   async function parseDefTroopRatio(file) {
     const img = await fileToImage(file);
-    const canvas = fullCanvas(img, 1200);
-    const { text } = await ocrCanvas(canvas);
+    const canvas = toCanvas(img, 1200);
+    const { text } = await ocrFull(canvas);
+    const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
 
-    const total = parseTroopsTotal(text);
-    const ratio = parseTroopRatio(text);
+    // Find "Troops Total" line and parse the number (could be 1.1M format)
+    let total = null;
+    for (const line of lines) {
+      if (/troops?\s*total/i.test(line)) {
+        // Extract everything after the colon
+        const m = line.match(/troops?\s*total\s*[:\s]+(.+)/i);
+        if (m) {
+          // Parse abbreviated number like 1.1M
+          const raw = m[1].replace(/[^0-9,.KkMmBb]/g, '');
+          total = parseAmount(raw);
+        }
+        if (!total) {
+          // Try next line
+          const idx = lines.indexOf(line);
+          if (idx + 1 < lines.length) {
+            const raw = lines[idx + 1].replace(/[^0-9,.KkMmBb]/g, '');
+            total = parseAmount(raw);
+          }
+        }
+        if (total) break;
+      }
+    }
+
+    // Find the troop type ratio popup: look for 3 percentage values in a row
+    // They are shown as "64.18%  35.81%  0%" in the popup
+    const allPcts = [];
+    const pctRe = /(\d{1,3}(?:[.,]\d{1,2})?)\s*%/g;
+    let m;
+    const fullText = lines.join(' ');
+    while ((m = pctRe.exec(fullText)) !== null) {
+      const v = parseFloat(m[1].replace(',', '.'));
+      if (v >= 0 && v <= 100) allPcts.push(v);
+    }
+
+    // The popup always has exactly 3 percentages that sum to ~100
+    // Find the triplet that sums closest to 100
+    let ratio = null;
+    for (let i = 0; i <= allPcts.length - 3; i++) {
+      const a = allPcts[i], b = allPcts[i+1], c = allPcts[i+2];
+      const sum = a + b + c;
+      if (sum >= 95 && sum <= 105) {
+        ratio = { inf: a, cav: b, arc: c };
+        break;
+      }
+    }
+
+    // Fallback: use largest 3 values that sum to ~100
+    if (!ratio && allPcts.length >= 3) {
+      const sorted = [...allPcts].sort((a, b) => b - a);
+      for (let i = 0; i < sorted.length - 2; i++) {
+        const a = sorted[i], b = sorted[i+1], c = sorted[i+2];
+        if (a + b + c >= 95 && a + b + c <= 105) {
+          ratio = { inf: a, cav: b, arc: c };
+          break;
+        }
+      }
+    }
 
     let troops = null;
     if (total && ratio) {
@@ -229,70 +289,41 @@
       };
     }
 
-    return {
-      total,
-      ratio,
-      troops,
-      rawText: text,
-    };
+    return { total, ratio, troops, rawText: text };
   }
 
-  /**
-   * Parse Def Stat Bonuses image.
-   * Reads all stat lines for defender.
-   */
-  async function parseDefStatBonuses(file) {
-    const img = await fileToImage(file);
-    const canvas = fullCanvas(img, 1200);
-    const { text } = await ocrCanvas(canvas);
-
-    // Stats are on the RIGHT side of the screen (defender column)
-    const W = canvas.width;
-    const { words } = await ocrCanvas(canvas);
-    const rightWords = words.filter(w => w.bbox.x0 > W * 0.45);
-    const rightText = rightWords.sort((a, b) => a.bbox.y0 - b.bbox.y0).map(w => w.text).join('\n');
-
-    const defStats = parseStatBlock(rightText.length > 100 ? rightText : text);
-
-    // Also look for enemy penalties
-    const letPenM = text.match(/enemy\s+leth[a-z]*\s+penalty[^-\d]*(-?\d+(?:[.,]\d+)?)\s*%/i);
-    const hpPenM  = text.match(/enemy\s+health\s+penalty[^-\d]*(-?\d+(?:[.,]\d+)?)\s*%/i);
-
-    return {
-      stats: defStats,
-      enemyLetPenalty: letPenM ? parseFloat(letPenM[1].replace(',', '.')) : 0,
-      enemyHpPenalty:  hpPenM  ? parseFloat(hpPenM[1].replace(',', '.'))  : 0,
-      rawText: text,
-    };
-  }
-
-  /**
-   * Parse Attacker Stats/Troops image (left side only).
-   */
+  /* ── PARSER 4: Attacker Stats/Troops (left half only) ───────────── */
   async function parseAttackerStatsTroops(file) {
     const img = await fileToImage(file);
-    const canvas = fullCanvas(img, 1200);
-    const { text, words } = await ocrCanvas(canvas);
+    const W = img.naturalWidth, H = img.naturalHeight;
+    // Take left 52% of image
+    const leftCanvas = cropCanvas(img, 0, 0, W * 0.52, H, 900);
+    const { text, words } = await ocrFull(leftCanvas);
+    const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
 
-    const W = canvas.width;
-    const leftWords = words.filter(w => w.bbox.x0 < W * 0.52);
-    const leftText = leftWords.sort((a, b) => a.bbox.y0 - b.bbox.y0).map(w => w.text).join('\n');
+    // Extract 3 troop amounts
+    const nums = [];
+    for (const line of lines) {
+      const cleaned = line.replace(/[^0-9,]/g, '');
+      const n = parseAmount(cleaned);
+      if (n != null && n >= 100 && n <= 9999999) {
+        nums.push(n);
+        if (nums.length === 3) break;
+      }
+    }
+    const troops = nums.length >= 3 ? { inf: nums[0], cav: nums[1], arc: nums[2] } : null;
+    const stats = parseStatLines(lines);
 
-    const troops = parseTroopAmounts(leftText);
-    const stats  = parseStatBlock(leftText.length > 50 ? leftText : text);
-
-    return {
-      troops,
-      stats,
-      rawText: text,
-    };
+    return { troops, stats, rawText: text };
   }
 
+  /* ── Public API ─────────────────────────────────────────────────── */
   window.KingSim = window.KingSim || {};
   window.KingSim.pvpOcr = {
-    parseAttackReport,
-    parseDefTroopRatio,
+    parseBattleReport,
+    parseAttackReport: parseBattleReport,   // alias for backward compat
     parseDefStatBonuses,
+    parseDefTroopRatio,
     parseAttackerStatsTroops,
   };
 })();
