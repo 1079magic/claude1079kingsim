@@ -43,8 +43,8 @@
       defenderTier    = 'T10',
       sparsity  = 0.01,
       infMin = 0.40, infMax = 0.80,
-      cavMin = 0.15, cavMax = 0.25,
-      arcMin = 0.10,   // always ≥10% archers — prevents degenerate 80/15/5 type formations
+      cavMin = 0.15, cavMax = 0.22,
+      arcMin = 0.15,   // always ≥15% archers — archers are DPS, must be present
       maxTop = 10,
     } = opts;
 

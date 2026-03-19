@@ -307,14 +307,21 @@
         const _perType=_ai+_ac+_aa;
         const attTotal=_perType>0?_perType:(num('pvp_att_total',0)||150000);
         await new Promise(r=>setTimeout(r,20));
-        const out=opt.scanPvP({attackerTotal:attTotal,attackerStats:readStats('pvp_att'),attackerTier:$('pvp_att_tier').value,defenderTroops:{inf:defInf,cav:defCav,arc:defArc},defenderStats:readStats('pvp_def'),defenderTier:$('pvp_def_tier').value,sparsity:.01,infMin:.40,infMax:.80,cavMin:.15,cavMax:.25,arcMin:.10,maxTop:10});
+        const out=opt.scanPvP({attackerTotal:attTotal,attackerStats:readStats('pvp_att'),attackerTier:$('pvp_att_tier').value,defenderTroops:{inf:defInf,cav:defCav,arc:defArc},defenderStats:readStats('pvp_def'),defenderTier:$('pvp_def_tier').value,sparsity:.01,infMin:.40,infMax:.80,cavMin:.15,cavMax:.22,arcMin:.15,maxTop:10});
         const best=out.best;if(!best)throw new Error('No results');
         const fi=best.fi,fc=best.fc;
         const inf=Math.round(fi*attTotal),cav=Math.round(fc*attTotal),arc=Math.max(0,attTotal-inf-cav);
         $('pvp_best_val').textContent=best.label;
         $('pvp_best_sub').innerHTML='Infantry: <strong>'+inf.toLocaleString()+'</strong> | Cavalry: <strong>'+cav.toLocaleString()+'</strong> | Archers: <strong>'+arc.toLocaleString()+'</strong><br>Est. defender injuries: <strong>'+best.defenderInjured.toLocaleString()+'</strong>';
-        const tbody=$('pvp_tbody');tbody.innerHTML='';
-        (out.top10||[]).forEach((r,i)=>{const tr=document.createElement('tr');const dI=(r.defenderInjured||0).toLocaleString();const aI=(r.attackerInjured||0).toLocaleString();const w=r.winner==='attacker'?'<span style="color:#10b981">WIN</span>':'<span style="color:#ef4444">LOSS</span>';tr.innerHTML='<td>'+(r.rank||i+1)+'</td><td>'+(r.label||'—')+'</td><td>'+dI+'</td><td>'+aI+'</td><td>'+w+'</td>';tbody.appendChild(tr);});
+        const tbody=$('pvp_tbody');
+        tbody.innerHTML=(out.top10||[]).map((r,i)=>{
+          const dI=(r.defenderInjured||0).toLocaleString();
+          const aI=(r.attackerInjured||0).toLocaleString();
+          const win=r.winner==='attacker';
+          const wCell=win?'<span style="color:#10b981;font-weight:700">WIN</span>':'<span style="color:#ef4444">LOSS</span>';
+          const rowStyle=win?'':'opacity:0.7';
+          return '<tr style="'+rowStyle+'"><td>'+(r.rank||i+1)+'</td><td>'+(r.label||'—')+'</td><td>'+dI+'</td><td>'+aI+'</td><td>'+wCell+'</td></tr>';
+        }).join('');
         $('pvp_count').innerHTML='Tested <strong>'+out.totalTested.toLocaleString()+'</strong> formations';
         $('pvp_results').style.display='block';
         $('pvp_results').scrollIntoView({behavior:'smooth',block:'start'});
