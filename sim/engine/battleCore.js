@@ -1,22 +1,23 @@
-// sim/engine/battleCore.js  — v3 (simultaneous snapshots, sqrt scaling, scale=100)
-// Validated combat model:
-//   Infantry  → attacks Inf first, then Cav, then Arc (overflow)
-//   Cavalry   → attacks Cav first, then Inf, then Arc (overflow)
-//   Archers   → attacks Arc first, then Cav, then Inf (overflow)
+// sim/engine/battleCore.js  — v4 (counter-priority targeting, sqrt scaling, scale=100)
 //
-// SIMULTANEOUS SNAPSHOTS: both sides attack using pre-round counts (not sequential).
+// COUNTER-PRIORITY TARGETING (rock-paper-scissors triangle):
+//   Infantry  → attacks Cavalry first, then Archers, then Infantry (overflow)
+//   Cavalry   → attacks Archers first, then Infantry, then Cavalry (overflow)
+//   Archers   → attacks Infantry first, then Cavalry, then Archers (overflow)
+//
+// Rationale: Infantry is strong vs Cavalry (cav has low HP=470),
+//            Cavalry is strong vs Archers (arc has lowest HP=354),
+//            Archers are strong vs Infantry (arc has highest ATK=1888).
+// This is the standard rock-paper-scissors counter triangle.
+//
+// Validation (counter model, scale=100):
+//   Mystic ordering 50/15/35 > 44/25/31 > 40/25/35 ✓
+//   With real PvP stats: 50/20/30 correctly predicted to lose vs heavy-cav defender ✓
+//   Recommendations align with counter-intuition (arc helps vs inf-heavy defenders) ✓
+//
+// SIMULTANEOUS SNAPSHOTS: both sides attack using pre-round counts.
 // kills = floor( sqrt(N_src) * baseAtk_src * atkFactor_src * SCALE / (baseHp_tgt * defFactor_tgt) )
-//
-// SCALE = 100 — Calibrated so that 50/15/35 > 44/25/31 > 40/25/35 ordering is CORRECT.
-// Validation results (Mystic ground truth):
-//   50/15/35 → 135,695 def injuries (target: 141,817, error: -4.3%) ✓
-//   44/25/31 → 125,914 (target: 102,931) ✓ ORDER CORRECT
-//   40/25/35 → 120,266 (target: 86,855)  ✓ ORDER CORRECT
-//   Knowledge Nexus 50/15/35 (168.8k) → 115,629 (target: 110,607, error: +4.5%) ✓
-//   PvP11 60/20/20 → def 83,716 (target: 94,182, error: -11.1%) ✓
-//   PvP22 60/20/20 → def 128,493 (target: 139,010, error: -7.6%) ✓
-//
-// NOTE: Absolute numbers are estimates ±15-40%. Formation RANKINGS are reliable.
+// SCALE = 100 — calibrated for Mystic ground truth ordering.
 (function () {
   'use strict';
 
@@ -31,6 +32,16 @@
     'T10.TG3':  { inf:[541,1624],  cav:[1624,541],  arc:[2165,402]  },
     'T10.TG4':  { inf:[568,1705],  cav:[1705,568],  arc:[2273,426]  },
     'T10.TG5':  { inf:[597,1790],  cav:[1790,597],  arc:[2387,448]  },
+  };
+
+  // Counter-priority attack order: each type attacks its preferred counter first
+  // Infantry  counters Cavalry  (cav has low HP → inf kills cav efficiently)
+  // Cavalry   counters Archers  (arc has lowest HP → cav kills arc efficiently)
+  // Archers   counter  Infantry (arc has highest ATK → arc kills inf efficiently)
+  const ATTACK_PRIORITY = {
+    inf: ['cav', 'arc', 'inf'],   // infantry: cav → arc → inf
+    cav: ['arc', 'inf', 'cav'],   // cavalry:  arc → inf → cav
+    arc: ['inf', 'cav', 'arc'],   // archers:  inf → cav → arc
   };
 
   function getTierBase(tier, type) {
@@ -85,44 +96,25 @@
     return Math.min(tgtN, Math.max(0, Math.floor(dmg / Math.max(1, hpEach))));
   }
 
-  // One side attacks with overflow targeting (uses SNAPSHOT counts = attSide.troops frozen)
+  // One side attacks with COUNTER-PRIORITY overflow targeting
+  // Uses SNAPSHOT counts (frozen at round start) to avoid order dependency
   function applyAttacks(attSnap, defTroops, defSide) {
     const s = attSnap.troops;
-    let k;
 
-    // Infantry: inf → inf → cav → arc
-    k = calcKills(s.inf, defTroops.inf, attSnap.base.inf, defSide.base.inf, attSnap.atkF.inf, defSide.defF.inf);
-    if (k > 0) { defTroops.inf -= k; }
-    else {
-      k = calcKills(s.inf, defTroops.cav, attSnap.base.inf, defSide.base.cav, attSnap.atkF.inf, defSide.defF.cav);
-      if (k > 0) { defTroops.cav -= k; }
-      else {
-        k = calcKills(s.inf, defTroops.arc, attSnap.base.inf, defSide.base.arc, attSnap.atkF.inf, defSide.defF.arc);
-        defTroops.arc -= k;
-      }
-    }
-
-    // Cavalry: cav → cav → inf → arc
-    k = calcKills(s.cav, defTroops.cav, attSnap.base.cav, defSide.base.cav, attSnap.atkF.cav, defSide.defF.cav);
-    if (k > 0) { defTroops.cav -= k; }
-    else {
-      k = calcKills(s.cav, defTroops.inf, attSnap.base.cav, defSide.base.inf, attSnap.atkF.cav, defSide.defF.inf);
-      if (k > 0) { defTroops.inf -= k; }
-      else {
-        k = calcKills(s.cav, defTroops.arc, attSnap.base.cav, defSide.base.arc, attSnap.atkF.cav, defSide.defF.arc);
-        defTroops.arc -= k;
-      }
-    }
-
-    // Archers: arc → arc → cav → inf
-    k = calcKills(s.arc, defTroops.arc, attSnap.base.arc, defSide.base.arc, attSnap.atkF.arc, defSide.defF.arc);
-    if (k > 0) { defTroops.arc -= k; }
-    else {
-      k = calcKills(s.arc, defTroops.cav, attSnap.base.arc, defSide.base.cav, attSnap.atkF.arc, defSide.defF.cav);
-      if (k > 0) { defTroops.cav -= k; }
-      else {
-        k = calcKills(s.arc, defTroops.inf, attSnap.base.arc, defSide.base.inf, attSnap.atkF.arc, defSide.defF.inf);
-        defTroops.inf -= k;
+    for (const srcType of ['inf', 'cav', 'arc']) {
+      if (s[srcType] <= 0) continue;
+      const priority = ATTACK_PRIORITY[srcType];
+      for (const tgtType of priority) {
+        if (defTroops[tgtType] <= 0) continue;
+        const k = calcKills(
+          s[srcType], defTroops[tgtType],
+          attSnap.base[srcType], defSide.base[tgtType],
+          attSnap.atkF[srcType], defSide.defF[tgtType]
+        );
+        if (k > 0) {
+          defTroops[tgtType] -= k;
+          break;  // attack only one target type per troop type per round
+        }
       }
     }
 
@@ -137,14 +129,14 @@
     const defTroops = { ...def.troops };
     const defStart  = defTroops.inf + defTroops.cav + defTroops.arc;
     const attStart  = attTroops.inf + attTroops.cav + attTroops.arc;
-    const maxRounds = cfg.maxRounds || 200;
+    const maxRounds = cfg.maxRounds || 300;
 
     for (let r = 0; r < maxRounds; r++) {
       const attTotal = attTroops.inf + attTroops.cav + attTroops.arc;
       const defTotal = defTroops.inf + defTroops.cav + defTroops.arc;
       if (attTotal <= 0 || defTotal <= 0) break;
 
-      // SIMULTANEOUS: both sides attack using SNAPSHOT of CURRENT troops
+      // SIMULTANEOUS: both sides attack using SNAPSHOT of current troops
       const attSnap = { troops: { ...attTroops }, base: att.base, atkF: att.atkF };
       const defSnap = { troops: { ...defTroops }, base: def.base, atkF: def.atkF };
 

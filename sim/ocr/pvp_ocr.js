@@ -527,7 +527,7 @@
       if (!digits.length) return 0;
       // Average of all valid readings, floor to nearest integer
       const avg = digits.reduce((s, d) => s + d, 0) / digits.length;
-      return Math.floor(avg);  // (3+3+4)/3 = 3.33 → 3, (3+3+3)/3 = 3.0 → 3
+      return Math.round(avg);  // (2+3+3)/3 = 2.67 → TG3, (3+3+4)/3 = 3.33 → TG3
     }
 
     try {

@@ -40,7 +40,7 @@
     .result-best-sub{font-size:.82rem;color:var(--muted);}
     .table-scroll{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;}
     .table-scroll table{min-width:520px;width:100%;border-collapse:collapse;}
-    .table-scroll th,.table-scroll td{padding:9px 12px;border-bottom:1px solid rgba(35,54,77,.6);font-size:13px;white-space:nowrap;}
+    .table-scroll th,.table-scroll td{padding:9px 12px;border-bottom:1px solid rgba(35,54,77,.6);font-size:13px;white-space:nowrap;color:var(--ink);}
     .table-scroll th{font-size:12px;font-weight:700;color:#7dd3fc;text-transform:uppercase;letter-spacing:.04em;text-align:left;}
     .table-scroll tr:first-child td{color:#ffd700;font-weight:700;}
     .stats-grid{display:grid;gap:12px;grid-template-columns:1fr;}
@@ -120,7 +120,7 @@
           <button class="btn-run" id="pvp_run_btn">&#9654; Run Simulation</button>
           <span class="muted" id="pvp_run_status">Ready — import data or enter manually below</span>
         </div>
-        <p class="engine-note">Rankings are reliable. Absolute injury estimates may vary ±15-25% from in-game values.</p>
+        <p class="engine-note">Rankings are reliable. Counter-priority targeting: Inf→Cav, Cav→Arc, Arc→Inf. Absolute estimates ±15-25%.</p>
       </div>
     </section>
 
@@ -315,7 +315,7 @@
         $('pvp_best_val').textContent=best.label;
         $('pvp_best_sub').innerHTML='Infantry: <strong>'+inf.toLocaleString()+'</strong> | Cavalry: <strong>'+cav.toLocaleString()+'</strong> | Archers: <strong>'+arc.toLocaleString()+'</strong><br>Est. defender injuries: <strong>'+best.defenderInjured.toLocaleString()+'</strong>';
         const tbody=$('pvp_tbody');tbody.innerHTML='';
-        (out.top10||[]).forEach(r=>{const tr=document.createElement('tr');tr.innerHTML='<td>'+r.rank+'</td><td>'+r.label+'</td><td>'+r.defenderInjured.toLocaleString()+'</td><td>'+r.attackerInjured.toLocaleString()+'</td>';tbody.appendChild(tr);});
+        (out.top10||[]).forEach((r,i)=>{const tr=document.createElement('tr');const dI=(r.defenderInjured||0).toLocaleString();const aI=(r.attackerInjured||0).toLocaleString();tr.innerHTML='<td>'+(r.rank||i+1)+'</td><td>'+(r.label||'—')+'</td><td>'+dI+'</td><td>'+aI+'</td>';tbody.appendChild(tr);});
         $('pvp_count').innerHTML='Tested <strong>'+out.totalTested.toLocaleString()+'</strong> formations';
         $('pvp_results').style.display='block';
         $('pvp_results').scrollIntoView({behavior:'smooth',block:'start'});
