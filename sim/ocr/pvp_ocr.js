@@ -88,9 +88,24 @@
   function parseAmount(s) {
     if (!s) return null;
     s = String(s).trim();
-    const mAbbr = s.match(/^([\d,\.]+)\s*([KkMmBb])/);
+    // OCR normalization: fix common misreads in numeric strings
+    s = s.replace(/(\.)[lI]/g, '.1');       // "1.lM" / "1.IM" → "1.1M" (l/I read as 1)
+    s = s.replace(/(\d)[lI]/g, '$11');       // "1lM" → "11M"
+    s = s.replace(/[Oo]/g, '0');              // O/o → 0
+    // European decimal: "1,1M" → "1.1M" (single digit, comma, 1-2 digits, then suffix)
+    s = s.replace(/^(\d+),(\d{1,2})([KkMmBb])$/i, '$1.$2$3');
+    // Colon-as-decimal: "1:1M" → "1.1M"
+    s = s.replace(/^(\d+):(\d{1,2})([KkMmBb])$/i, '$1.$2$3');
+    const mAbbr = s.match(/^([\d,\.]+)\s*([KkMmBb])/i);
     if (mAbbr) {
-      const n = parseFloat(mAbbr[1].replace(/,/g, ''));
+      let numStr = mAbbr[1];
+      // Thousand-separator commas vs decimal comma
+      if (/,\d{3}(,\d{3})*$/.test(numStr)) {
+        numStr = numStr.replace(/,/g, '');    // "1,100,000" → "1100000"
+      } else {
+        numStr = numStr.replace(',', '.');    // "1,1" → "1.1" (European decimal)
+      }
+      const n = parseFloat(numStr);
       if (!isFinite(n)) return null;
       return Math.round(n * ({ k:1e3, m:1e6, b:1e9 }[mAbbr[2].toLowerCase()] || 1));
     }
@@ -286,11 +301,21 @@
     for (let i = 0; i < lines.length; i++) {
       if (/troops?\s*total/i.test(lines[i])) {
         const after = lines[i].replace(/.*troops?\s*total\s*[:\s]*/i, '').trim();
-        total = parseAmount(after.replace(/[^0-9,.KkMmBb]/g, ''));
+        total = parseAmount(after.replace(/[^0-9,.KkMmBblI]/g, '')); // include lI for OCR fix
         if (!total && i + 1 < lines.length) {
-          total = parseAmount(lines[i + 1].replace(/[^0-9,.KkMmBb]/g, ''));
+          total = parseAmount(lines[i + 1].replace(/[^0-9,.KkMmBblI]/g, ''));
         }
         if (total) break;
+      }
+    }
+    // Fallback: scan ALL lines for any M/K suffixed number > 50,000 (likely troop total)
+    if (!total) {
+      for (const line of lines) {
+        const m = line.match(/([\d][\d,\.lI]*[KkMmBb])/);
+        if (m) {
+          const candidate = parseAmount(m[1]);
+          if (candidate && candidate > 50000) { total = candidate; break; }
+        }
       }
     }
 
