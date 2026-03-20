@@ -159,16 +159,23 @@
       joinCandidates.push({ name: heroName, score: joinScore, isJoiner });
     });
 
-    // Sort CALL: by score desc (non-joiners only, all 3 skills)
+    // Sort CALL by score desc
     callCandidates.sort((a, b) => b.score - a.score);
+
+    // CALL must have exactly 1 INF, 1 CAV, 1 ARC — pick best of each type
+    const callByType = { Infantry: null, Cavalry: null, Archer: null };
+    for (const h of callCandidates) {
+      const tt = heroIndex.get(h.name)?.troopType || 'Infantry';
+      if (!callByType[tt]) callByType[tt] = h;
+    }
+    // Build the typed call team (only include types that have a hero available)
+    const callTop3 = Object.values(callByType).filter(Boolean);
 
     // Sort JOIN: joiners first (sorted by score), then non-joiners (sorted by score)
     joinCandidates.sort((a, b) => {
       if (a.isJoiner !== b.isJoiner) return a.isJoiner ? -1 : 1;
       return b.score - a.score;
     });
-
-    const callTop3 = callCandidates.slice(0, 3);
     // JOIN: numMarches - 1 slots (one march is the CALL)
     const joinNeeded = Math.max(0, numMarches - 1);
     // Remove call heroes from join pool to avoid duplicates
@@ -249,53 +256,59 @@
     const panel   = document.getElementById('bear-rec-panel');
     const content = document.getElementById('bear-rec-content');
     if (!panel || !content) return;
-    if (!rec || (!rec.call.length && !rec.join.length)) {
+    if (!rec || (!rec.call?.length && !rec.join?.length)) {
       panel.style.display = 'none';
       return;
     }
     panel.style.display = 'block';
 
-    const numM = rec.numMarches;
-    let html = `<p style="font-size:.72rem;color:var(--muted);margin:0 0 8px">
-      Based on ${numM} march${numM!==1?'es':''} · own ${numM===1?'0':'('+numM+'-1)'} join slot${numM>2?'s':''}</p>`;
+    const numM = rec.numMarches || 3;
 
-    // CALL section
-    if (rec.call.length) {
-      html += `<div style="margin-bottom:10px">
-        <div style="font-size:.7rem;font-weight:700;letter-spacing:.05em;color:#22d3ee;text-transform:uppercase;margin-bottom:5px">
-          ⚔ Call Rally — Top ${rec.call.length} Heroes
-        </div>`;
-      rec.call.forEach((h, i) => {
-        html += `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #1a2c40">
-          <span style="font-size:.7rem;color:var(--muted);width:16px;text-align:right">${i+1}</span>
-          <span class="bear-hero-pill bear-hero-pill--call" style="font-size:.75rem">${h.name}</span>
-          <span style="font-size:.68rem;color:var(--muted);margin-left:auto">score ${h.score}</span>
-        </div>`;
-      });
-      html += `</div>`;
-    }
+    // ── Compact 2-col layout: CALL left | JOIN right ──────────────
+    // Troop type emojis for call slots
+    const TYPE_EMOJI = { Infantry:'⚔️', Cavalry:'🐎', Archer:'🏹' };
 
-    // JOIN section
-    if (rec.join.length) {
-      html += `<div>
-        <div style="font-size:.7rem;font-weight:700;letter-spacing:.05em;color:#10b981;text-transform:uppercase;margin-bottom:5px">
-          🤝 Join Rallies — Top ${rec.join.length} Hero${rec.join.length!==1?'es':''}
-        </div>`;
-      rec.join.forEach((h, i) => {
-        const isJ = JOINER_NAMES.has(h.name);
-        html += `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #1a2c40">
-          <span style="font-size:.7rem;color:var(--muted);width:16px;text-align:right">${i+1}</span>
-          <span class="bear-hero-pill bear-hero-pill--join" style="font-size:.75rem;display:inline-block">${h.name}</span>
-          ${isJ ? '<span style="font-size:.62rem;color:#7dd3fc;opacity:.7">joiner</span>' : ''}
-          <span style="font-size:.68rem;color:var(--muted);margin-left:auto">score ${h.score}</span>
-        </div>`;
-      });
-      html += `</div>`;
-    }
+    // Build CALL column
+    let callHtml = '';
+    (rec.call || []).forEach((h, i) => {
+      const heroData = window._HERO_INDEX_REF?.get(h.name);
+      const tt = heroData?.troopType || '';
+      const em = TYPE_EMOJI[tt] || '';
+      callHtml += `<div style="display:flex;align-items:center;gap:5px;padding:4px 0;border-bottom:1px solid rgba(34,211,238,.08)">
+        <span style="font-size:.75rem;width:16px;text-align:center">${em}</span>
+        <span class="bear-hero-pill bear-hero-pill--call" style="font-size:.72rem;padding:2px 7px">${h.name}</span>
+      </div>`;
+    });
 
-    if (!rec.call.length && !rec.join.length) {
-      html = '<p class="muted" style="font-size:.78rem">Mark heroes as Owned to see recommendations.</p>';
-    }
+    // Build JOIN column
+    let joinHtml = '';
+    (rec.join || []).forEach((h, i) => {
+      const isJ = JOINER_NAMES.has(h.name);
+      const heroData = window._HERO_INDEX_REF?.get(h.name);
+      const tt = heroData?.troopType || '';
+      const em = TYPE_EMOJI[tt] || '';
+      joinHtml += `<div style="display:flex;align-items:center;gap:5px;padding:4px 0;border-bottom:1px solid rgba(16,185,129,.08)">
+        <span style="font-size:.75rem;width:16px;text-align:center">${em}</span>
+        <span class="bear-hero-pill bear-hero-pill--join" style="font-size:.72rem;padding:2px 7px;display:inline-block">${h.name}</span>
+        ${isJ?'<span style="font-size:.58rem;color:#7dd3fc;opacity:.65;white-space:nowrap">★</span>':''}
+      </div>`;
+    });
+
+    const html = `
+      <div style="font-size:.65rem;color:var(--muted);margin-bottom:6px">
+        ${numM} march${numM!==1?'es':''} · CALL 3 heroes · ${numM-1} join slot${numM>2?'s':''}
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div>
+          <div style="font-size:.65rem;font-weight:700;letter-spacing:.06em;color:#22d3ee;text-transform:uppercase;margin-bottom:4px">⚔ Call Rally</div>
+          ${callHtml || '<p style="font-size:.7rem;color:var(--muted);padding:4px 0">No heroes set</p>'}
+        </div>
+        <div>
+          <div style="font-size:.65rem;font-weight:700;letter-spacing:.06em;color:#10b981;text-transform:uppercase;margin-bottom:4px">🤝 Join Rallies</div>
+          ${joinHtml || '<p style="font-size:.7rem;color:var(--muted);padding:4px 0">No join slots</p>'}
+        </div>
+      </div>
+      <div style="font-size:.6rem;color:var(--muted);margin-top:6px;opacity:.6">★ = joiner hero · 1 hero per troop type in Call</div>`;
 
     content.innerHTML = html;
   }
@@ -311,6 +324,7 @@
       if (!rec) return;
       injectCallHeroNames(rec.call);
       injectJoinHeroNames(rec.join);
+      saveRec(rec);
       renderBearPanel(rec);
       window.__bearHeroRec = rec;
     });
@@ -343,12 +357,30 @@
   };
 
   // Auto-start + initial render on load
+  // ── Persist recommendation to localStorage so it survives page navigation ──
+  const REC_KEY = 'kingsim_bear_rec_v1';
+  function saveRec(rec) {
+    try { localStorage.setItem(REC_KEY, JSON.stringify(rec)); } catch(_) {}
+  }
+  function loadRec() {
+    try { const r = localStorage.getItem(REC_KEY); return r ? JSON.parse(r) : null; }
+    catch(_) { return null; }
+  }
+
   function init() {
     startObserving();
-    // Render bear panel on initial load (even before tables exist)
+    // Try to restore from localStorage first (instant render on page load)
+    const cached = loadRec();
+    if (cached && (cached.call?.length || cached.join?.length)) {
+      renderBearPanel(cached);
+    }
+    // Then recompute fresh
     ensureHeroIndex().then(() => {
       const rec = recommend();
-      if (rec) renderBearPanel(rec);
+      if (rec && (rec.call.length || rec.join.length)) {
+        saveRec(rec);
+        renderBearPanel(rec);
+      }
     });
   }
 

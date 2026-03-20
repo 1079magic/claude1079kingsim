@@ -70,12 +70,14 @@
         <div class="info-tip"><strong style="color:#fbbf24">Tip:</strong> Set your hero levels and skills here before running PvP simulations — knowing your hero bonuses makes the formation rankings far more accurate.</div>
       </div>
     </div>
-    <section class="panel panel-glass">
-      <h2 class="h2">🧙‍♂️ Heroes — Build & Battle Effects</h2>
-      <p class="muted" style="margin-top:6px">
-        Select ownership, set level (⭐ 1–5), skill levels (1–5), and widget level (⚔ 1–5).
-        Joiners are merged into the <b>Epic</b> group. Calculations show <b>Battle‑PLUS</b> effects only.
-      </p>
+    <!-- Bear Hero Recommendation panel — ABOVE hero cards, always visible once data exists -->
+    <section class="panel panel-glass" id="bear-rec-panel" style="display:none;border-left:3px solid #22d3ee">
+      <h3 style="font-size:.85rem;font-weight:700;color:#22d3ee;margin:0 0 8px;display:flex;align-items:center;gap:6px">
+        🐻 Bear Magic — Recommended Heroes
+      </h3>
+      <div id="bear-rec-content">
+        <p class="muted" style="font-size:.78rem">Set heroes as Owned to see recommendations.</p>
+      </div>
     </section>
 
     <!-- Hero cards grid -->
@@ -87,15 +89,7 @@
       </div>
     </section>
 
-    <!-- Bear Hero Recommendation panel -->
-    <section class="panel panel-glass" id="bear-rec-panel" style="display:none;margin-top:10px">
-      <h3 style="font-size:.95rem;font-weight:700;color:#22d3ee;margin:0 0 10px;display:flex;align-items:center;gap:6px">
-        🐻 Bear Magic — Recommended Heroes
-      </h3>
-      <div id="bear-rec-content">
-        <p class="muted" style="font-size:.78rem">Calculating…</p>
-      </div>
-    </section>
+
 
     <!-- Summary panel (revealed when at least one hero is owned) -->
     <section class="panel panel-glass" id="summary-panel" style="display:none">
