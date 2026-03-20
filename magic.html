@@ -393,17 +393,7 @@
           // Initialize & compute
           if (window.Magic && typeof Magic.init === 'function') Magic.init();
           if (window.Magic && typeof Magic.compute === 'function') Magic.compute('magic12');
-          // Inject hero names — defer one frame so table DOM is settled
-          (function() {
-            var HB = window.HeroesBear;
-            if (!HB) return;
-            var rec = (HB.recommend && HB.recommend()) || (HB.loadRec && HB.loadRec()) || window.__bearHeroRec;
-            if (!rec || !rec.call || !rec.call.length) return;
-            requestAnimationFrame(function() {
-              HB.injectCallHeroNames(rec.call);
-              HB.injectJoinHeroNames(rec.join);
-            });
-          })();
+
 
           if (s){ s.textContent=''; s.className=''; }
         }catch(err){

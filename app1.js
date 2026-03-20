@@ -983,11 +983,22 @@ Stock used: ${used} / ${before}.`;
       }
     }
 
-    $("btnMagic12")?.addEventListener("click", () => { resetRecButtonState(); compute("magic12"); });
+    function computeAndInject(mode) {
+      compute(mode);
+      var HB = window.HeroesBear;
+      if (HB) {
+        var rec = (HB.recommend && HB.recommend()) || (HB.loadRec && HB.loadRec()) || window.__bearHeroRec;
+        if (rec && rec.call && rec.call.length) {
+          HB.injectCallHeroNames(rec.call);
+          HB.injectJoinHeroNames(rec.join);
+        }
+      }
+    }
+    $("btnMagic12")?.addEventListener("click", () => { resetRecButtonState(); computeAndInject("magic12"); });
     $("btnRecompute")?.addEventListener("click", () => {
       resetRecButtonState();
       const mode = $("hiddenLastMode")?.value || "magic12";
-      compute(mode);
+      computeAndInject(mode);
     });
 
     // ── "Use Recommended" button — single click applies, second click restores ──
@@ -1027,6 +1038,16 @@ Stock used: ${used} / ${before}.`;
 
     inited = true;
     compute("magic12");
+    // Hero names inject — runs here because tiers.json await is done, tables are rendered
+    (function(){
+      var HB = window.HeroesBear;
+      if (!HB) return;
+      var rec = (HB.recommend && HB.recommend()) || (HB.loadRec && HB.loadRec()) || window.__bearHeroRec;
+      if (rec && rec.call && rec.call.length) {
+        HB.injectCallHeroNames(rec.call);
+        HB.injectJoinHeroNames(rec.join);
+      }
+    })();
   }
 
   // Expose
