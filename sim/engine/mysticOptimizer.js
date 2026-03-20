@@ -134,12 +134,15 @@
       defenderStats   = {},
       defenderTier    = 'T10',
       defenderTroops: defOverride = null,
+      overrideCentre  = null,
       maxTop = 10,
     } = opts;
 
     const cfg    = TRIAL_CONFIG[trialName] || DEFAULT_CONFIG;
-    const centre = computeCentre(cfg);
-    const wing   = cfg.delta ? WING : WING_FB;
+    const centre = overrideCentre
+      ? { fi: overrideCentre.fi, fc: overrideCentre.fc, fa: parseFloat((1-overrideCentre.fi-overrideCentre.fc).toFixed(3)) }
+      : computeCentre(cfg);
+    const wing   = (overrideCentre || cfg.delta) ? WING : WING_FB;
 
     // Search bounds: centre ± wing, clamped to hard floors
     // For validated trials: infMax = centre.fi (engine gravitates to ceiling = our target)
@@ -222,6 +225,24 @@
     return cfg.preset;
   }
 
+  const RECAL_MOVES = [
+    { dFi: +0.010, dFc: -0.010, label: '+1% inf, −1% cav' },
+    { dFi:  0.000, dFc: -0.010, label: '+1% arc, −1% cav' },
+    { dFi: +0.010, dFc:  0.000, label: '+1% inf, −1% arc' },
+    { dFi:  0.000, dFc: -0.010, label: '+1% arc, −1% cav' },
+    { dFi: -0.020, dFc: +0.010, label: '+1% cav+arc, −2% inf' },
+  ];
+
+  function recalibrateCentre(centre, injured, defTotal, attemptIdx) {
+    const pct  = Math.min(1, injured / Math.max(1, defTotal));
+    const move = RECAL_MOVES[Math.min(attemptIdx, RECAL_MOVES.length - 1)];
+    const scale = pct < 0.50 ? 2.0 : 1.0;
+    const newFi = parseFloat(Math.max(0.40, Math.min(0.68, centre.fi + move.dFi * scale)).toFixed(3));
+    const newFc = parseFloat(Math.max(0.10, Math.min(0.35, centre.fc + move.dFc * scale)).toFixed(3));
+    const newFa = parseFloat(Math.max(0.15, 1 - newFi - newFc).toFixed(3));
+    return { fi: newFi, fc: newFc, fa: newFa, moveName: move.label, injuredPct: pct };
+  }
+
   window.KingSim = window.KingSim || {};
-  window.KingSim.mysticOptimizer = { scanMysticTrials, DEF_FRACTIONS, TRIAL_CONFIG, getPreset };
+  window.KingSim.mysticOptimizer = { scanMysticTrials, DEF_FRACTIONS, TRIAL_CONFIG, getPreset, recalibrateCentre, RECAL_MOVES };
 })();

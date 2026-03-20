@@ -290,10 +290,341 @@
     }
   }
 
+  // ═══════════════════════════════════════════════════════════════════
+  // BATTLE RECALIBRATION SYSTEM
+  // ─────────────────────────────────────────────────────────────────
+  // After each failed Mystic Trial the user enters injured defenders.
+  // The engine shifts its search centre by one validated move and
+  // re-scans around the new centre.  Up to 5 attempts (daily limit).
+  // State persists in localStorage so a page reload never loses data.
+  // ═══════════════════════════════════════════════════════════════════
+
+  const RC_MAX    = 5;
+  const RC_KEY    = (t) => 'mystic_recal_' + t.replace(/\s+/g,'_');
+  const DEF_POOL  = 150000; // fixed Mystic defender pool
+
+  // ── localStorage ─────────────────────────────────────────────────
+  function rcLoad(trial){
+    try{ const r=localStorage.getItem(RC_KEY(trial)); return r?JSON.parse(r):null; }catch(_){return null;}
+  }
+  function rcSave(trial,state){
+    try{ localStorage.setItem(RC_KEY(trial),JSON.stringify(state)); }catch(_){}
+  }
+  function rcDrop(trial){
+    try{ localStorage.removeItem(RC_KEY(trial)); }catch(_){}
+  }
+
+  let _rcState = null; // in-memory mirror
+
+  function rcGet(trial){
+    if(_rcState && _rcState.trial===trial) return _rcState;
+    _rcState = rcLoad(trial); return _rcState;
+  }
+  function rcInit(trial, centre, defTotal){
+    _rcState = { trial,
+      baseCentre:    {fi:centre.fi, fc:centre.fc, fa:centre.fa},
+      currentCentre: {fi:centre.fi, fc:centre.fc, fa:centre.fa},
+      defTotal:      defTotal||DEF_POOL,
+      attempts:[],
+      won:false };
+    rcSave(trial,_rcState); return _rcState;
+  }
+
+  // ── Fireworks ─────────────────────────────────────────────────────
+  function launchFireworks(){
+    const cv=document.getElementById('fw-canvas'); if(!cv) return;
+    cv.width=window.innerWidth; cv.height=window.innerHeight; cv.style.display='block';
+    const ctx=cv.getContext('2d');
+    const COLS=['#22d3ee','#10b981','#fbbf24','#f87171','#a78bfa','#fff'];
+    const parts=[];
+    for(let i=0;i<200;i++){
+      const a=Math.random()*Math.PI*2, s=1.5+Math.random()*7;
+      parts.push({x:cv.width*(0.2+Math.random()*0.6), y:cv.height*(0.2+Math.random()*0.5),
+        vx:Math.cos(a)*s, vy:Math.sin(a)*s-2, alpha:1,
+        color:COLS[Math.floor(Math.random()*COLS.length)], r:2.5+Math.random()*3.5});
+    }
+    let f=0;
+    (function draw(){
+      ctx.clearRect(0,0,cv.width,cv.height);
+      parts.forEach(p=>{
+        p.x+=p.vx; p.y+=p.vy; p.vy+=0.11; p.alpha-=0.014;
+        if(p.alpha<=0)return;
+        ctx.globalAlpha=p.alpha; ctx.fillStyle=p.color;
+        ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill();
+      });
+      ctx.globalAlpha=1;
+      if(++f<130) requestAnimationFrame(draw);
+      else{ cv.style.display='none'; ctx.clearRect(0,0,cv.width,cv.height); }
+    })();
+  }
+
+  // ── Formatting helpers ────────────────────────────────────────────
+  function fmtF(fi,fc){ const fa=Math.max(0,1-fi-fc); return (fi*100).toFixed(1)+'/'+(fc*100).toFixed(1)+'/'+(fa*100).toFixed(1); }
+  function fmtT(fi,fc,tot){
+    if(!tot) return '';
+    const i=Math.round(fi*tot), c=Math.round(fc*tot), a=Math.max(0,tot-i-c);
+    return 'Inf\u202f'+i.toLocaleString()+'\u2002|\u2002Cav\u202f'+c.toLocaleString()+'\u2002|\u2002Arc\u202f'+a.toLocaleString();
+  }
+
+  // ── Render: base (green) card ─────────────────────────────────────
+  function renderBase(centre, attTotal){
+    const panel=$('mt_recal_panel'); if(!panel) return;
+    panel.style.display='block';
+    const bf=$('rc_base_formation'); if(bf) bf.textContent=fmtF(centre.fi,centre.fc);
+    const bs=$('rc_base_sub');       if(bs) bs.textContent=fmtT(centre.fi,centre.fc,attTotal);
+  }
+
+  // ── Render: recalibrated (cyan) card ──────────────────────────────
+  function renderRecal(centre, attTotal, moveName, attemptNum){
+    const card=$('rc_new_card'); if(!card) return;
+    card.style.display='block';
+    const nf=$('rc_new_formation'); if(nf) nf.textContent=fmtF(centre.fi,centre.fc);
+    const ns=$('rc_new_sub');
+    if(ns) ns.textContent='Attempt\u202f'+attemptNum+'\u2002\u00b7\u2002'+moveName+
+      (attTotal?'\n'+fmtT(centre.fi,centre.fc,attTotal):'');
+  }
+
+  // ── Attempt row management ────────────────────────────────────────
+  function addAttemptRow(n){
+    const track=$('rc_attempt_track'); if(!track) return;
+    if(document.getElementById('rc_attempt_'+n)) return; // already there
+    const isFinal=(n>=RC_MAX);
+    const row=document.createElement('div');
+    row.className='attempt-row lost'; row.id='rc_attempt_'+n;
+    row.innerHTML=
+      '<div class="attempt-label">Attempt #'+n+(isFinal?'  \u00b7  Last attempt today':'')+' \u2014 enter injured defenders</div>'+
+      '<div class="attempt-injured-row">'+
+        '<input class="attempt-injured-input" id="rc_inj_'+n+'" type="number" placeholder="e.g.\u202f136\u202f571" min="0" step="1000" />'+
+        '<button class="attempt-apply-btn" id="rc_apply_'+n+'">Recalibrate \u21bb</button>'+
+      '</div>'+
+      '<div class="attempt-status" id="rc_status_'+n+'"></div>';
+    track.appendChild(row);
+    document.getElementById('rc_apply_'+n)?.addEventListener('click',()=>applyAttempt(n));
+    document.getElementById('rc_inj_'+n)?.addEventListener('keydown',e=>{ if(e.key==='Enter') applyAttempt(n); });
+    setTimeout(()=>document.getElementById('rc_inj_'+n)?.focus(),60);
+  }
+
+  function sealAttemptRow(n, injured, moveName){
+    const st=document.getElementById('rc_status_'+n);
+    const pct=((injured/DEF_POOL)*100).toFixed(1);
+    if(st) st.textContent=injured.toLocaleString()+' injured ('+pct+'%)  \u00b7  '+moveName;
+    const inp=document.getElementById('rc_inj_'+n);
+    const btn=document.getElementById('rc_apply_'+n);
+    if(inp){ inp.disabled=true; inp.value=injured; }
+    if(btn) btn.style.display='none';
+  }
+
+  // ── Core: apply one failed attempt ────────────────────────────────
+  async function applyAttempt(n){
+    const trial=$('mt_trial')?.value||'Crystal Cave';
+    const state=rcGet(trial);
+    if(!state){ alert('Run simulation first.'); return; }
+    if(state.won) return;
+
+    const injured=parseFloat(document.getElementById('rc_inj_'+n)?.value||'0');
+    if(!injured||injured<=0){ document.getElementById('rc_inj_'+n)?.focus(); return; }
+
+    const mo=window.KingSim?.mysticOptimizer;
+    if(!mo?.recalibrateCentre){ alert('Optimizer not loaded'); return; }
+
+    const idx=state.attempts.length;
+    const nc=mo.recalibrateCentre(state.currentCentre, injured, state.defTotal, idx);
+
+    state.attempts.push({injured, moveName:nc.moveName, newCentre:nc});
+    state.currentCentre={fi:nc.fi, fc:nc.fc, fa:nc.fa};
+    rcSave(trial,state);
+
+    sealAttemptRow(n, injured, nc.moveName);
+
+    // Re-run engine around new centre
+    const status=$('mt_status');
+    if(status){status.textContent='Recalibrating\u2026';status.style.color='#9aa4b2';}
+
+    const attTotal=readTotals('att')||readTotals('mt_atk')||150000;
+    const attSt=readSideStats('att'); const defSt=readSideStats('def');
+
+    try{
+      await new Promise(r=>setTimeout(r,5));
+      const moR=mo.scanMysticTrials({
+        trialName:trial, overrideCentre:nc,
+        attackerTotal:attTotal,
+        attackerStats:{
+          attack:   attSt.attack   ||{inf:0,cav:0,arc:0},
+          defense:  attSt.defense  ||{inf:0,cav:0,arc:0},
+          lethality:attSt.lethality||{inf:0,cav:0,arc:0},
+          health:   attSt.health   ||{inf:0,cav:0,arc:0},
+        },
+        attackerTier:readTier('att')||'T10',
+        defenderTotal:readTotals('def')||DEF_POOL,
+        defenderStats:{
+          attack:   defSt.attack   ||{inf:0,cav:0,arc:0},
+          defense:  defSt.defense  ||{inf:0,cav:0,arc:0},
+          lethality:defSt.lethality||{inf:0,cav:0,arc:0},
+          health:   defSt.health   ||{inf:0,cav:0,arc:0},
+        },
+        defenderTier:readTier('def')||'T10',
+        maxTop:10,
+      });
+
+      if(moR.best){
+        renderRecal(moR.best, attTotal, nc.moveName, n);
+        const or=$('rc_outcome_row');
+        if(n<RC_MAX){
+          if(or) or.style.display='flex';
+          addAttemptRow(n+1);
+        } else {
+          if(or) or.style.display='none';
+          const track=$('rc_attempt_track');
+          const msg=document.createElement('div');
+          msg.style.cssText='color:var(--muted);font-size:.78rem;padding:8px 0;font-style:italic';
+          msg.textContent='Daily limit reached (5 attempts). Use Clear to start a new session.';
+          if(track) track.appendChild(msg);
+        }
+        $('mt_recal_panel')?.scrollIntoView({behavior:'smooth',block:'nearest'});
+      }
+
+      if(status){status.textContent='Done';status.style.color='#10b981';}
+    }catch(e){
+      console.error('[Recal]',e);
+      if(status){status.textContent='Recal error: '+(e?.message||e);status.style.color='#ef4444';}
+    }
+  }
+
+  // ── Restore a saved session on page load ──────────────────────────
+  function restoreSession(trial){
+    const state=rcLoad(trial); if(!state) return;
+    _rcState=state;
+
+    // Pre-fill the prior injured field with last known value
+    if(state.attempts?.length>0){
+      const last=state.attempts[state.attempts.length-1];
+      const el=$('mt_prior_injured'); if(el&&last?.injured) el.value=last.injured;
+    }
+
+    if(!state.baseCentre) return;
+    const attTotal=readTotals('att')||150000;
+
+    const results=$('mt_results'); if(results) results.style.display='block';
+    renderBase(state.baseCentre, attTotal);
+
+    if(state.won){
+      const track=$('rc_attempt_track');
+      if(track&&!track.children.length)
+        track.innerHTML='<div style="color:#10b981;font-weight:800;font-size:1rem;padding:10px 0">\uD83C\uDFC6 Victory confirmed! Session complete.</div>';
+      const or=$('rc_outcome_row'); if(or) or.style.display='none';
+      return;
+    }
+
+    // Rebuild read-only attempt history
+    state.attempts.forEach((a,i)=>{
+      addAttemptRow(i+1);
+      sealAttemptRow(i+1, a.injured, a.moveName);
+      if(a.newCentre) renderRecal(a.newCentre, attTotal, a.moveName, i+1);
+    });
+
+    const nextN=state.attempts.length+1;
+    if(nextN<=RC_MAX){
+      const or=$('rc_outcome_row'); if(or) or.style.display='flex';
+      if(state.attempts.length>0) addAttemptRow(nextN);
+    }
+  }
+
+  // ── Called after run() to hook into result ────────────────────────
+  function initRecalAfterRun(bestFi, bestFc, attTotal, defTotal, trial){
+    const existing=rcGet(trial);
+    if(existing&&!existing.won&&existing.baseCentre){
+      renderBase(existing.baseCentre, attTotal); return;
+    }
+    const centre={fi:bestFi, fc:bestFc, fa:Math.max(0,1-bestFi-bestFc)};
+    rcInit(trial, centre, defTotal);
+    renderBase(centre, attTotal);
+  }
+
+  // ── Win / Lost / Clear ────────────────────────────────────────────
+  function wireRecalButtons(){
+    $('rc_btn_win')?.addEventListener('click',()=>{
+      const trial=$('mt_trial')?.value||'Crystal Cave';
+      const state=rcGet(trial); if(state){state.won=true;rcSave(trial,state);}
+      const or=$('rc_outcome_row'); if(or) or.style.display='none';
+      const track=$('rc_attempt_track');
+      if(track) track.innerHTML='<div style="color:#10b981;font-weight:800;font-size:1.05rem;padding:10px 0">\uD83C\uDFC6 Victory confirmed! Formation is solid. Well played!</div>';
+      launchFireworks();
+    });
+
+    $('rc_btn_lost')?.addEventListener('click',()=>{
+      const trial=$('mt_trial')?.value||'Crystal Cave';
+      let state=rcGet(trial);
+      if(!state){
+        const bf=$('rc_base_formation')?.textContent||'54.0/16.0/30.0';
+        const p=bf.split('/').map(Number);
+        const fi=(p[0]||54)/100, fc=(p[1]||16)/100;
+        state=rcInit(trial,{fi,fc,fa:1-fi-fc},DEF_POOL);
+      }
+      const or=$('rc_outcome_row'); if(or) or.style.display='none';
+      addAttemptRow(1);
+    });
+
+    $('rc_btn_clear')?.addEventListener('click',()=>{
+      const trial=$('mt_trial')?.value||'Crystal Cave';
+      rcDrop(trial); _rcState=null;
+      const panel=$('mt_recal_panel'); if(panel) panel.style.display='none';
+      const nc=$('rc_new_card'); if(nc) nc.style.display='none';
+      const track=$('rc_attempt_track'); if(track) track.innerHTML='';
+      const or=$('rc_outcome_row'); if(or) or.style.display='none';
+      const bf=$('rc_base_formation'); if(bf) bf.textContent='\u2014';
+      const bs=$('rc_base_sub'); if(bs) bs.textContent='Run simulation to populate';
+      const el=$('mt_prior_injured'); if(el) el.value='';
+      const res=$('mt_results'); if(res) res.style.display='none';
+      const st=$('mt_status'); if(st){st.textContent='Cleared \u2014 ready for new session';st.style.color='';}
+    });
+  }
+
+  // ── Wrapped run() that triggers recal init ────────────────────────
+  const _originalRun = run;
+  async function runWithRecal(){
+    await _originalRun();
+
+    // Extract best formation from the rendered bestline text
+    const bestLine=$('mt_bestline')?.textContent||'';
+    const m=bestLine.match(/([\d.]+)\/([\d.]+)\/([\d.]+)/);
+    if(!m) return;
+
+    const fi=parseFloat(m[1])/100, fc=parseFloat(m[2])/100;
+    const trial    =$('mt_trial')?.value||'Crystal Cave';
+    const attTotal =readTotals('att')||readTotals('mt_atk')||150000;
+    const defTotal =readTotals('def')||readTotals('mt_def')||DEF_POOL;
+
+    initRecalAfterRun(fi, fc, attTotal, defTotal, trial);
+
+    const panel=$('mt_recal_panel'); if(panel) panel.style.display='block';
+    const or=$('rc_outcome_row');    if(or)    or.style.display='flex';
+
+    // If user pre-filled injured troops → auto-fire attempt #1
+    const prior=parseFloat($('mt_prior_injured')?.value||'0');
+    if(prior>0){
+      const state=rcGet(trial);
+      if(state&&state.attempts.length===0){
+        const or2=$('rc_outcome_row'); if(or2) or2.style.display='none';
+        addAttemptRow(1);
+        const injEl=document.getElementById('rc_inj_1');
+        if(injEl){ injEl.value=prior; await applyAttempt(1); }
+      }
+    }
+
+    $('mt_recal_panel')?.scrollIntoView({behavior:'smooth',block:'nearest'});
+  }
+
   // ----------------------------- WIRE -----------------------------
   function wire(){
-    $('mt_run')?.addEventListener('click', run);
-    $('mt_trial')?.addEventListener('change', ()=>{ dirty = true; const s=$('mt_status'); if (s){ s.textContent='Ready'; s.style.color=''; } });
+    $('mt_run')?.addEventListener('click', runWithRecal);
+    $('mt_trial')?.addEventListener('change', ()=>{
+      dirty=true;
+      const s=$('mt_status'); if(s){s.textContent='Ready';s.style.color='';}
+      _rcState=null;
+      restoreSession($('mt_trial').value);
+    });
+    wireRecalButtons();
+    restoreSession($('mt_trial')?.value||'Crystal Cave');
   }
 
   if (document.readyState==='loading') document.addEventListener('DOMContentLoaded', wire);

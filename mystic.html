@@ -131,7 +131,36 @@
       }
     }
 
+  
+    /* ── Recalibration system ───────────────────────────────── */
+    .recal-panel{margin-top:14px}
+    .recal-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px}
+    @media(max-width:600px){.recal-grid{grid-template-columns:1fr}}
+    .best-card-base{background:rgba(16,185,129,.08);border:1px solid #10b981;border-radius:10px;padding:14px}
+    .best-card-recal{background:rgba(34,211,238,.07);border:1px solid #22d3ee;border-radius:10px;padding:14px}
+    .best-card-label{font-size:.72rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;margin-bottom:4px}
+    .best-card-label.green{color:#10b981}.best-card-label.cyan{color:#22d3ee}
+    .best-card-formation{font-size:1.5rem;font-weight:800;color:#e9eef7;margin:2px 0 4px}
+    .best-card-sub{font-size:.78rem;color:var(--muted);white-space:pre-line}
+    .outcome-row{display:flex;gap:10px;align-items:center;margin:10px 0 0;flex-wrap:wrap}
+    .btn-win{background:linear-gradient(90deg,#10b981,#059669);color:#fff;border:0;font-weight:700;padding:9px 22px;border-radius:10px;font-size:.9rem;cursor:pointer;min-height:40px;transition:filter .15s}.btn-win:hover{filter:brightness(1.1)}
+    .btn-lost{background:linear-gradient(90deg,#ef4444,#dc2626);color:#fff;border:0;font-weight:700;padding:9px 22px;border-radius:10px;font-size:.9rem;cursor:pointer;min-height:40px;transition:filter .15s}.btn-lost:hover{filter:brightness(1.1)}
+    .attempt-track{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+    .attempt-row{background:rgba(255,255,255,.03);border:1px solid #1c2d40;border-radius:8px;padding:10px 12px}
+    .attempt-row.lost{border-color:rgba(239,68,68,.4);background:rgba(239,68,68,.03)}
+    .attempt-label{font-size:.72rem;font-weight:700;color:var(--muted);margin-bottom:4px}
+    .attempt-injured-row{display:flex;gap:8px;align-items:center;margin-top:6px;flex-wrap:wrap}
+    .attempt-injured-input{width:130px;padding:5px 8px;font-size:.82rem;background:rgba(255,255,255,.04);border:1px solid #1e3048;border-radius:6px;color:var(--ink)}
+    .attempt-apply-btn{padding:5px 14px;font-size:.78rem;font-weight:700;background:rgba(34,211,238,.15);border:1px solid #22d3ee;color:#22d3ee;border-radius:6px;cursor:pointer;min-height:32px}.attempt-apply-btn:hover{background:rgba(34,211,238,.28)}
+    .attempt-status{font-size:.75rem;color:var(--muted);margin-top:4px}
+    .recal-btn-clear{padding:6px 14px;font-size:.78rem;font-weight:700;background:rgba(255,255,255,.04);border:1px solid #2a3850;color:var(--muted);border-radius:8px;cursor:pointer;margin-top:12px}.recal-btn-clear:hover{border-color:#ef4444;color:#ef4444}
+    #fw-canvas{position:fixed;inset:0;pointer-events:none;z-index:9998;display:none}
+    .pre-run-injured{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px;padding:8px 10px;background:rgba(255,255,255,.02);border:1px solid #1a2d40;border-radius:8px}
+    .pre-run-injured label{font-size:.75rem;color:var(--muted);white-space:nowrap}
+    .pre-run-injured input{width:140px;padding:5px 8px;font-size:.82rem;background:rgba(255,255,255,.04);border:1px solid #1e3048;border-radius:6px;color:var(--ink)}
+    .pre-run-injured .hint{font-size:.7rem;color:#3b5f86;font-style:italic}
   </style>
+  <canvas id="fw-canvas"></canvas>
 </head>
 <body>
   <!-- NAV (same shared partials) -->
@@ -217,12 +246,52 @@
         </div>
 
       </div>
+
+      <!-- Pre-run injured input — optional, triggers instant recalibration on run -->
+      <div class="pre-run-injured" id="pre_run_injured_row">
+        <label for="mt_prior_injured">Injured from last battle:</label>
+        <input type="number" id="mt_prior_injured" placeholder="e.g. 136 571" min="0" step="1000" />
+        <span class="hint">Optional — leave blank for standard simulation</span>
+      </div>
     </section>
 
     <!-- RESULTS go directly below the Run button (above inputs) -->
     <section class="panel panel-glass" id="mt_results" style="display:none">
       <div id="mt_bestline" class="muted" style="margin:0 0 12px 0"></div>
       <div id="mt_tablewrap"></div>
+
+      <!-- ══ RECALIBRATION PANEL ══ shown after first simulation result -->
+      <div class="recal-panel" id="mt_recal_panel" style="display:none">
+        <div style="font-size:.72rem;font-weight:700;color:#7dd3fc;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">
+          Battle Follow-up &amp; Recalibration
+        </div>
+
+        <!-- 2-col card grid: green = engine recommendation, cyan = recalibrated -->
+        <div class="recal-grid">
+          <div class="best-card-base">
+            <div class="best-card-label green">&#9876; Recommended Formation</div>
+            <div class="best-card-formation" id="rc_base_formation">—</div>
+            <div class="best-card-sub" id="rc_base_sub">Run simulation to populate</div>
+          </div>
+          <div class="best-card-recal" id="rc_new_card" style="display:none">
+            <div class="best-card-label cyan">&#8635; Recalibrated Formation</div>
+            <div class="best-card-formation" id="rc_new_formation">—</div>
+            <div class="best-card-sub" id="rc_new_sub"></div>
+          </div>
+        </div>
+
+        <!-- Win / Lost outcome buttons -->
+        <div class="outcome-row" id="rc_outcome_row" style="display:none">
+          <span style="font-size:.78rem;color:var(--muted)">How did the battle go?</span>
+          <button class="btn-win"  id="rc_btn_win">&#127942; Win!</button>
+          <button class="btn-lost" id="rc_btn_lost">&#128128; Lost</button>
+        </div>
+
+        <!-- Per-attempt rows injected dynamically (max 5) -->
+        <div class="attempt-track" id="rc_attempt_track"></div>
+
+        <button class="recal-btn-clear" id="rc_btn_clear">&#10005; Clear session &amp; start over</button>
+      </div>
     </section>
 
     <!-- 2-grid stats & troops -->
