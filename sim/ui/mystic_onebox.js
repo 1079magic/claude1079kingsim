@@ -366,22 +366,75 @@
     return 'Inf\u202f'+i.toLocaleString()+'\u2002|\u2002Cav\u202f'+c.toLocaleString()+'\u2002|\u2002Arc\u202f'+a.toLocaleString();
   }
 
-  // ── Render: base (green) card ─────────────────────────────────────
-  function renderBase(centre, attTotal){
+  // ── Unified formation history renderer ────────────────────────────
+  // Builds a dynamic list of formation cards:
+  //   - The LATEST entry is shown full-size (prominent)
+  //   - All previous entries are compact one-line pills (history)
+  // This means: before any attempt, only ONE card shows (the green base).
+  // After each recalibration, the previous card shrinks and the new one is full-size.
+  function renderFormationHistory(history, attTotal){
     const panel=$('mt_recal_panel'); if(!panel) return;
     panel.style.display='block';
-    const bf=$('rc_base_formation'); if(bf) bf.textContent=fmtF(centre.fi,centre.fc);
-    const bs=$('rc_base_sub');       if(bs) bs.textContent=fmtT(centre.fi,centre.fc,attTotal);
+
+    let wrap=document.getElementById('rc_history_wrap');
+    if(!wrap){
+      wrap=document.createElement('div');
+      wrap.id='rc_history_wrap';
+      wrap.style.cssText='margin-bottom:12px';
+      const or=$('rc_outcome_row');
+      if(or) panel.insertBefore(wrap,or);
+      else { const first=panel.querySelector('div[style]'); panel.insertBefore(wrap,first?.nextSibling||null); }
+    }
+
+    if(!history||!history.length){ wrap.innerHTML=''; return; }
+
+    let html='';
+    history.forEach((entry,i)=>{
+      const isCurrent=(i===history.length-1);
+      const formation=fmtF(entry.fi,entry.fc);
+      const troops=fmtT(entry.fi,entry.fc,attTotal)||'';
+
+      if(isCurrent){
+        const borderCol=entry.isBase?'#10b981':'#22d3ee';
+        const bgCol    =entry.isBase?'rgba(16,185,129,.08)':'rgba(34,211,238,.07)';
+        const lblCol   =entry.isBase?'#10b981':'#22d3ee';
+        const lblTxt   =entry.isBase?'\u2694\ufe0f Recommended Formation':'\u21bb Recalibrated Formation';
+        const sub      =entry.isBase?troops:('Attempt\u202f'+entry.attemptNum+'\u2002\u00b7\u2002'+(entry.moveName||'')+'\n'+troops);
+        html+='<div style="background:'+bgCol+';border:1px solid '+borderCol+';border-radius:10px;padding:14px;margin-bottom:10px">'+
+          '<div style="font-size:.72rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:'+lblCol+';margin-bottom:4px">'+lblTxt+'</div>'+
+          '<div style="font-size:1.5rem;font-weight:800;color:#e9eef7;margin:2px 0 4px">'+formation+'</div>'+
+          '<div style="font-size:.78rem;color:var(--muted);white-space:pre-line">'+sub+'</div>'+
+          '</div>';
+      } else {
+        const dotCol=entry.isBase?'#10b981':'#22d3ee';
+        const tag=entry.isBase?'Initial':'Attempt\u202f'+entry.attemptNum;
+        const move=entry.moveName?'\u2002\u00b7\u2002'+entry.moveName:'';
+        html+='<div style="display:flex;align-items:center;gap:8px;padding:5px 10px;background:rgba(255,255,255,.02);border:1px solid #1c2d40;border-radius:8px;margin-bottom:5px">'+
+          '<div style="width:7px;height:7px;border-radius:50%;background:'+dotCol+';flex-shrink:0"></div>'+
+          '<span style="font-size:.7rem;color:var(--muted);white-space:nowrap">'+tag+move+'</span>'+
+          '<span style="font-size:.85rem;font-weight:700;color:#c9d5e8;margin-left:auto">'+formation+'</span>'+
+          '</div>';
+      }
+    });
+    wrap.innerHTML=html;
   }
 
-  // ── Render: recalibrated (cyan) card ──────────────────────────────
+  // ── Convenience: show only the base card ─────────────────────────
+  function renderBase(centre, attTotal){
+    renderFormationHistory([{fi:centre.fi,fc:centre.fc,attemptNum:0,isBase:true,moveName:''}], attTotal);
+  }
+
+  // ── Convenience: rebuild full history after a new recal result ────
   function renderRecal(centre, attTotal, moveName, attemptNum){
-    const card=$('rc_new_card'); if(!card) return;
-    card.style.display='block';
-    const nf=$('rc_new_formation'); if(nf) nf.textContent=fmtF(centre.fi,centre.fc);
-    const ns=$('rc_new_sub');
-    if(ns) ns.textContent='Attempt\u202f'+attemptNum+'\u2002\u00b7\u2002'+moveName+
-      (attTotal?'\n'+fmtT(centre.fi,centre.fc,attTotal):'');
+    const trial=$('mt_trial')?.value||'Crystal Cave';
+    const state=rcGet(trial);
+    const history=[];
+    if(state?.baseCentre) history.push({fi:state.baseCentre.fi,fc:state.baseCentre.fc,attemptNum:0,isBase:true,moveName:''});
+    // Include all sealed attempts from state
+    (state?.attempts||[]).forEach((a,i)=>{
+      if(a.newCentre) history.push({fi:a.newCentre.fi,fc:a.newCentre.fc,attemptNum:i+1,isBase:false,moveName:a.moveName});
+    });
+    renderFormationHistory(history, attTotal);
   }
 
   // ── Attempt row management ────────────────────────────────────────
@@ -505,7 +558,13 @@
     const attTotal=readTotals('att')||150000;
 
     const results=$('mt_results'); if(results) results.style.display='block';
-    renderBase(state.baseCentre, attTotal);
+
+    // Rebuild full history from saved state
+    const hist=[{fi:state.baseCentre.fi,fc:state.baseCentre.fc,attemptNum:0,isBase:true,moveName:''}];
+    (state.attempts||[]).forEach((a,i)=>{
+      if(a.newCentre) hist.push({fi:a.newCentre.fi,fc:a.newCentre.fc,attemptNum:i+1,isBase:false,moveName:a.moveName});
+    });
+    renderFormationHistory(hist, attTotal);
 
     if(state.won){
       const track=$('rc_attempt_track');
@@ -515,11 +574,10 @@
       return;
     }
 
-    // Rebuild read-only attempt history
+    // Rebuild read-only attempt history inputs
     state.attempts.forEach((a,i)=>{
       addAttemptRow(i+1);
       sealAttemptRow(i+1, a.injured, a.moveName);
-      if(a.newCentre) renderRecal(a.newCentre, attTotal, a.moveName, i+1);
     });
 
     const nextN=state.attempts.length+1;
@@ -533,7 +591,13 @@
   function initRecalAfterRun(bestFi, bestFc, attTotal, defTotal, trial){
     const existing=rcGet(trial);
     if(existing&&!existing.won&&existing.baseCentre){
-      renderBase(existing.baseCentre, attTotal); return;
+      // Session in progress — rebuild full history (base + all attempts so far)
+      const hist=[{fi:existing.baseCentre.fi,fc:existing.baseCentre.fc,attemptNum:0,isBase:true,moveName:''}];
+      (existing.attempts||[]).forEach((a,i)=>{
+        if(a.newCentre) hist.push({fi:a.newCentre.fi,fc:a.newCentre.fc,attemptNum:i+1,isBase:false,moveName:a.moveName});
+      });
+      renderFormationHistory(hist, attTotal);
+      return;
     }
     const centre={fi:bestFi, fc:bestFc, fa:Math.max(0,1-bestFi-bestFc)};
     rcInit(trial, centre, defTotal);
@@ -555,10 +619,11 @@
       const trial=$('mt_trial')?.value||'Crystal Cave';
       let state=rcGet(trial);
       if(!state){
-        const bf=$('rc_base_formation')?.textContent||'54.0/16.0/30.0';
-        const p=bf.split('/').map(Number);
-        const fi=(p[0]||54)/100, fc=(p[1]||16)/100;
-        state=rcInit(trial,{fi,fc,fa:1-fi-fc},DEF_POOL);
+        // Read best formation from the rendered bestline text as fallback
+        const bl=$('mt_bestline')?.textContent||'';
+        const m=bl.match(/([\d.]+)\/([\d.]+)\/([\d.]+)/);
+        const fi=m?parseFloat(m[1])/100:0.54, fc=m?parseFloat(m[2])/100:0.16;
+        state=rcInit(trial,{fi,fc,fa:Math.max(0,1-fi-fc)},DEF_POOL);
       }
       const or=$('rc_outcome_row'); if(or) or.style.display='none';
       addAttemptRow(1);
@@ -568,11 +633,9 @@
       const trial=$('mt_trial')?.value||'Crystal Cave';
       rcDrop(trial); _rcState=null;
       const panel=$('mt_recal_panel'); if(panel) panel.style.display='none';
-      const nc=$('rc_new_card'); if(nc) nc.style.display='none';
+      const hw=document.getElementById('rc_history_wrap'); if(hw) hw.innerHTML='';
       const track=$('rc_attempt_track'); if(track) track.innerHTML='';
       const or=$('rc_outcome_row'); if(or) or.style.display='none';
-      const bf=$('rc_base_formation'); if(bf) bf.textContent='\u2014';
-      const bs=$('rc_base_sub'); if(bs) bs.textContent='Run simulation to populate';
       const el=$('mt_prior_injured'); if(el) el.value='';
       const res=$('mt_results'); if(res) res.style.display='none';
       const st=$('mt_status'); if(st){st.textContent='Cleared \u2014 ready for new session';st.style.color='';}
@@ -597,18 +660,24 @@
     initRecalAfterRun(fi, fc, attTotal, defTotal, trial);
 
     const panel=$('mt_recal_panel'); if(panel) panel.style.display='block';
-    const or=$('rc_outcome_row');    if(or)    or.style.display='flex';
 
-    // If user pre-filled injured troops → auto-fire attempt #1
+    // If user pre-filled injured troops → auto-fire attempt #1 and DON'T show Win/Lost yet
     const prior=parseFloat($('mt_prior_injured')?.value||'0');
     if(prior>0){
       const state=rcGet(trial);
       if(state&&state.attempts.length===0){
-        const or2=$('rc_outcome_row'); if(or2) or2.style.display='none';
+        // Keep outcome row hidden — it will reappear after applyAttempt completes
+        const or=$('rc_outcome_row'); if(or) or.style.display='none';
         addAttemptRow(1);
         const injEl=document.getElementById('rc_inj_1');
         if(injEl){ injEl.value=prior; await applyAttempt(1); }
+      } else {
+        // Session already has attempts — just show outcome row
+        const or=$('rc_outcome_row'); if(or) or.style.display='flex';
       }
+    } else {
+      // No prior injured — show Win/Lost immediately for fresh result
+      const or=$('rc_outcome_row'); if(or) or.style.display='flex';
     }
 
     $('mt_recal_panel')?.scrollIntoView({behavior:'smooth',block:'nearest'});

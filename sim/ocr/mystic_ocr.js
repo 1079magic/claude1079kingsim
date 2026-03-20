@@ -485,16 +485,102 @@
       const atkFractions = toFractions(L);
       const defFractions = toFractions(R);
 
-      // ---------- D) Final pack (totals fixed to 150k; Lv 10.0 → T10) ----------
-      const FIXED_TOTAL = 150000;
-      const atkTotal = FIXED_TOTAL;
-      const defTotal = FIXED_TOTAL;
+      // ---------- D) Troop amounts — try to read absolute numbers from top band ----------
+      // Some trials (e.g. Knowledge Nexus) show actual troop amounts, not just %, under each icon.
+      // We detect large comma-separated numbers (>1000) in the band above "Bonus Details".
+      // If we find 3 numbers per side, we use them directly; otherwise fall back to 150k+fractions.
+
+      setStatus('Reading troop amounts…');
+
+      // Parse a word that could be a troop count: digits with optional comma separator
+      function parseTroopCount(txt) {
+        if (/%/.test(String(txt))) return NaN; // reject percentage tokens
+        const s = String(txt).replace(/[,. ]/g, '').replace(/[Oo]/g,'0').replace(/[lI]/g,'1');
+        const n = parseInt(s, 10);
+        return (Number.isFinite(n) && n >= 1000 && n <= 999999) ? n : NaN;
+      }
+
+      // Collect numeric words in the top band (above Bonus Details heading)
+      const topBandBottom = (bonusY != null) ? Math.max(0, bonusY - Math.round(H*0.01)) : Math.round(H*0.38);
+      const topBandWords = words.filter(w => w.bbox.y1 <= topBandBottom);
+
+      const countTokens = topBandWords
+        .map(w => {
+          const n = parseTroopCount(w.text);
+          return Number.isFinite(n) ? { n, x:(w.bbox.x0+w.bbox.x1)/2, y:(w.bbox.y0+w.bbox.y1)/2, bbox:w.bbox } : null;
+        })
+        .filter(Boolean);
+
+      // Split by midline into left (attacker) and right (defender)
+      const cntLeft  = countTokens.filter(t => t.x <= xMid).sort((a,b) => a.x - b.x);
+      const cntRight = countTokens.filter(t => t.x >  xMid).sort((a,b) => a.x - b.x);
+
+      // Only accept if we find exactly 3 per side (or exactly 3 on attacker side)
+      // Pick the 3 numbers that are horizontally closest together (the troop row)
+      function pickTroopTriple(arr) {
+        if (arr.length < 3) return null;
+        // Cluster into rows by Y proximity; pick row with 3 numbers summing reasonably
+        const rows = [];
+        const tolY = 20;
+        for (const t of arr) {
+          let r = rows.find(R => Math.abs(R.y - t.y) <= tolY);
+          if (!r) { r = {y:t.y, n:0, items:[]}; rows.push(r); }
+          r.items.push(t); r.n++;
+          r.y = (r.y*(r.n-1) + t.y) / r.n;
+        }
+        rows.sort((a,b) => b.items.length - a.items.length);
+        for (const row of rows) {
+          const items = row.items.sort((a,b) => a.x - b.x);
+          if (items.length >= 3) return items.slice(0, 3);
+        }
+        return null;
+      }
+
+      const atkTriple = pickTroopTriple(cntLeft);
+      const defTriple = pickTroopTriple(cntRight);
+
+      // Build troop objects from triples
+      // Icon order left→right in the image: INF (shield), CAV (horse), ARC (crossbow)
+      let atkTroopCounts = null;
+      let defTroopCounts = null;
+      let atkTotal, defTotal;
+
+      if (atkTriple && atkTriple.length === 3) {
+        // Icons are left-to-right: INF, CAV, ARC (consistent with game layout)
+        atkTroopCounts = {
+          inf: atkTriple[0].n,
+          cav: atkTriple[1].n,
+          arc: atkTriple[2].n
+        };
+        atkTotal = atkTroopCounts.inf + atkTroopCounts.cav + atkTroopCounts.arc;
+        // Derive fractions from actual counts (override percentage-based fractions)
+        const s = atkTotal || 1;
+        atkFractions = { inf: atkTroopCounts.inf/s, cav: atkTroopCounts.cav/s, arc: atkTroopCounts.arc/s };
+        console.log('[OCR] attacker troop counts from image:', atkTroopCounts, 'total:', atkTotal);
+      } else {
+        atkTotal = 150000; // fixed fallback
+      }
+
+      if (defTriple && defTriple.length === 3) {
+        defTroopCounts = {
+          inf: defTriple[0].n,
+          cav: defTriple[1].n,
+          arc: defTriple[2].n
+        };
+        defTotal = defTroopCounts.inf + defTroopCounts.cav + defTroopCounts.arc;
+        const s = defTotal || 1;
+        defFractions = { inf: defTroopCounts.inf/s, cav: defTroopCounts.cav/s, arc: defTroopCounts.arc/s };
+        console.log('[OCR] defender troop counts from image:', defTroopCounts, 'total:', defTotal);
+      } else {
+        defTotal = 150000; // fixed fallback
+      }
 
       // Screenshot shows "Lv 10.0" in troop icons → T10
       const atkTier = 'T10';
       const defTier = 'T10';
 
-      return { atkStats, defStats, atkTotal, defTotal, atkTier, defTier, atkFractions, defFractions };
+      return { atkStats, defStats, atkTotal, defTotal, atkTier, defTier,
+               atkFractions, defFractions, atkTroopCounts, defTroopCounts };
     }
 
   /* -----------------------------
@@ -620,8 +706,23 @@
         setVal('def_tier',  out.defTier);
 
         // Per-type troops to side-by-side
-        setTroopsToPVE('att', out.atkTotal, out.atkFractions);
-        setTroopsToPVE('def', out.defTotal, out.defFractions);
+        // If we got exact counts from OCR, write them directly; else derive from fractions
+        if (out.atkTroopCounts) {
+          setVal('att_total', out.atkTotal);
+          setVal('att_inf',   out.atkTroopCounts.inf);
+          setVal('att_cav',   out.atkTroopCounts.cav);
+          setVal('att_arc',   out.atkTroopCounts.arc);
+        } else {
+          setTroopsToPVE('att', out.atkTotal, out.atkFractions);
+        }
+        if (out.defTroopCounts) {
+          setVal('def_total', out.defTotal);
+          setVal('def_inf',   out.defTroopCounts.inf);
+          setVal('def_cav',   out.defTroopCounts.cav);
+          setVal('def_arc',   out.defTroopCounts.arc);
+        } else {
+          setTroopsToPVE('def', out.defTotal, out.defFractions);
+        }
 
         
         setStatus('✅ Imported');

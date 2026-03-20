@@ -266,25 +266,16 @@
           Battle Follow-up &amp; Recalibration
         </div>
 
-        <!-- 2-col card grid: green = engine recommendation, cyan = recalibrated -->
-        <div class="recal-grid">
-          <div class="best-card-base">
-            <div class="best-card-label green">&#9876; Recommended Formation</div>
-            <div class="best-card-formation" id="rc_base_formation">—</div>
-            <div class="best-card-sub" id="rc_base_sub">Run simulation to populate</div>
-          </div>
-          <div class="best-card-recal" id="rc_new_card" style="display:none">
-            <div class="best-card-label cyan">&#8635; Recalibrated Formation</div>
-            <div class="best-card-formation" id="rc_new_formation">—</div>
-            <div class="best-card-sub" id="rc_new_sub"></div>
-          </div>
-        </div>
+        <!-- Dynamic formation history cards (injected by JS) -->
+        <!-- id="rc_history_wrap" is created by JS and inserted here -->
 
         <!-- Win / Lost outcome buttons -->
         <div class="outcome-row" id="rc_outcome_row" style="display:none">
           <span style="font-size:.78rem;color:var(--muted)">How did the battle go?</span>
-          <button class="btn-win"  id="rc_btn_win">&#127942; Win!</button>
-          <button class="btn-lost" id="rc_btn_lost">&#128128; Lost</button>
+          <div style="display:flex;gap:10px">
+            <button class="btn-win"  id="rc_btn_win">&#127942; Win!</button>
+            <button class="btn-lost" id="rc_btn_lost">&#128128; Lost</button>
+          </div>
         </div>
 
         <!-- Per-attempt rows injected dynamically (max 5) -->
