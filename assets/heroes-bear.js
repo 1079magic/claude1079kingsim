@@ -269,8 +269,10 @@
     // Iterate all saved hero states and match to heroIndex by name
     for (const [id, st] of Object.entries(savedState)) {
       if (!st || !st.owned) continue;
-      // Extract hero name from ID: "heroes__amadeus" → "amadeus" → match case-insensitively
-      const namePart = id.replace(/^(heroes|joiners)__/, '').replace(/_/g, ' ');
+      // Extract hero name from ID: "gen_1__amadeus" → "amadeus", "epic__chenko" → "chenko"
+      // ID format is: <group>__<name> where group can be gen_1, gen_2, epic, etc.
+      const dblIdx = id.indexOf('__');
+      const namePart = (dblIdx >= 0 ? id.slice(dblIdx + 2) : id).replace(/_/g, ' ');
       let heroData = null;
       let heroName = '';
       for (const [hName, hData] of heroIndex) {
