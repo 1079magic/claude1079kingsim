@@ -507,57 +507,41 @@
   }
 
   // ------------------- Rendering -------------------
-  function renderCallTable(r){
-    $("callRallyTable").innerHTML = `
-      <table>
-        <thead>
-          <tr><th>Type</th><th>Infantry</th><th>Cavalry</th><th>Archers</th><th>Total</th></tr>
-        </thead>
-        <tbody>
-          <tr style="background:#162031;">
-            <td><strong>CALL</strong></td>
-            <td>${r.inf}</td>
-            <td>${r.cav}</td>
-            <td>${r.arc}</td>
-            <td>${sumTroops(r)}</td>
-          </tr>
-        </tbody>
-      </table>
-    `;
-    if (window.HeroesBear) {
-      var _rc = window.HeroesBear.recommend() || (window.HeroesBear.recommendFromCache && window.HeroesBear.recommendFromCache()) || (window.HeroesBear.loadRec && window.HeroesBear.loadRec()) || window.__bearHeroRec;
-      if (_rc) {
-        window.HeroesBear.injectCallHeroNames(_rc.call);
-        window.__bearHeroRec = _rc;
-      }
-    }
-  }
-  function renderJoinTable(joins){
-    let out = `
-      <table>
-        <thead>
-          <tr><th>#</th><th>Infantry</th><th>Cavalry</th><th>Archers</th><th>Total</th></tr>
-        </thead>
-        <tbody>
-    `;
-    joins.forEach((p,i)=>{
-      out += `
-        <tr>
-          <td>#${i+1}</td>
-          <td>${p.inf}</td>
-          <td>${p.cav}</td>
-          <td>${p.arc}</td>
-          <td>${sumTroops(p)}</td>
-        </tr>
-      `;
+  // Single combined table (CALL + JOIN rows) into #optTableWrap — same structure as Option-A
+  function renderCombinedTable(rally, joins){
+    let html = `<table><thead>
+      <tr><th>Type</th><th>Infantry</th><th>Cavalry</th><th>Archers</th><th>Total</th></tr>
+    </thead><tbody>`;
+    html += `<tr style="background:#162031;">
+      <td><strong>CALL</strong></td>
+      <td>${rally.inf}</td>
+      <td>${rally.cav}</td>
+      <td>${rally.arc}</td>
+      <td>${sumTroops(rally)}</td>
+    </tr>`;
+    joins.forEach(function(p, i){
+      html += `<tr>
+        <td>#${i+1}</td>
+        <td>${p.inf}</td>
+        <td>${p.cav}</td>
+        <td>${p.arc}</td>
+        <td>${sumTroops(p)}</td>
+      </tr>`;
     });
-    out += `</tbody></table>`;
-    $("joinTableWrap").innerHTML = out;
-    if (window.HeroesBear) {
-      var _rj = window.HeroesBear.recommend() || (window.HeroesBear.recommendFromCache && window.HeroesBear.recommendFromCache()) || (window.HeroesBear.loadRec && window.HeroesBear.loadRec()) || window.__bearHeroRec;
-      if (_rj) {
-        window.HeroesBear.injectJoinHeroNames(_rj.join);
-        window.__bearHeroRec = _rj;
+    html += `</tbody></table>`;
+    var tableEl = $("optTableWrap");
+    if (tableEl) {
+      tableEl.innerHTML = html;
+      // Inject hero names — same function that works on Option-A
+      if (window.HeroesBear) {
+        var _rec = window.HeroesBear.recommend()
+          || (window.HeroesBear.recommendFromCache && window.HeroesBear.recommendFromCache())
+          || (window.HeroesBear.loadRec && window.HeroesBear.loadRec())
+          || window.__bearHeroRec;
+        if (_rec) {
+          window.HeroesBear.injectOptTableHeroes(_rec.call, _rec.join);
+          window.__bearHeroRec = _rec;
+        }
       }
     }
   }
@@ -937,8 +921,7 @@
     updateRecommendedDisplay(recResult.bestN, X);
 
     // Display
-    renderCallTable(rally);
-    renderJoinTable(joins);
+    renderCombinedTable(rally, joins);
 
     $("fractionReadout").textContent = `Using: ${toPctTriplet(fractions)} (Inf/Cav/Arc)`;
     const formed = joins.reduce((s,p)=>s+sumTroops(p),0);
@@ -997,7 +980,7 @@ Stock used: ${used} / ${before}.`;
     }
 
     function computeAndInject(mode) {
-      compute(mode); // renderCallTable/renderJoinTable inject heroes
+      compute(mode); // renderCombinedTable injects heroes
     }
     $("btnMagic12")?.addEventListener("click", () => { resetRecButtonState(); computeAndInject("magic12"); });
     $("btnRecompute")?.addEventListener("click", () => {
@@ -1042,7 +1025,7 @@ Stock used: ${used} / ${before}.`;
     });
 
     inited = true;
-    compute("magic12"); // renderCallTable/renderJoinTable inject heroes
+    compute("magic12"); // renderCombinedTable injects heroes
   }
 
   // Expose
