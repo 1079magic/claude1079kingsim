@@ -652,8 +652,11 @@ function buildRally(fractions, rallySize, stock) {
       tableEl.innerHTML = html;
       // Inject hero names into table (from heroes page selections)
       if (window.HeroesBear) {
-        var _rec2 = window.HeroesBear.recommend() || (window.HeroesBear.loadRec ? window.HeroesBear.loadRec() : null) || window.__bearHeroRec;
-        if (_rec2) window.HeroesBear.injectOptTableHeroes(_rec2.call, _rec2.join);
+        var _rec2 = window.HeroesBear.recommend() || (window.HeroesBear.recommendFromCache ? window.HeroesBear.recommendFromCache() : null) || (window.HeroesBear.loadRec ? window.HeroesBear.loadRec() : null) || window.__bearHeroRec;
+        if (_rec2) {
+          window.HeroesBear.injectOptTableHeroes(_rec2.call, _rec2.join);
+          window.__bearHeroRec = _rec2;
+        }
       }
     }
 

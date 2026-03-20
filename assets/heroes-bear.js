@@ -240,6 +240,91 @@
     };
   }
 
+  // ── Cache-only recommendation (no heroGrid DOM needed) ───────────────────
+  // Works on magic.html / optiona.html where heroGrid doesn't exist.
+  // Reads hero ownership & levels from localStorage, hero data from _HERO_INDEX_REF.
+  function recommendFromCache() {
+    const heroIndex = window._HERO_INDEX_REF;
+    if (!heroIndex || !heroIndex.size) return null;
+
+    const savedState = (() => {
+      try { return JSON.parse(localStorage.getItem('kingsim_heroes_v2') || '{}'); }
+      catch(_) { return {}; }
+    })();
+    if (!Object.keys(savedState).length) return null;
+
+    // Read numMarches
+    let numMarches = 1;
+    try {
+      const syncState = JSON.parse(localStorage.getItem('kingSim_shared_inputs_v1') || '{}');
+      if (syncState.numFormations) numMarches = Math.max(1, parseInt(syncState.numFormations) || 1);
+    } catch (_) {}
+    const marchEl = document.getElementById('numFormations') || document.getElementById('marchSize');
+    if (marchEl && marchEl.value) numMarches = Math.max(1, parseInt(marchEl.value) || 1);
+    if (numMarches <= 1) numMarches = 3;
+
+    const callCandidates = [];
+    const joinCandidates = [];
+
+    // Iterate all saved hero states and match to heroIndex by name
+    for (const [id, st] of Object.entries(savedState)) {
+      if (!st || !st.owned) continue;
+      // Extract hero name from ID: "heroes__amadeus" → "amadeus" → match case-insensitively
+      const namePart = id.replace(/^(heroes|joiners)__/, '').replace(/_/g, ' ');
+      let heroData = null;
+      let heroName = '';
+      for (const [hName, hData] of heroIndex) {
+        if (hName.toLowerCase() === namePart.toLowerCase()) {
+          heroData = hData; heroName = hName; break;
+        }
+      }
+      if (!heroData) continue;
+
+      const isJoiner = JOINER_NAMES.has(heroName);
+      const callScore = scoreHero(heroData, st, true);
+      const joinScore = scoreHero(heroData, st, false);
+      const troopType = heroData.troopType || 'Infantry';
+
+      if (!isJoiner) {
+        callCandidates.push({ name: heroName, score: callScore, isJoiner: false, troopType });
+      }
+      joinCandidates.push({ name: heroName, score: joinScore, isJoiner, troopType });
+    }
+
+    if (!callCandidates.length && !joinCandidates.length) return null;
+
+    callCandidates.sort((a, b) => b.score - a.score);
+    const callByType = { Infantry: null, Cavalry: null, Archer: null };
+    for (const h of callCandidates) {
+      const tt = heroIndex.get(h.name)?.troopType || 'Infantry';
+      if (!callByType[tt]) callByType[tt] = h;
+    }
+    const callTop3 = Object.values(callByType).filter(Boolean);
+
+    const JOIN_VALID_KEYS = new Set([
+      'lethalityUp_percent', 'attackUp_percent',
+      'rallyLethalityUp_percent', 'rallyAttackUp_percent',
+    ]);
+    function firstSkillIsValid(hd) {
+      const sk0 = hd.skills?.[0];
+      if (!sk0) return false;
+      return Object.values(sk0.levels || {}).some(lv => Object.keys(lv).some(k => JOIN_VALID_KEYS.has(k)));
+    }
+    const joinFiltered_valid = joinCandidates.filter(h => {
+      const hd = heroIndex.get(h.name);
+      return hd && firstSkillIsValid(hd);
+    });
+    joinFiltered_valid.sort((a, b) => {
+      if (a.isJoiner !== b.isJoiner) return a.isJoiner ? -1 : 1;
+      return b.score - a.score;
+    });
+    const joinNeeded = Math.max(0, numMarches - 1);
+    const callNameSet = new Set(callTop3.map(h => h.name));
+    const joinTopN = joinFiltered_valid.filter(h => !callNameSet.has(h.name)).slice(0, joinNeeded);
+
+    return { call: callTop3, join: joinTopN, numMarches, allCall: callCandidates, allJoin: joinCandidates };
+  }
+
   // ── Table injection helpers ───────────────────────────────────────────────────
   // ── Shared hero table injection helpers ──────────────────────────────────────
   // Both magic.html and optiona.html use callRallyTable / joinTableWrap.
@@ -442,13 +527,13 @@
   let _lastInjectionTime = 0; // cooldown to break MutationObserver cycles
 
   function doInject() {
-    const rec = recommend() || loadRec();
+    const rec = recommend() || recommendFromCache() || loadRec();
     if (!rec || (!rec.call?.length && !rec.join?.length)) return;
     injectCallHeroNames(rec.call);
     injectJoinHeroNames(rec.join);
     injectOptTableHeroes(rec.call, rec.join);
     _lastInjectionTime = Date.now();
-    const freshRec = recommend();
+    const freshRec = recommend() || recommendFromCache();
     if (freshRec) { saveRec(freshRec); renderBearPanel(freshRec); }
     window.__bearHeroRec = rec;
   }
@@ -491,6 +576,7 @@
 
   window.HeroesBear = {
     recommend,
+    recommendFromCache,
     loadRec,
     saveRec,
     renderBearPanel,
@@ -511,27 +597,28 @@
     if (cached && document.getElementById('heroGrid')) {
       renderBearPanel(cached);
     }
-    // Recompute fresh (only when heroGrid exists = heros.html)
-    // On magic/optiona: recommend() returns null, MutationObserver handles injection
+
     ensureHeroIndex().then(() => {
-      const rec = recommend();
+      // On heros.html: recommend() works (has heroGrid DOM)
+      // On magic/optiona: recommendFromCache() works (reads localStorage + _HERO_INDEX_REF)
+      const rec = recommend() || recommendFromCache();
       if (rec && (rec.call.length || rec.join.length)) {
         saveRec(rec);
         renderBearPanel(rec);
-        // Also inject now in case tables are already rendered
+        window.__bearHeroRec = rec;
+        // Inject now in case tables are already rendered
         injectCallHeroNames(rec.call);
         injectJoinHeroNames(rec.join);
         injectOptTableHeroes(rec.call, rec.join);
+        _lastInjectionTime = Date.now();
       }
     });
 
-    // Safety-net retries for async page init (magic.html fetches tiers.json before
-    // rendering tables, so the initial doInject often finds empty table wrappers).
-    // These retries ensure heroes appear even if the MutationObserver cycle misses.
+    // Safety-net retries for async page init (magic.html fetches tiers.json
+    // before rendering tables, so the initial inject may find empty wrappers).
     function retryInject() {
-      const rec = recommend() || loadRec() || window.__bearHeroRec;
+      const rec = recommend() || recommendFromCache() || loadRec() || window.__bearHeroRec;
       if (!rec || (!rec.call?.length && !rec.join?.length)) return;
-      // Only inject if tables exist and don't already have hero columns
       const callTbl = document.getElementById('callRallyTable');
       const joinTbl = document.getElementById('joinTableWrap');
       const optTbl  = document.getElementById('optTableWrap');

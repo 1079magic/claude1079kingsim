@@ -525,7 +525,7 @@
       </table>
     `;
     if (window.HeroesBear) {
-      var _rc = window.HeroesBear.recommend() || (window.HeroesBear.loadRec && window.HeroesBear.loadRec()) || window.__bearHeroRec;
+      var _rc = window.HeroesBear.recommend() || (window.HeroesBear.recommendFromCache && window.HeroesBear.recommendFromCache()) || (window.HeroesBear.loadRec && window.HeroesBear.loadRec()) || window.__bearHeroRec;
       if (_rc) {
         window.HeroesBear.injectCallHeroNames(_rc.call);
         window.__bearHeroRec = _rc;
@@ -554,7 +554,7 @@
     out += `</tbody></table>`;
     $("joinTableWrap").innerHTML = out;
     if (window.HeroesBear) {
-      var _rj = window.HeroesBear.recommend() || (window.HeroesBear.loadRec && window.HeroesBear.loadRec()) || window.__bearHeroRec;
+      var _rj = window.HeroesBear.recommend() || (window.HeroesBear.recommendFromCache && window.HeroesBear.recommendFromCache()) || (window.HeroesBear.loadRec && window.HeroesBear.loadRec()) || window.__bearHeroRec;
       if (_rj) {
         window.HeroesBear.injectJoinHeroNames(_rj.join);
         window.__bearHeroRec = _rj;
