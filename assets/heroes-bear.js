@@ -245,13 +245,14 @@
   // Reads hero ownership & levels from localStorage, hero data from _HERO_INDEX_REF.
   function recommendFromCache() {
     const heroIndex = window._HERO_INDEX_REF;
-    if (!heroIndex || !heroIndex.size) return null;
+    if (!heroIndex || !heroIndex.size) { console.log('[recommendFromCache] no heroIndex'); return null; }
 
     const savedState = (() => {
       try { return JSON.parse(localStorage.getItem('kingsim_heroes_v2') || '{}'); }
       catch(_) { return {}; }
     })();
-    if (!Object.keys(savedState).length) return null;
+    if (!Object.keys(savedState).length) { console.log('[recommendFromCache] empty savedState'); return null; }
+    console.log('[recommendFromCache] heroIndex size:', heroIndex.size, 'savedState keys:', Object.keys(savedState).length, 'sample keys:', Object.keys(savedState).slice(0, 3));
 
     // Read numMarches
     let numMarches = 1;
@@ -293,7 +294,8 @@
       joinCandidates.push({ name: heroName, score: joinScore, isJoiner, troopType });
     }
 
-    if (!callCandidates.length && !joinCandidates.length) return null;
+    if (!callCandidates.length && !joinCandidates.length) { console.log('[recommendFromCache] no candidates matched'); return null; }
+    console.log('[recommendFromCache] callCandidates:', callCandidates.length, 'joinCandidates:', joinCandidates.length);
 
     callCandidates.sort((a, b) => b.score - a.score);
     const callByType = { Infantry: null, Cavalry: null, Archer: null };

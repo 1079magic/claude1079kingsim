@@ -538,7 +538,12 @@
           || (window.HeroesBear.recommendFromCache && window.HeroesBear.recommendFromCache())
           || (window.HeroesBear.loadRec && window.HeroesBear.loadRec())
           || window.__bearHeroRec;
+        console.log('[Magic] hero rec:', _rec ? ('call=' + (_rec.call||[]).length + ' join=' + (_rec.join||[]).length) : 'NULL');
+        console.log('[Magic] _HERO_INDEX_REF size:', window._HERO_INDEX_REF ? window._HERO_INDEX_REF.size : 'NONE');
+        console.log('[Magic] heroes_v2 keys:', Object.keys(JSON.parse(localStorage.getItem('kingsim_heroes_v2')||'{}')).slice(0,5));
         if (_rec) {
+          console.log('[Magic] call heroes:', (_rec.call||[]).map(function(h){return h.name}));
+          console.log('[Magic] join heroes:', (_rec.join||[]).map(function(h){return h.name}));
           window.HeroesBear.injectOptTableHeroes(_rec.call, _rec.join);
           window.__bearHeroRec = _rec;
         }
