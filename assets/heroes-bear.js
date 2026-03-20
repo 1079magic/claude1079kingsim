@@ -461,21 +461,7 @@
   }
 
   // Expose public API
-  window.HeroesBear = {
-    recommend,
-    loadRec,
-    renderBearPanel,
-    scoreHero,
-    BEAR_W,
-    JOINER_NAMES,
-    injectCallHeroNames,
-    injectJoinHeroNames,
-    scheduleInjection,
-    startObserving,
-  };
-
-  // Auto-start + initial render on load
-  // ── Persist recommendation to localStorage so it survives page navigation ──
+  // ── localStorage for rec persistence ────────────────────────────────────────
   const REC_KEY = 'kingsim_bear_rec_v1';
   function saveRec(rec) {
     try { localStorage.setItem(REC_KEY, JSON.stringify(rec)); } catch(_) {}
@@ -484,6 +470,21 @@
     try { const r = localStorage.getItem(REC_KEY); return r ? JSON.parse(r) : null; }
     catch(_) { return null; }
   }
+
+  window.HeroesBear = {
+    recommend,
+    loadRec,
+    saveRec,
+    renderBearPanel,
+    scoreHero,
+    BEAR_W,
+    JOINER_NAMES,
+    injectCallHeroNames,
+    injectJoinHeroNames,
+    injectOptTableHeroes,
+    scheduleInjection,
+    startObserving,
+  };
 
   function init() {
     startObserving();
