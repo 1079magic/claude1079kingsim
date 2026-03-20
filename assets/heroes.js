@@ -64,17 +64,17 @@
     svg.setAttribute('viewBox','0 0 24 24');
     svg.classList.add('star'); if (active) svg.classList.add('active');
     const p = document.createElementNS('http://www.w3.org/2000/svg','path');
-    p.setAttribute('fill','#FFD54F');
+    // Active stars: bright gold filled; inactive: muted outline-ish (dark fill, low opacity via CSS)
+    p.setAttribute('fill', active ? '#FFD54F' : '#4a5568');
     p.setAttribute('d','M12 2l2.9 6.1 6.7.6-5 4.3 1.5 6.6L12 16l-6.1 3.6 1.5-6.6-5-4.3 6.7-.6z');
     svg.appendChild(p);
     return svg;
   }
   function swordSVG(active){
-    // Use crossed swords emoji (⚔️⚔️) as requested
     const span = document.createElement('span');
     span.className = 'sword' + (active ? ' active' : '');
     span.textContent = '⚔️';
-    span.style.cssText = 'font-size:16px;cursor:pointer;opacity:'+(active?'1':'0.45')+';transition:opacity .15s,transform .1s';
+    // NO inline styles — all styling via CSS .sword and .sword.active
     return span;
   }
 
@@ -263,7 +263,12 @@
       s.dataset.value = i;
       s.addEventListener('click', ()=>{
         card.dataset.level = i;
-        [...stars.children].forEach((el,idx)=> el.classList.toggle('active', idx < i));
+        [...stars.children].forEach((el,j)=>{
+          const isActive = j < i;
+          el.classList.toggle('active', isActive);
+          const path = el.querySelector('path');
+          if(path) path.setAttribute('fill', isActive ? '#FFD54F' : '#4a5568');
+        });
         saveState(); computeSummary(); updateHeaderSums();
       });
       stars.appendChild(s);

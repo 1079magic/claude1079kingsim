@@ -45,7 +45,7 @@
     // Secondary combat stats
     damageDealtUp_percent:      1.0,
     damageTakenDown_percent:    1.2,
-    procChance_percent:         0.5,
+    procChance_percent:         3.5,  // expected-value: chance × 0.50 effect ÷ 100 × atkWeight
     damagePerTurn_percent:      0.5,
     targetDamageTakenUp_percent:0.8,
     enemyLethalityDown_percent: 0.6,
@@ -220,61 +220,76 @@
   }
 
   // ── Table injection helpers ───────────────────────────────────────────────────
-  // Inject hero names into callRallyTable (after app1.js renders it)
+  // ── Shared hero table injection helpers ──────────────────────────────────────
+  // Both magic.html and optiona.html use callRallyTable / joinTableWrap.
+  // Hero names go between the Type/# column and the Infantry column.
+
   function injectCallHeroNames(callHeroes) {
     const callTable = document.getElementById('callRallyTable');
-    if (!callTable || !callHeroes?.length) return;
-    const tbody = callTable.querySelector('tbody');
-    if (!tbody) return;
+    if (!callTable) return;
 
-    // Find or create the hero name row (2nd row, after the CALL formation row)
-    let heroRow = tbody.querySelector('.bear-hero-row-call');
-    if (!heroRow) {
-      heroRow = document.createElement('tr');
-      heroRow.className = 'bear-hero-row-call';
-      tbody.insertBefore(heroRow, tbody.firstChild.nextSibling || null);
+    // ── thead: add "Heroes" th after Type ──
+    const thead = callTable.querySelector('thead tr');
+    if (thead && !thead.querySelector('.bear-hero-th')) {
+      const th = document.createElement('th');
+      th.className = 'bear-hero-th';
+      th.style.cssText = 'font-size:.68rem;color:#22d3ee;white-space:nowrap;padding:4px 6px';
+      th.textContent = 'Heroes';
+      // Insert after first th (Type)
+      thead.insertBefore(th, thead.cells[1]);
     }
 
-    const nameHtml = callHeroes.map(h =>
-      `<span class="bear-hero-pill bear-hero-pill--call">${h.name}</span>`
-    ).join('');
+    // ── tbody CALL row: add hero names cell after first td ──
+    const callRow = callTable.querySelector('tbody tr');
+    if (!callRow) return;
+    let heroTd = callRow.querySelector('.bear-hero-cell');
+    if (!heroTd) {
+      heroTd = document.createElement('td');
+      heroTd.className = 'bear-hero-cell';
+      heroTd.style.cssText = 'padding:3px 6px;vertical-align:middle';
+      callRow.insertBefore(heroTd, callRow.cells[1]);
+    }
 
-    heroRow.innerHTML = `
-      <td style="font-size:.7rem;color:#7dd3fc;font-weight:600;white-space:nowrap">Heroes</td>
-      <td colspan="4" style="padding:3px 8px">
-        <div class="bear-hero-names">${nameHtml}</div>
-      </td>`;
+    if (!callHeroes?.length) { heroTd.innerHTML = ''; return; }
+
+    // Each hero on its own line — wrapped, small font
+    const pills = callHeroes.map(h => {
+      const TYPE_EMOJI = { Infantry:'⚔️', Cavalry:'🐎', Archer:'🏹' };
+      const heroData = window._HERO_INDEX_REF?.get(h.name);
+      const em = TYPE_EMOJI[heroData?.troopType] || '';
+      return `<div style="white-space:nowrap;margin-bottom:1px">
+        <span class="bear-hero-pill bear-hero-pill--call" style="font-size:.65rem;padding:1px 5px">${em}${h.name}</span>
+      </div>`;
+    }).join('');
+    heroTd.innerHTML = pills;
   }
 
-  // Inject hero names into joinTableWrap (per row)
   function injectJoinHeroNames(joinHeroes) {
     const joinWrap = document.getElementById('joinTableWrap');
-    if (!joinWrap || !joinHeroes?.length) return;
+    if (!joinWrap) return;
+
+    // ── thead: add "Hero" th after # ──
+    const thead = joinWrap.querySelector('thead tr');
+    if (thead && !thead.querySelector('.bear-hero-th')) {
+      const th = document.createElement('th');
+      th.className = 'bear-hero-th';
+      th.style.cssText = 'font-size:.68rem;color:#10b981;white-space:nowrap;padding:4px 6px';
+      th.textContent = 'Hero';
+      thead.insertBefore(th, thead.cells[1]);
+    }
+
     const rows = joinWrap.querySelectorAll('tbody tr');
     rows.forEach((row, i) => {
-      const hero = joinHeroes[i];
-      if (!hero) return;
-
-      // Find or create the hero cell (before infantry cell)
-      let heroCell = row.querySelector('.bear-hero-cell');
-      if (!heroCell) {
-        heroCell = document.createElement('td');
-        heroCell.className = 'bear-hero-cell';
-        heroCell.style.cssText = 'padding:3px 6px;font-size:.7rem;vertical-align:middle';
-        // Insert after the first # cell
-        const firstCell = row.cells[0];
-        if (firstCell) row.insertBefore(heroCell, firstCell.nextSibling);
-        // Adjust header too (add "Hero" th after #)
-        const thead = joinWrap.querySelector('thead tr');
-        if (thead && !thead.querySelector('.bear-hero-th')) {
-          const heroTh = document.createElement('th');
-          heroTh.className = 'bear-hero-th';
-          heroTh.textContent = 'Hero';
-          heroTh.style.cssText = 'font-size:.7rem;white-space:nowrap';
-          thead.insertBefore(heroTh, thead.cells[1]);
-        }
+      let heroTd = row.querySelector('.bear-hero-cell');
+      if (!heroTd) {
+        heroTd = document.createElement('td');
+        heroTd.className = 'bear-hero-cell';
+        heroTd.style.cssText = 'padding:3px 6px;vertical-align:middle';
+        row.insertBefore(heroTd, row.cells[1]);
       }
-      heroCell.innerHTML = `<span class="bear-hero-pill bear-hero-pill--join">${hero.name}</span>`;
+      const hero = joinHeroes?.[i];
+      if (!hero) { heroTd.innerHTML = ''; return; }
+      heroTd.innerHTML = `<span class="bear-hero-pill bear-hero-pill--join" style="font-size:.65rem;padding:1px 5px;display:inline-block">${hero.name}</span>`;
     });
   }
 
@@ -340,6 +355,56 @@
     content.innerHTML = html;
   }
 
+  // ── Inject heroes into optTableWrap (optiona.html — same structure, different ID) ──
+  function injectOptTableHeroes(callHeroes, joinHeroes) {
+    const wrap = document.getElementById('optTableWrap');
+    if (!wrap) return;
+    const table = wrap.querySelector('table');
+    if (!table) return;
+
+    // thead: insert Heroes th after Type
+    const thead = table.querySelector('thead tr');
+    if (thead && !thead.querySelector('.bear-hero-th')) {
+      const th = document.createElement('th');
+      th.className = 'bear-hero-th';
+      th.style.cssText = 'font-size:.68rem;color:#22d3ee;white-space:nowrap;padding:4px 6px';
+      th.textContent = 'Heroes';
+      thead.insertBefore(th, thead.cells[1]);
+    }
+
+    // tbody rows
+    const rows = table.querySelectorAll('tbody tr');
+    let joinIdx = 0;
+    rows.forEach(row => {
+      const typeCell = row.cells[0];
+      const typeText = typeCell?.textContent?.trim() || '';
+      const isCall = typeText.toUpperCase().includes('CALL');
+
+      let heroTd = row.querySelector('.bear-hero-cell');
+      if (!heroTd) {
+        heroTd = document.createElement('td');
+        heroTd.className = 'bear-hero-cell';
+        heroTd.style.cssText = 'padding:3px 6px;vertical-align:middle';
+        row.insertBefore(heroTd, row.cells[1]);
+      }
+
+      if (isCall && callHeroes?.length) {
+        const pills = callHeroes.map(h => {
+          const TYPE_EMOJI = { Infantry:'⚔️', Cavalry:'🐎', Archer:'🏹' };
+          const hd = window._HERO_INDEX_REF?.get(h.name);
+          const em = TYPE_EMOJI[hd?.troopType] || '';
+          return `<div style="white-space:nowrap;margin-bottom:1px"><span class="bear-hero-pill bear-hero-pill--call" style="font-size:.65rem;padding:1px 5px">${em}${h.name}</span></div>`;
+        }).join('');
+        heroTd.innerHTML = pills;
+      } else if (!isCall && joinHeroes?.[joinIdx]) {
+        const h = joinHeroes[joinIdx++];
+        heroTd.innerHTML = `<span class="bear-hero-pill bear-hero-pill--join" style="font-size:.65rem;padding:1px 5px;display:inline-block">${h.name}</span>`;
+      } else {
+        heroTd.innerHTML = '';
+      }
+    });
+  }
+
   // ── Auto-inject after tables render (observe DOM changes) ────────────────────
   let _injectionScheduled = false;
   function scheduleInjection() {
@@ -351,22 +416,22 @@
       if (!rec) return;
       injectCallHeroNames(rec.call);
       injectJoinHeroNames(rec.join);
+      injectOptTableHeroes(rec.call, rec.join);  // optiona.html
       saveRec(rec);
       renderBearPanel(rec);
       window.__bearHeroRec = rec;
     });
   }
 
-  // Observe callRallyTable and joinTableWrap for content changes
+  // Observe callRallyTable, joinTableWrap, and optTableWrap for content changes
   function startObserving() {
-    const ids = ['callRallyTable', 'joinTableWrap'];
+    const ids = ['callRallyTable', 'joinTableWrap', 'optTableWrap'];
     ids.forEach(id => {
       const el = document.getElementById(id);
       if (!el) return;
       new MutationObserver(() => scheduleInjection())
         .observe(el, { childList: true, subtree: true, characterData: true });
     });
-    // Also re-inject when hero state changes
     window.addEventListener('heroStateChanged', scheduleInjection);
   }
 
@@ -401,12 +466,15 @@
     if (cached && (cached.call?.length || cached.join?.length)) {
       renderBearPanel(cached);
     }
-    // Then recompute fresh
+    // Then recompute fresh and inject into tables
     ensureHeroIndex().then(() => {
       const rec = recommend();
       if (rec && (rec.call.length || rec.join.length)) {
         saveRec(rec);
         renderBearPanel(rec);
+        injectCallHeroNames(rec.call);
+        injectJoinHeroNames(rec.join);
+        injectOptTableHeroes(rec.call, rec.join);
       }
     });
   }
