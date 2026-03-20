@@ -51,6 +51,7 @@
       };
     });
     localStorage.setItem(KEY, JSON.stringify(payload));
+    window.dispatchEvent(new Event('heroStateChanged'));
   }
   function loadState(){
     try { return JSON.parse(localStorage.getItem(KEY)||'{}'); }
@@ -69,17 +70,12 @@
     return svg;
   }
   function swordSVG(active){
-    const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
-    svg.setAttribute('viewBox','0 0 24 24');
-    svg.classList.add('sword'); if (active) svg.classList.add('active');
-    const p1 = document.createElementNS('http://www.w3.org/2000/svg','path');
-    p1.setAttribute('fill','#76E4FF');
-    p1.setAttribute('d','M3 4l7.8 7.8-.7.7L2.3 4.7 3 4zm11.1 7.6L21 4l.7.7-9.1 9.1-.7-.7z');
-    const p2 = document.createElementNS('http://www.w3.org/2000/svg','path');
-    p2.setAttribute('fill','#76E4FF');
-    p2.setAttribute('d','M5.7 2.3l.7.7L4 5.4l-.7-.7 2.4-2.4zm12.6 0L21 4.1l-.7.7-2.7-2.7.7-.7zM2.3 18.3l3.4-3.4 2.4 2.4-3.4 3.4-2.4-2.4zm16.6-3.4l2.4 2.4-3.4 3.4-2.4-2.4 3.4-3.4z');
-    svg.appendChild(p1); svg.appendChild(p2);
-    return svg;
+    // Use crossed swords emoji (⚔️⚔️) as requested
+    const span = document.createElement('span');
+    span.className = 'sword' + (active ? ' active' : '');
+    span.textContent = '⚔️';
+    span.style.cssText = 'font-size:16px;cursor:pointer;opacity:'+(active?'1':'0.45')+';transition:opacity .15s,transform .1s';
+    return span;
   }
 
   // ---------- Emoji icons for troop type ----------
@@ -242,7 +238,10 @@
       });
       stars.appendChild(s);
     }
-    card.appendChild(lvlRow);
+    // Wrap controls for smooth expand animation
+    const ctrlWrap = document.createElement('div');
+    ctrlWrap.className = 'controls-wrap';
+    ctrlWrap.appendChild(lvlRow);
 
     // Skills (segmented 1..5)
     const currentSkillVals = state.skills || [];
@@ -262,7 +261,7 @@
         });
         seg.appendChild(b);
       }
-      card.appendChild(row);
+      ctrlWrap.appendChild(row);
     });
 
     // Widget swords
@@ -280,7 +279,7 @@
         });
         swords.appendChild(swd);
       }
-      card.appendChild(wRow);
+      ctrlWrap.appendChild(wRow);
     }
 
     // Formation
@@ -301,10 +300,17 @@
         saveState(); computeSummary(); updateHeaderSums();
       });
     });
-    card.appendChild(formRow);
+    ctrlWrap.appendChild(formRow);
+    card.appendChild(ctrlWrap);
 
     // Lock behavior
-    const setLock = (owned)=>{ card.classList.toggle('locked', !owned); };
+    const setLock = (owned)=>{
+      card.classList.toggle('locked', !owned);
+      if(owned) {
+        card.classList.add('just-owned');
+        setTimeout(()=>card.classList.remove('just-owned'), 400);
+      }
+    };
     setLock(!!state.owned);
     chk.addEventListener('change', e=>{ setLock(e.target.checked); saveState(); computeSummary(); updateHeaderSums(); });
 
@@ -480,6 +486,7 @@
 
   // ---------- Boot ----------
   let HERO_INDEX = new Map();
+  window._HERO_INDEX_REF = HERO_INDEX; // expose for heroes-bear.js
 
   async function boot(){
     try{
@@ -489,6 +496,7 @@
 
       // build quick index by name
       (data.heroes||[]).forEach(h => HERO_INDEX.set(h.name, h));
+      window._HERO_INDEX_REF = HERO_INDEX; // re-assign after population
 
       // build groups/grids and wire controls
       buildGrid(data);

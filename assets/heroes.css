@@ -208,3 +208,107 @@
   /* Show controls inside sheet */
   .hero-sheet-body .controls { display: flex !important; flex-direction: column; gap: 8px; }
 }
+
+/* ===== Hero Recommendation — Bear table injections ===== */
+.bear-hero-names {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+.bear-hero-pill {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: .68rem;
+  font-weight: 700;
+  letter-spacing: .02em;
+  white-space: nowrap;
+  line-height: 1.4;
+}
+.bear-hero-pill--call {
+  background: rgba(34,211,238,.15);
+  border: 1px solid rgba(34,211,238,.5);
+  color: #22d3ee;
+}
+.bear-hero-pill--join {
+  background: rgba(16,185,129,.12);
+  border: 1px solid rgba(16,185,129,.45);
+  color: #10b981;
+  display: block;
+}
+.bear-hero-row-call td { padding: 3px 8px; }
+.bear-hero-th { font-size:.68rem !important; padding:4px 6px !important; color:#10b981 !important; white-space:nowrap; }
+.bear-hero-cell { padding:3px 6px !important; }
+
+/* Mobile: keep tables readable — reduce fonts when hero column present */
+@media (max-width: 640px) {
+  .bear-hero-pill { font-size:.6rem; padding:2px 6px; }
+  /* Call table with hero row: tighter column widths */
+  #callRallyTable table, #joinTableWrap table {
+    font-size: clamp(9px, 2.2vw, 12px);
+  }
+  #callRallyTable th, #callRallyTable td,
+  #joinTableWrap  th, #joinTableWrap  td {
+    padding: 4px 4px !important;
+  }
+}
+
+/* ===== Smooth expand animation when owned toggled ===== */
+@keyframes card-expand {
+  0%   { transform: scaleY(0.96); opacity: .7; }
+  60%  { transform: scaleY(1.01); }
+  100% { transform: scaleY(1);    opacity: 1;  }
+}
+.hero-card.just-owned {
+  animation: card-expand .35s cubic-bezier(.22,.68,0,1.2) forwards;
+  transform-origin: top center;
+}
+
+/* ===== Widget ⚔️ emoji styling ===== */
+.swords { display: inline-flex; gap: 2px; align-items: center; }
+.sword {
+  font-size: 16px;
+  cursor: pointer;
+  opacity: .45;
+  transition: opacity .15s, transform .12s;
+  display: inline-block;
+  line-height: 1;
+  user-select: none;
+}
+.sword.active { opacity: 1; transform: translateY(-1px); }
+.sword:hover:not(.active) { opacity: .7; }
+
+/* ===== 3-col hero grid on mobile (ALL screen sizes) ===== */
+@media (max-width: 640px) {
+  .group-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+  }
+  .hero-card { padding: 6px 8px !important; }
+  .hero-name { font-size: 11px !important; }
+  .hero-meta { font-size: 10px !important; }
+  .focus-sums { font-size: 9px !important; }
+  .seg button { padding: 4px 5px !important; font-size: 10px !important; }
+  .pill { padding: 4px 7px !important; font-size: 10px !important; }
+  .sword { font-size: 13px !important; }
+  .star  { width: 15px !important; height: 15px !important; }
+  .label { font-size: 10px !important; }
+}
+
+/* ===== Bear Recommendation Panel on heros.html ===== */
+#bear-rec-panel { border-left: 3px solid #22d3ee; }
+
+/* ===== Mobile card controls — smooth expand when owned ===== */
+/* Controls section animates height when card goes from locked→unlocked */
+.hero-card .controls-wrap {
+  overflow: hidden;
+  max-height: 0;
+  transition: max-height .3s cubic-bezier(.22,.68,0,1.1), opacity .25s ease;
+  opacity: 0;
+}
+/* Not locked = show controls */
+.hero-card:not(.locked) .controls-wrap {
+  max-height: 400px;
+  opacity: 1;
+}
