@@ -242,6 +242,9 @@
 
 /* Phones: popover nav */
 @media (max-width: 640px){
+  /* Pin the nav bar to a consistent height so --navH is stable across all pages */
+  .nav { min-height:56px; }
+  .nav-inner { min-height:56px; }
   .nav .nav-links{
     position:absolute;
     left:12px; right:12px;

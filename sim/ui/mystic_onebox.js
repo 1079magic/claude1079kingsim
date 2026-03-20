@@ -125,27 +125,29 @@
       const defScore = (p.defScore!=null ? p.defScore : 'N/A');
       return `
         <tr>
-          <td>${p.label}</td>
-          <td>${atkScore}</td>
-          <td>${di}/${dc}/${da}</td>
-          <td>${defScore}</td>
+          <td style="padding:5px 8px;white-space:nowrap">${p.label}</td>
+          <td style="padding:5px 8px;text-align:right">${atkScore}</td>
+          <td style="padding:5px 8px;white-space:nowrap">${di}/${dc}/${da}</td>
+          <td style="padding:5px 8px;text-align:right">${defScore}</td>
         </tr>`;
     }).join('');
 
     host.innerHTML = `
       <h3 style="margin-top:14px">Scoreboard</h3>
       <div class="muted" style="margin:6px 0 8px 0">Scanned ${scannedCount.toLocaleString()} formations; showing top 10.</div>
-      <table>
+      <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;width:100%">
+      <table style="min-width:320px;width:100%;font-size:clamp(10px,2.5vw,13px)">
         <thead>
           <tr>
-            <th>Attacker</th>
-            <th>Atk_Score</th>
-            <th>Defender</th>
-            <th>Def_Score</th>
+            <th style="white-space:nowrap;padding:6px 8px">Attacker</th>
+            <th style="white-space:nowrap;padding:6px 8px">Atk Score</th>
+            <th style="white-space:nowrap;padding:6px 8px">Defender</th>
+            <th style="white-space:nowrap;padding:6px 8px">Def Score</th>
           </tr>
         </thead>
         <tbody>${body}</tbody>
-      </table>`;
+      </table>
+      </div>`;
   }
 
   // --- replace the run() function with this version ---
@@ -335,25 +337,39 @@
     const cv=document.getElementById('fw-canvas'); if(!cv) return;
     cv.width=window.innerWidth; cv.height=window.innerHeight; cv.style.display='block';
     const ctx=cv.getContext('2d');
-    const COLS=['#22d3ee','#10b981','#fbbf24','#f87171','#a78bfa','#fff'];
-    const parts=[];
-    for(let i=0;i<200;i++){
-      const a=Math.random()*Math.PI*2, s=1.5+Math.random()*7;
-      parts.push({x:cv.width*(0.2+Math.random()*0.6), y:cv.height*(0.2+Math.random()*0.5),
-        vx:Math.cos(a)*s, vy:Math.sin(a)*s-2, alpha:1,
-        color:COLS[Math.floor(Math.random()*COLS.length)], r:2.5+Math.random()*3.5});
+    const COLS=['#22d3ee','#10b981','#fbbf24','#f87171','#a78bfa','#ffffff','#60a5fa','#34d399'];
+    let parts=[];
+    // Spawn initial burst
+    function spawnBurst(count){
+      for(let i=0;i<count;i++){
+        const a=Math.random()*Math.PI*2, s=1.5+Math.random()*8;
+        parts.push({x:cv.width*(0.15+Math.random()*0.7), y:cv.height*(0.15+Math.random()*0.55),
+          vx:Math.cos(a)*s, vy:Math.sin(a)*s-2.5, alpha:1,
+          // Fade rate: slower = lasts longer (0.014 → 4s at 60fps needs ~0.007)
+          fade:0.006+Math.random()*0.004,
+          color:COLS[Math.floor(Math.random()*COLS.length)], r:2+Math.random()*4});
+      }
     }
+    spawnBurst(250);
     let f=0;
+    // Second burst at 1s, third at 2s
+    const TOTAL_FRAMES=240; // 4 seconds at 60fps
     (function draw(){
       ctx.clearRect(0,0,cv.width,cv.height);
+      // Spawn additional bursts at 1s and 2s for sustained celebration
+      if(f===60)  spawnBurst(200);
+      if(f===120) spawnBurst(200);
+      if(f===180) spawnBurst(150);
       parts.forEach(p=>{
-        p.x+=p.vx; p.y+=p.vy; p.vy+=0.11; p.alpha-=0.014;
+        p.x+=p.vx; p.y+=p.vy; p.vy+=0.09; p.alpha-=p.fade;
         if(p.alpha<=0)return;
         ctx.globalAlpha=p.alpha; ctx.fillStyle=p.color;
         ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill();
       });
       ctx.globalAlpha=1;
-      if(++f<130) requestAnimationFrame(draw);
+      // Remove dead particles to keep performance clean
+      if(f%30===0) parts=parts.filter(p=>p.alpha>0);
+      if(++f<TOTAL_FRAMES) requestAnimationFrame(draw);
       else{ cv.style.display='none'; ctx.clearRect(0,0,cv.width,cv.height); }
     })();
   }
@@ -521,10 +537,11 @@
 
       if(moR.best){
         renderRecal(moR.best, attTotal, nc.moveName, n);
+        // Show Win/Lost buttons so user chooses the outcome — do NOT auto-open next row
         const or=$('rc_outcome_row');
         if(n<RC_MAX){
           if(or) or.style.display='flex';
-          addAttemptRow(n+1);
+          // Next injured row opens ONLY when user clicks Lost (in wireRecalButtons)
         } else {
           if(or) or.style.display='none';
           const track=$('rc_attempt_track');
@@ -619,14 +636,15 @@
       const trial=$('mt_trial')?.value||'Crystal Cave';
       let state=rcGet(trial);
       if(!state){
-        // Read best formation from the rendered bestline text as fallback
         const bl=$('mt_bestline')?.textContent||'';
         const m=bl.match(/([\d.]+)\/([\d.]+)\/([\d.]+)/);
         const fi=m?parseFloat(m[1])/100:0.54, fc=m?parseFloat(m[2])/100:0.16;
         state=rcInit(trial,{fi,fc,fa:Math.max(0,1-fi-fc)},DEF_POOL);
       }
       const or=$('rc_outcome_row'); if(or) or.style.display='none';
-      addAttemptRow(1);
+      // Open the NEXT attempt row (one after current attempt count)
+      const nextN = state.attempts.length + 1;
+      if(nextN <= RC_MAX) addAttemptRow(nextN);
     });
 
     $('rc_btn_clear')?.addEventListener('click',()=>{
