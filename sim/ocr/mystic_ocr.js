@@ -482,8 +482,8 @@
         const s = inf + cav + arc || 1;
         return { inf:inf/s, cav:cav/s, arc:arc/s };
       }
-      const atkFractions = toFractions(L);
-      const defFractions = toFractions(R);
+      let atkFractions = toFractions(L);
+      let defFractions = toFractions(R);
 
       // ---------- D) Troop amounts — try to read absolute numbers from top band ----------
       // Some trials (e.g. Knowledge Nexus) show actual troop amounts, not just %, under each icon.
