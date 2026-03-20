@@ -198,8 +198,28 @@
     // Build the typed call team (only include types that have a hero available)
     const callTop3 = Object.values(callByType).filter(Boolean);
 
-    // Sort JOIN: joiners first (sorted by score), then non-joiners (sorted by score)
-    joinCandidates.sort((a, b) => {
+    // JOIN: only heroes whose first expedition skill directly boosts squad/rally damage
+    // procChance, damageTakenDown, defenseUp etc. in first skill = not effective for joins
+    const JOIN_VALID_KEYS = new Set([
+      'lethalityUp_percent', 'attackUp_percent',
+      'rallyLethalityUp_percent', 'rallyAttackUp_percent',
+    ]);
+    function firstSkillIsValid(heroData) {
+      const sk0 = heroData.skills?.[0];
+      if (!sk0) return false;
+      // Check any level's keys — if ANY level has a valid key, the skill is valid
+      const lvls = Object.values(sk0.levels || {});
+      return lvls.some(lv => Object.keys(lv).some(k => JOIN_VALID_KEYS.has(k)));
+    }
+
+    // Filter join candidates: must have valid first expedition skill
+    const joinFiltered_valid = joinCandidates.filter(h => {
+      const hd = heroIndex.get(h.name);
+      return hd && firstSkillIsValid(hd);
+    });
+
+    // Sort: joiners first, then by score desc
+    joinFiltered_valid.sort((a, b) => {
       if (a.isJoiner !== b.isJoiner) return a.isJoiner ? -1 : 1;
       return b.score - a.score;
     });
@@ -207,7 +227,7 @@
     const joinNeeded = Math.max(0, numMarches - 1);
     // Remove call heroes from join pool to avoid duplicates
     const callNameSet = new Set(callTop3.map(h => h.name));
-    const joinFiltered = joinCandidates.filter(h => !callNameSet.has(h.name));
+    const joinFiltered = joinFiltered_valid.filter(h => !callNameSet.has(h.name));
     const joinTopN = joinFiltered.slice(0, joinNeeded);
 
     return {
@@ -412,12 +432,13 @@
     _injectionScheduled = true;
     ensureHeroIndex().then(() => {
       _injectionScheduled = false;
-      const rec = recommend();
-      if (!rec) return;
+      // Try fresh compute (heroes page); fall back to cache (magic/optiona)
+      const rec = recommend() || loadRec();
+      if (!rec || (!rec.call?.length && !rec.join?.length)) return;
       injectCallHeroNames(rec.call);
       injectJoinHeroNames(rec.join);
-      injectOptTableHeroes(rec.call, rec.join);  // optiona.html
-      saveRec(rec);
+      injectOptTableHeroes(rec.call, rec.join);
+      if (recommend()) { saveRec(rec); } // only save when fresh (has heroGrid)
       renderBearPanel(rec);
       window.__bearHeroRec = rec;
     });
@@ -461,12 +482,17 @@
 
   function init() {
     startObserving();
-    // Try to restore from localStorage first (instant render on page load)
+    // Render from cache immediately (works on ALL pages, even without heroGrid)
     const cached = loadRec();
     if (cached && (cached.call?.length || cached.join?.length)) {
       renderBearPanel(cached);
+      // Inject into tables right away from cache (magic/optiona pages)
+      // Tables may not be rendered yet — the MutationObserver will also fire later
+      injectCallHeroNames(cached.call);
+      injectJoinHeroNames(cached.join);
+      injectOptTableHeroes(cached.call, cached.join);
     }
-    // Then recompute fresh and inject into tables
+    // Recompute fresh (only possible when heroGrid exists = heros.html)
     ensureHeroIndex().then(() => {
       const rec = recommend();
       if (rec && (rec.call.length || rec.join.length)) {
@@ -475,6 +501,8 @@
         injectCallHeroNames(rec.call);
         injectJoinHeroNames(rec.join);
         injectOptTableHeroes(rec.call, rec.join);
+      } else if (cached && (cached.call?.length || cached.join?.length)) {
+        // No fresh rec (not on heroes page) — already rendered from cache above
       }
     });
   }
