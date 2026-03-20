@@ -90,7 +90,7 @@
 
   // ---------- Header meta & four-stat aggregation ----------
   function headerMeta(hero){
-    return (hero.troopType || 'Any'); // show only troop type, e.g., "Cavalry"
+    return (hero.troopType || 'Any');
   }
 
   // Sum ATK/LET/DEF/HP from current selections (skills + widget)
@@ -190,7 +190,7 @@
     card.dataset.widget    = state.widget||0;
     card.dataset.formation = state.formation||'';
 
-    // Header (icon + name + meta + cyan sums)
+    // Header (icon + name + cyan sums) — troop type removed, name shown in gold above
     const head = document.createElement('div'); head.className = 'card-head';
 
     const iconWrap = document.createElement('div');
@@ -199,12 +199,10 @@
 
     const text  = document.createElement('div'); text.className  = 'header-text';
     const nm    = document.createElement('div'); nm.className    = 'hero-name'; nm.textContent = hero.name;
-    const meta  = document.createElement('div'); meta.className  = 'hero-meta'; meta.textContent = headerMeta(hero);
     const sumsAtkLet = document.createElement('div'); sumsAtkLet.className = 'focus-sums'; sumsAtkLet.textContent = 'ATK +0.0% • LET +0.0%';
     const sumsDefHp  = document.createElement('div'); sumsDefHp.className  = 'focus-sums'; sumsDefHp.textContent  = 'DEF +0.0% • HP +0.0%';
 
     text.appendChild(nm);
-    text.appendChild(meta);
     text.appendChild(sumsAtkLet);
     text.appendChild(sumsDefHp);
 
