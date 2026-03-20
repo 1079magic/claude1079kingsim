@@ -321,8 +321,8 @@
   </div>
 
   <!-- Engines + state loader -->
-  <script src="app1.js"></script>
   <script src="assets/heroes-bear.js"></script>
+  <script src="app1.js"></script>
   
   <!-- Self-healing & autorun (unchanged logic) -->
   <script>
@@ -393,6 +393,14 @@
           // Initialize & compute
           if (window.Magic && typeof Magic.init === 'function') Magic.init();
           if (window.Magic && typeof Magic.compute === 'function') Magic.compute('magic12');
+          // Inject hero names after tables render
+          if (window.HeroesBear) {
+            var _hr = window.HeroesBear.recommend() || window.HeroesBear.loadRec() || window.__bearHeroRec;
+            if (_hr) {
+              window.HeroesBear.injectCallHeroNames(_hr.call);
+              window.HeroesBear.injectJoinHeroNames(_hr.join);
+            }
+          }
 
           if (s){ s.textContent=''; s.className=''; }
         }catch(err){
