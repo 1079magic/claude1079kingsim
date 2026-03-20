@@ -390,8 +390,9 @@
           // Load Troops & Stats
           if (window.KingState && typeof KingState.load === 'function') KingState.load();
 
-          // Initialize & compute (init() is async — it awaits tiers.json then calls compute internally)
+          // Initialize & compute
           if (window.Magic && typeof Magic.init === 'function') Magic.init();
+          if (window.Magic && typeof Magic.compute === 'function') Magic.compute('magic12');
 
 
           if (s){ s.textContent=''; s.className=''; }
