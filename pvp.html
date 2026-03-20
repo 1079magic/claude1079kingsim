@@ -118,6 +118,39 @@
     }
 
   </style>
+  <!-- PvP recalibration CSS (mirrors Mystic styling) -->
+  <style>
+    /* Recalibration panel */
+    .pvp-recal-panel{margin-top:14px}
+    .pvp-recal-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px}
+    @media(max-width:600px){.pvp-recal-grid{grid-template-columns:1fr}}
+    .pvp-best-card{background:rgba(34,211,238,.07);border:1px solid #22d3ee;border-radius:10px;padding:14px}
+    .pvp-best-card.green{background:rgba(16,185,129,.08);border-color:#10b981}
+    .pvp-card-label{font-size:.72rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;margin-bottom:4px;color:#22d3ee}
+    .pvp-card-label.green{color:#10b981}
+    .pvp-card-formation{font-size:1.5rem;font-weight:800;color:#e9eef7;margin:2px 0 4px}
+    .pvp-card-sub{font-size:.78rem;color:var(--muted);white-space:pre-line}
+    .pvp-outcome-row{display:flex;gap:10px;align-items:center;margin:10px 0 0;flex-wrap:wrap}
+    .pvp-btn-win{background:linear-gradient(90deg,#10b981,#059669);color:#fff;border:0;font-weight:700;padding:9px 22px;border-radius:10px;font-size:.9rem;cursor:pointer;min-height:40px;transition:filter .15s}
+    .pvp-btn-win:hover{filter:brightness(1.1)}
+    .pvp-btn-lost{background:linear-gradient(90deg,#ef4444,#dc2626);color:#fff;border:0;font-weight:700;padding:9px 22px;border-radius:10px;font-size:.9rem;cursor:pointer;min-height:40px;transition:filter .15s}
+    .pvp-btn-lost:hover{filter:brightness(1.1)}
+    .pvp-attempt-track{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+    .pvp-attempt-row{background:rgba(255,255,255,.03);border:1px solid #1c2d40;border-radius:8px;padding:10px 12px}
+    .pvp-attempt-row.lost{border-color:rgba(239,68,68,.4);background:rgba(239,68,68,.03)}
+    .pvp-attempt-label{font-size:.72rem;font-weight:700;color:var(--muted);margin-bottom:6px}
+    .pvp-injured-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px}
+    .pvp-injured-label{font-size:.72rem;color:var(--muted);white-space:nowrap}
+    .pvp-injured-input{width:130px;padding:5px 8px;font-size:.82rem;background:rgba(255,255,255,.04);border:1px solid #1e3048;border-radius:6px;color:var(--ink)}
+    .pvp-apply-btn{padding:5px 14px;font-size:.78rem;font-weight:700;background:rgba(34,211,238,.15);border:1px solid #22d3ee;color:#22d3ee;border-radius:6px;cursor:pointer;min-height:32px}
+    .pvp-apply-btn:hover{background:rgba(34,211,238,.28)}
+    .pvp-attempt-status{font-size:.75rem;color:var(--muted);margin-top:4px}
+    .pvp-shift-badge{display:inline-block;padding:2px 8px;font-size:.68rem;font-weight:700;border-radius:20px;background:rgba(34,211,238,.12);color:#22d3ee;border:1px solid rgba(34,211,238,.3)}
+    .pvp-recal-btn-clear{padding:6px 14px;font-size:.78rem;font-weight:700;background:rgba(255,255,255,.04);border:1px solid #2a3850;color:var(--muted);border-radius:8px;cursor:pointer;margin-top:12px}
+    .pvp-recal-btn-clear:hover{border-color:#ef4444;color:#ef4444}
+    #pvp-fw-canvas{position:fixed;inset:0;pointer-events:none;z-index:9998;display:none}
+  </style>
+  <canvas id="pvp-fw-canvas"></canvas>
   <!-- Image lightbox modal -->
   <div class="img-modal" id="img_modal" onclick="this.classList.remove('open')">
     <img id="img_modal_img" src="" alt="Example" />
@@ -243,6 +276,26 @@
       </div>
       <div id="pvp_table_wrap" class="pvp-table-wrap"></div>
       <div style="margin-top:8px"><span class="muted" id="pvp_count"></span></div>
+
+      <!-- ══ PVP RECALIBRATION PANEL ══ -->
+      <div class="pvp-recal-panel" id="pvp_recal_panel" style="display:none">
+        <div style="font-size:.72rem;font-weight:700;color:#7dd3fc;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;border-top:1px solid #1c2d40;padding-top:12px;margin-top:4px">
+          ⚔ Battle Follow-up &amp; Recalibration
+        </div>
+        <!-- Dynamic history cards — injected by JS into #pvp_history_wrap -->
+        <div id="pvp_history_wrap" style="margin-bottom:10px"></div>
+        <!-- Outcome buttons -->
+        <div class="pvp-outcome-row" id="pvp_outcome_row" style="display:none">
+          <span style="font-size:.78rem;color:var(--muted)">How did the battle go?</span>
+          <div style="display:flex;gap:10px">
+            <button class="pvp-btn-win"  id="pvp_btn_win">🏆 Win!</button>
+            <button class="pvp-btn-lost" id="pvp_btn_lost">💀 Lost</button>
+          </div>
+        </div>
+        <!-- Attempt rows — injected dynamically -->
+        <div class="pvp-attempt-track" id="pvp_attempt_track"></div>
+        <button class="pvp-recal-btn-clear" id="pvp_btn_clear">✕ Clear session &amp; start over</button>
+      </div>
     </section>
 
     <section class="panel panel-glass">
@@ -435,6 +488,12 @@
         $('pvp_count').innerHTML='Tested <strong>'+out.totalTested.toLocaleString()+'</strong> formations';
         $('pvp_results').style.display='block';
         $('pvp_results').scrollIntoView({behavior:'smooth',block:'start'});
+        // Show recalibration panel
+        const _ai2=num('pvp_att_inf',0),_ac2=num('pvp_att_cav',0),_aa2=num('pvp_att_arc',0);
+        const _perType2=_ai2+_ac2+_aa2;
+        const _attTotal2=_perType2>0?_perType2:(num('pvp_att_total',0)||150000);
+        const _defTotal2=num('pvp_def_inf',0)+num('pvp_def_cav',0)+num('pvp_def_arc',0)||150000;
+        window.__pvpShowRecal&&window.__pvpShowRecal(out.best, _attTotal2, _defTotal2);
         status.textContent='Done';status.style.color='#10b981';
       }catch(e){status.textContent='Error: '+(e.message||e);status.style.color='#ef4444';}
       finally{btn.disabled=false;btn.innerHTML='&#9654; Run Simulation';}
@@ -482,6 +541,317 @@
     header.addEventListener('click', function(){
       banner.classList.toggle('open');
     });
+  });
+})();
+</script>
+
+<!-- ══════════════════════════════════════════════════════════════
+     PVP RECALIBRATION SYSTEM
+     After each battle the user enters own losses + defender kills.
+     The engine adapts the search window based on loss rate & trend,
+     re-runs scanPvP, and shows an updated best formation.
+     State persists in localStorage so page refreshes keep history.
+     Max 5 attempts (same daily limit logic as Mystic Trials).
+════════════════════════════════════════════════════════════════ -->
+<script>
+(function(){
+  'use strict';
+  const PVP_MAX   = 5;
+  const PVP_KEY   = () => 'pvp_recal_session';
+  const $         = id => document.getElementById(id);
+  const num       = (id,d=0) => { const v=parseFloat(($( id)?.value||'').replace(/,/g,'')); return Number.isFinite(v)?v:d; };
+
+  // ── localStorage ──────────────────────────────────────────────
+  function rcLoad(){  try{ const r=localStorage.getItem(PVP_KEY()); return r?JSON.parse(r):null; }catch(_){return null;} }
+  function rcSave(s){ try{ localStorage.setItem(PVP_KEY(),JSON.stringify(s)); }catch(_){} }
+  function rcDrop(){  try{ localStorage.removeItem(PVP_KEY()); }catch(_){} }
+  let _rcState = null;
+  function rcGet(){ if(_rcState) return _rcState; _rcState=rcLoad(); return _rcState; }
+  function rcInit(best, attTotal, defTotal){
+    _rcState = { best:{fi:best.fi,fc:best.fc,fa:best.fa,label:best.label},
+      attTotal, defTotal, attempts:[], won:false };
+    rcSave(_rcState); return _rcState;
+  }
+
+  // ── Fireworks (same as Mystic) ─────────────────────────────────
+  function launchFireworks(){
+    const cv=$('pvp-fw-canvas'); if(!cv) return;
+    cv.width=window.innerWidth; cv.height=window.innerHeight; cv.style.display='block';
+    const ctx=cv.getContext('2d');
+    const COLS=['#22d3ee','#10b981','#fbbf24','#f87171','#a78bfa','#fff','#60a5fa','#34d399'];
+    let parts=[];
+    function spawnBurst(n){ for(let i=0;i<n;i++){
+      const a=Math.random()*Math.PI*2,s=1.5+Math.random()*8;
+      parts.push({x:cv.width*(0.15+Math.random()*0.7),y:cv.height*(0.15+Math.random()*0.55),
+        vx:Math.cos(a)*s,vy:Math.sin(a)*s-2.5,alpha:1,fade:0.006+Math.random()*0.004,
+        color:COLS[Math.floor(Math.random()*COLS.length)],r:2+Math.random()*4});
+    }}
+    spawnBurst(250);
+    let f=0;
+    (function draw(){
+      ctx.clearRect(0,0,cv.width,cv.height);
+      if(f===60)  spawnBurst(200);
+      if(f===120) spawnBurst(200);
+      if(f===180) spawnBurst(150);
+      parts.forEach(p=>{
+        p.x+=p.vx;p.y+=p.vy;p.vy+=0.09;p.alpha-=p.fade;
+        if(p.alpha<=0)return;
+        ctx.globalAlpha=p.alpha;ctx.fillStyle=p.color;
+        ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();
+      });
+      ctx.globalAlpha=1;
+      if(f%30===0) parts=parts.filter(p=>p.alpha>0);
+      if(++f<240) requestAnimationFrame(draw);
+      else{ cv.style.display='none'; ctx.clearRect(0,0,cv.width,cv.height); }
+    })();
+  }
+
+  // ── Format helpers ─────────────────────────────────────────────
+  function fmtF(fi,fc){ const fa=Math.max(0,1-fi-fc); return (fi*100).toFixed(1)+'/'+(fc*100).toFixed(1)+'/'+(fa*100).toFixed(1); }
+  function fmtT(fi,fc,tot){
+    if(!tot) return '';
+    const i=Math.round(fi*tot),c=Math.round(fc*tot),a=Math.max(0,tot-i-c);
+    return 'Inf\u202f'+i.toLocaleString()+'\u2002|\u2002Cav\u202f'+c.toLocaleString()+'\u2002|\u2002Arc\u202f'+a.toLocaleString();
+  }
+
+  // ── History card renderer ──────────────────────────────────────
+  function renderHistory(history, attTotal){
+    const wrap=$('pvp_history_wrap'); if(!wrap) return;
+    if(!history||!history.length){ wrap.innerHTML=''; return; }
+    let html='';
+    history.forEach((e,i)=>{
+      const isCurrent=(i===history.length-1);
+      const formation=fmtF(e.fi,e.fc);
+      const troops=fmtT(e.fi,e.fc,attTotal)||'';
+      const isBase=e.isBase;
+      if(isCurrent){
+        const bc=isBase?'green':'';
+        const lbl=isBase?'\u2694\ufe0f Recommended Formation':'\u21bb Recalibrated Formation';
+        const bdCol=isBase?'#10b981':'#22d3ee';
+        const bgCol=isBase?'rgba(16,185,129,.08)':'rgba(34,211,238,.07)';
+        const lc=isBase?'#10b981':'#22d3ee';
+        let sub=isBase?troops:('Attempt\u202f'+e.attemptNum);
+        if(!isBase&&e.summary) sub+='\u2002\u00b7\u2002'+e.summary;
+        if(troops&&!isBase) sub+='\n'+troops;
+        html+='<div style="background:'+bgCol+';border:1px solid '+bdCol+';border-radius:10px;padding:14px;margin-bottom:10px">'+
+          '<div style="font-size:.72rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:'+lc+';margin-bottom:4px">'+lbl+'</div>'+
+          '<div style="font-size:1.5rem;font-weight:800;color:#e9eef7;margin:2px 0 4px">'+formation+'</div>'+
+          '<div style="font-size:.78rem;color:var(--muted);white-space:pre-line">'+sub+'</div>'+
+          '</div>';
+      } else {
+        const dc=isBase?'#10b981':'#22d3ee';
+        const tag=isBase?'Initial':'Attempt\u202f'+e.attemptNum;
+        const move=e.summary?'\u2002\u00b7\u2002'+e.summary:'';
+        html+='<div style="display:flex;align-items:center;gap:8px;padding:5px 10px;background:rgba(255,255,255,.02);border:1px solid #1c2d40;border-radius:8px;margin-bottom:5px">'+
+          '<div style="width:7px;height:7px;border-radius:50%;background:'+dc+';flex-shrink:0"></div>'+
+          '<span style="font-size:.7rem;color:var(--muted);white-space:nowrap">'+tag+move+'</span>'+
+          '<span style="font-size:.85rem;font-weight:700;color:#c9d5e8;margin-left:auto">'+formation+'</span>'+
+          '</div>';
+      }
+    });
+    wrap.innerHTML=html;
+  }
+
+  // ── Rebuild history array from state ──────────────────────────
+  function buildHistory(state){
+    const h=[{fi:state.best.fi,fc:state.best.fc,fa:state.best.fa,isBase:true,attemptNum:0,summary:''}];
+    (state.attempts||[]).forEach((a,i)=>{
+      if(a.newBest) h.push({fi:a.newBest.fi,fc:a.newBest.fc,fa:a.newBest.fa,isBase:false,attemptNum:i+1,summary:a.summary||''});
+    });
+    return h;
+  }
+
+  // ── Attempt row management ────────────────────────────────────
+  function addAttemptRow(n){
+    const track=$('pvp_attempt_track'); if(!track) return;
+    if($('pvp_attempt_'+n)) return;
+    const isFinal=(n>=PVP_MAX);
+    const row=document.createElement('div');
+    row.className='pvp-attempt-row lost'; row.id='pvp_attempt_'+n;
+    row.innerHTML=
+      '<div class="pvp-attempt-label">Attempt #'+n+(isFinal?'\u2002\u00b7\u2002Last attempt today':'')+' \u2014 enter battle results</div>'+
+      '<div class="pvp-injured-row">'+
+        '<span class="pvp-injured-label">Own losses:</span>'+
+        '<input class="pvp-injured-input" id="pvp_att_loss_'+n+'" type="number" placeholder="e.g.\u202f90\u202f000" min="0" step="1000" />'+
+      '</div>'+
+      '<div class="pvp-injured-row">'+
+        '<span class="pvp-injured-label">Def killed:</span>'+
+        '<input class="pvp-injured-input" id="pvp_def_kill_'+n+'" type="number" placeholder="e.g.\u202f72\u202f000" min="0" step="1000" />'+
+        '<button class="pvp-apply-btn" id="pvp_apply_'+n+'">Recalibrate \u21bb</button>'+
+      '</div>'+
+      '<div class="pvp-attempt-status" id="pvp_status_'+n+'"></div>';
+    track.appendChild(row);
+    $('pvp_apply_'+n)?.addEventListener('click',()=>applyAttempt(n));
+    ['pvp_att_loss_'+n,'pvp_def_kill_'+n].forEach(id=>{
+      $(id)?.addEventListener('keydown',e=>{ if(e.key==='Enter') applyAttempt(n); });
+    });
+    setTimeout(()=>$('pvp_att_loss_'+n)?.focus(),60);
+  }
+
+  function sealAttemptRow(n, attLoss, defKill, summary){
+    const st=$('pvp_status_'+n);
+    const state=rcGet(); const tot=state?.attTotal||150000; const defT=state?.defTotal||150000;
+    const lp=(attLoss/tot*100).toFixed(0), kp=(defKill/defT*100).toFixed(0);
+    if(st) st.textContent='Own losses: '+attLoss.toLocaleString()+' ('+lp+'%)  \u00b7  Def killed: '+defKill.toLocaleString()+' ('+kp+'%)  \u00b7  '+summary;
+    [$('pvp_att_loss_'+n),$('pvp_def_kill_'+n),$('pvp_apply_'+n)].forEach(el=>{
+      if(el){ el.disabled=true; if(el.tagName==='BUTTON') el.style.display='none'; }
+    });
+  }
+
+  // ── Core: apply one attempt ────────────────────────────────────
+  async function applyAttempt(n){
+    const state=rcGet(); if(!state){ alert('Run simulation first.'); return; }
+    if(state.won) return;
+
+    const attLoss=parseFloat(($('pvp_att_loss_'+n)?.value||'').replace(/,/g,''))||0;
+    const defKill=parseFloat(($('pvp_def_kill_'+n)?.value||'').replace(/,/g,''))||0;
+    if(!attLoss||attLoss<=0){ $('pvp_att_loss_'+n)?.focus(); return; }
+
+    const opt=window.KingSim?.pvpOptimizer;
+    if(!opt?.pvpRecalibrate||!opt?.scanPvP){ alert('Optimizer not loaded'); return; }
+
+    const rc=opt.pvpRecalibrate(state.best, attLoss, state.attTotal, defKill, state.defTotal, state.attempts);
+
+    // Run new scan with recalibrated bounds
+    const status=$('pvp_run_status');
+    if(status){status.textContent='Recalibrating\u2026';status.style.color='#9aa4b2';}
+
+    function readStats(p){
+      return{attack:{inf:num(p+'_inf_atk',0),cav:num(p+'_cav_atk',0),arc:num(p+'_arc_atk',0)},
+             defense:{inf:num(p+'_inf_def',0),cav:num(p+'_cav_def',0),arc:num(p+'_arc_def',0)},
+             lethality:{inf:num(p+'_inf_let',0),cav:num(p+'_cav_let',0),arc:num(p+'_arc_let',0)},
+             health:{inf:num(p+'_inf_hp',0),cav:num(p+'_cav_hp',0),arc:num(p+'_arc_hp',0)}};
+    }
+    const defInf=num('pvp_def_inf',0),defCav=num('pvp_def_cav',0),defArc=num('pvp_def_arc',0);
+
+    try{
+      await new Promise(r=>setTimeout(r,10));
+      const out=opt.scanPvP({
+        attackerTotal:   state.attTotal,
+        attackerStats:   readStats('pvp_att'),
+        attackerTier:    $('pvp_att_tier')?.value||'T10',
+        defenderTroops:  {inf:defInf,cav:defCav,arc:defArc},
+        defenderStats:   readStats('pvp_def'),
+        defenderTier:    $('pvp_def_tier')?.value||'T10',
+        sparsity:        0.01,
+        infMin:rc.infMin, infMax:rc.infMax,
+        cavMin:rc.cavMin, cavMax:rc.cavMax,
+        arcMin:rc.arcMin,
+        maxTop:10,
+      });
+
+      if(!out.best) throw new Error('No results from recalibration');
+      const nb=out.best;
+
+      // Save attempt
+      state.attempts.push({attLoss,defKill,newBest:{fi:nb.fi,fc:nb.fc,fa:nb.fa,label:nb.label},summary:rc.summary});
+      state.best={fi:nb.fi,fc:nb.fc,fa:nb.fa,label:nb.label};
+      rcSave(state);
+
+      sealAttemptRow(n, attLoss, defKill, rc.summary);
+
+      // Re-render history + update main best card
+      const hist=buildHistory({...state,best:{fi:nb.fi,fc:nb.fc,fa:nb.fa},
+        attempts:state.attempts.slice(0,-1).concat([{attLoss,defKill,newBest:nb,summary:rc.summary}])});
+      renderHistory(hist, state.attTotal);
+      updateMainBestCard(nb, state.attTotal);
+
+      // Show Win/Lost — do NOT auto-open next row
+      const or=$('pvp_outcome_row'); if(or) or.style.display='flex';
+      $('pvp_recal_panel')?.scrollIntoView({behavior:'smooth',block:'nearest'});
+
+      if(status){status.textContent='Recalibrated \u2014 shift \u00b1'+Math.round(rc.shift*100)+'pp';status.style.color='#10b981';}
+    }catch(e){
+      console.error('[PvP Recal]',e);
+      if(status){status.textContent='Error: '+(e.message||e);status.style.color='#ef4444';}
+    }
+  }
+
+  // ── Update the main pvp_best_card to match new best ───────────
+  function updateMainBestCard(best, attTotal){
+    const fi=best.fi,fc=best.fc,fa=Math.max(0,1-fi-fc);
+    const pI=(fi*100).toFixed(1),pC=(fc*100).toFixed(1),pA=(fa*100).toFixed(1);
+    const inf=Math.round(fi*attTotal),cav=Math.round(fc*attTotal),arc=Math.max(0,attTotal-inf-cav);
+    const bv=$('pvp_best_val'); if(bv) bv.textContent=pI+'/'+pC+'/'+pA;
+    const bs=$('pvp_best_sub');
+    if(bs) bs.innerHTML='Infantry: <strong>'+inf.toLocaleString()+'</strong> | Cavalry: <strong>'+cav.toLocaleString()+'</strong> | Archers: <strong>'+arc.toLocaleString()+'</strong>';
+  }
+
+  // ── Show recal panel after initial run ────────────────────────
+  window.__pvpShowRecal = function(best, attTotal, defTotal){
+    const state=rcGet();
+    if(!state||state.won){
+      rcInit(best, attTotal, defTotal);
+      const hist=[{fi:best.fi,fc:best.fc,fa:best.fa,isBase:true,attemptNum:0,summary:''}];
+      renderHistory(hist, attTotal);
+    } else {
+      // Existing session: rebuild history
+      const hist=buildHistory(state);
+      renderHistory(hist, state.attTotal);
+    }
+    const panel=$('pvp_recal_panel'); if(panel) panel.style.display='block';
+    const or=$('pvp_outcome_row'); if(or) or.style.display='flex';
+  };
+
+  // ── Restore saved session on page load ────────────────────────
+  function restoreSession(){
+    const state=rcLoad(); if(!state) return;
+    _rcState=state;
+    if(!state.best) return;
+    const results=$('pvp_results'); if(results) results.style.display='block';
+    const hist=buildHistory(state);
+    renderHistory(hist, state.attTotal);
+    const panel=$('pvp_recal_panel'); if(panel) panel.style.display='block';
+    if(state.won){
+      const track=$('pvp_attempt_track');
+      if(track&&!track.children.length) track.innerHTML='<div style="color:#10b981;font-weight:800;font-size:1rem;padding:10px 0">\uD83C\uDFC6 Victory! Session complete.</div>';
+      const or=$('pvp_outcome_row'); if(or) or.style.display='none';
+      return;
+    }
+    state.attempts.forEach((a,i)=>{
+      addAttemptRow(i+1);
+      sealAttemptRow(i+1, a.attLoss, a.defKill, a.summary||'');
+    });
+    const nextN=state.attempts.length+1;
+    if(nextN<=PVP_MAX){
+      const or=$('pvp_outcome_row'); if(or) or.style.display='flex';
+      if(state.attempts.length>0) addAttemptRow(nextN);
+    }
+  }
+
+  // ── Wire buttons ──────────────────────────────────────────────
+  function wireButtons(){
+    $('pvp_btn_win')?.addEventListener('click',()=>{
+      const state=rcGet(); if(state){state.won=true;rcSave(state);}
+      const or=$('pvp_outcome_row'); if(or) or.style.display='none';
+      const track=$('pvp_attempt_track');
+      if(track) track.innerHTML='<div style="color:#10b981;font-weight:800;font-size:1.05rem;padding:10px 0">\uD83C\uDFC6 Victory confirmed! Formation is solid. Well played!</div>';
+      launchFireworks();
+    });
+
+    $('pvp_btn_lost')?.addEventListener('click',()=>{
+      const state=rcGet();
+      if(!state){ alert('Run simulation first.'); return; }
+      const or=$('pvp_outcome_row'); if(or) or.style.display='none';
+      const nextN=state.attempts.length+1;
+      if(nextN<=PVP_MAX) addAttemptRow(nextN);
+    });
+
+    $('pvp_btn_clear')?.addEventListener('click',()=>{
+      rcDrop(); _rcState=null;
+      const panel=$('pvp_recal_panel'); if(panel) panel.style.display='none';
+      const hw=$('pvp_history_wrap'); if(hw) hw.innerHTML='';
+      const track=$('pvp_attempt_track'); if(track) track.innerHTML='';
+      const or=$('pvp_outcome_row'); if(or) or.style.display='none';
+      const results=$('pvp_results'); if(results) results.style.display='none';
+      const st=$('pvp_run_status');
+      if(st){st.textContent='Cleared \u2014 ready for new session';st.style.color='';}
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded',()=>{
+    wireButtons();
+    restoreSession();
   });
 })();
 </script>

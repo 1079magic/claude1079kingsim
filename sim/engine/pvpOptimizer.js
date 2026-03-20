@@ -103,6 +103,78 @@
     };
   }
 
+  // ─────────────────────────────────────────────────────────────────
+  // PVP RECALIBRATION BRAIN
+  // After each failed attack the user reports their own attacker losses
+  // and how many defenders they killed.  The engine computes a new
+  // search window size (shift) based on:
+  //   • current loss rate        (own losses / attacker total)
+  //   • delta from previous run  (improving → smaller shift / worsening → larger)
+  //   • kill-rate momentum       (big jump → expand search; stagnant → contract)
+  // The new window is centred on the current best formation ± shift.
+  // Shift ranges: 1–50pp for infantry, half that for cavalry.
+  // ─────────────────────────────────────────────────────────────────
+
+  /**
+   * Compute new scanPvP bounds after a failed attempt.
+   * @param {{ fi, fc, fa }} currentBest  The best formation from last scan.
+   * @param {number} attLosses  Own troops injured in the real battle.
+   * @param {number} attTotal   Own total troops sent.
+   * @param {number} defKilled  Defender troops injured in the real battle.
+   * @param {number} defTotal   Total defender troops.
+   * @param {Array}  history    Previous attempts [{attLosses, attTotal, defKilled, defTotal}].
+   * @returns {{ shift, infMin, infMax, cavMin, cavMax, arcMin, verdict, direction, summary }}
+   */
+  function pvpRecalibrate(currentBest, attLosses, attTotal, defKilled, defTotal, history) {
+    const lossRate = attLosses / Math.max(1, attTotal);
+    const killRate = defKilled / Math.max(1, defTotal);
+
+    const prev        = history.length > 0 ? history[history.length - 1] : null;
+    const prevLoss    = prev ? prev.attLosses / Math.max(1, prev.attTotal) : lossRate;
+    const prevKill    = prev ? prev.defKilled / Math.max(1, prev.defTotal) : 0;
+    const killDelta   = killRate - prevKill;
+    const lossImprove = lossRate < prevLoss; // fewer own losses = better
+
+    // ── Base shift by loss severity ───────────────────────────────
+    let shift;
+    if (lossRate > 0.60) {
+      // Heavy losses (>60%) — need large moves to find better ground
+      shift = lossImprove ? 0.07 : 0.15;
+    } else if (lossRate > 0.30) {
+      // Moderate losses — medium adjustments
+      shift = lossImprove ? 0.04 : 0.08;
+    } else {
+      // Light losses (<30%) — small fine-tuning
+      shift = lossImprove ? 0.01 : 0.03;
+    }
+
+    // ── Kill-rate amplifiers ──────────────────────────────────────
+    if (killDelta > 0.50) shift = Math.min(0.50, shift * 2.0); // massive kill jump → explore wider
+    else if (killDelta > 0.30) shift = Math.min(0.50, shift * 1.5); // good kill jump
+    // Stuck (kill barely moved AND losses moderate) → halve to micro-adjust
+    if (Math.abs(killDelta) < 0.05 && lossRate < 0.50) shift = Math.max(0.01, shift * 0.5);
+
+    shift = Math.min(0.50, Math.max(0.01, parseFloat(shift.toFixed(3))));
+
+    // ── New search bounds centred on current best ─────────────────
+    const fi = currentBest.fi;
+    const fc = currentBest.fc;
+    const infMin = parseFloat(Math.max(0.15, fi - shift).toFixed(3));
+    const infMax = parseFloat(Math.min(0.85, fi + shift).toFixed(3));
+    const cavMin = parseFloat(Math.max(0.05, fc - shift / 2).toFixed(3));
+    const cavMax = parseFloat(Math.min(0.50, fc + shift / 2).toFixed(3));
+    const arcMin = parseFloat(Math.max(0.10, 1 - infMax - cavMax).toFixed(3));
+
+    const verdict   = lossRate > 0.50 ? 'heavy' : lossRate > 0.20 ? 'moderate' : 'light';
+    const direction = lossImprove ? 'improving' : 'worsening';
+
+    return {
+      shift, infMin, infMax, cavMin, cavMax, arcMin,
+      verdict, direction, lossRate, killRate,
+      summary: `±${(shift*100).toFixed(0)}pp — ${verdict} losses (${(lossRate*100).toFixed(0)}%), ${direction}`
+    };
+  }
+
   window.KingSim = window.KingSim || {};
-  window.KingSim.pvpOptimizer = { scanPvP };
+  window.KingSim.pvpOptimizer = { scanPvP, pvpRecalibrate };
 })();
