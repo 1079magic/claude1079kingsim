@@ -438,8 +438,7 @@
       injectCallHeroNames(rec.call);
       injectJoinHeroNames(rec.join);
       injectOptTableHeroes(rec.call, rec.join);
-      if (recommend()) { saveRec(rec); } // only save when fresh (has heroGrid)
-      renderBearPanel(rec);
+      if (recommend()) { saveRec(rec); renderBearPanel(rec); } // panel only on heros.html
       window.__bearHeroRec = rec;
     });
   }
@@ -482,17 +481,16 @@
 
   function init() {
     startObserving();
-    // Render from cache immediately (works on ALL pages, even without heroGrid)
+    // Inject from cache immediately — works on ALL pages (magic/optiona have no heroGrid)
     const cached = loadRec();
     if (cached && (cached.call?.length || cached.join?.length)) {
-      renderBearPanel(cached);
-      // Inject into tables right away from cache (magic/optiona pages)
-      // Tables may not be rendered yet — the MutationObserver will also fire later
       injectCallHeroNames(cached.call);
       injectJoinHeroNames(cached.join);
       injectOptTableHeroes(cached.call, cached.join);
+      // Bear panel only on heros.html
+      if (document.getElementById('heroGrid')) renderBearPanel(cached);
     }
-    // Recompute fresh (only possible when heroGrid exists = heros.html)
+    // Recompute fresh (only when heroGrid exists = heros.html)
     ensureHeroIndex().then(() => {
       const rec = recommend();
       if (rec && (rec.call.length || rec.join.length)) {
@@ -501,8 +499,6 @@
         injectCallHeroNames(rec.call);
         injectJoinHeroNames(rec.join);
         injectOptTableHeroes(rec.call, rec.join);
-      } else if (cached && (cached.call?.length || cached.join?.length)) {
-        // No fresh rec (not on heroes page) — already rendered from cache above
       }
     });
   }
