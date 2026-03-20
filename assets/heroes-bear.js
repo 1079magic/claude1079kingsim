@@ -70,16 +70,18 @@
       }
     }
 
-    // Widget (stats + exclusive skills)
+    // Widget — EXPEDITION only (stats + expedition-tagged exclusive skills)
     const wlv = parseInt(cardState.widget || 0);
     const w   = heroData.widget;
     if (w && wlv) {
       const lkey = `Level ${wlv}`;
+      // Widget stats (cavalryLethality etc.) are expedition stats — include all
       for (const [k, table] of Object.entries(w.stats || {})) {
         const val = typeof table === 'object' ? (table[lkey] ?? 0) : 0;
         score += (parseFloat(val) || 0) * (BEAR_W[k] ?? 0.10);
       }
-      for (const ex of (w.exclusiveSkills || [])) {
+      // Only expedition-tagged exclusive skills
+      for (const ex of (w.exclusiveSkills || []).filter(e => e.type === 'expedition')) {
         const lvMap = ex.levels || {};
         const row2  = lvMap[`⚔️ Lv.${wlv}`] || lvMap[`Level ${wlv}`] || {};
         for (const [k, v] of Object.entries(row2)) {

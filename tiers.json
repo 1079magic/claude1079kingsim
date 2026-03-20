@@ -342,7 +342,8 @@
               "⚔️ Lv.5": {
                 "damageTakenDown_percent": 30
               }
-            }
+            },
+            "type": "conquest"
           },
           {
             "name": "Discernment",
@@ -362,7 +363,8 @@
               "⚔️ Lv.5": {
                 "rallyAttackUp_percent": 15
               }
-            }
+            },
+            "type": "expedition"
           }
         ]
       }
@@ -468,7 +470,8 @@
               "⚔️ Lv.5": {
                 "damageDealtUp_percent": 30
               }
-            }
+            },
+            "type": "conquest"
           },
           {
             "name": "Divine Strength",
@@ -488,7 +491,8 @@
               "⚔️ Lv.5": {
                 "defenderLethalityUp_percent": 15
               }
-            }
+            },
+            "type": "expedition"
           }
         ]
       }
@@ -578,7 +582,8 @@
               "⚔️ Lv.5": {
                 "damageDealtUp_percent": 30
               }
-            }
+            },
+            "type": "conquest"
           },
           {
             "name": "Zeal",
@@ -598,7 +603,8 @@
               "⚔️ Lv.5": {
                 "rallyLethalityUp_percent": 15
               }
-            }
+            },
+            "type": "expedition"
           }
         ]
       }
@@ -698,7 +704,8 @@
               "⚔️ Lv.5": {
                 "attackUp_percent": 24
               }
-            }
+            },
+            "type": "conquest"
           },
           {
             "name": "Defend to Attack",
@@ -718,7 +725,8 @@
               "⚔️ Lv.5": {
                 "defenderAttackUp_percent": 15
               }
-            }
+            },
+            "type": "expedition"
           }
         ]
       }
@@ -829,7 +837,8 @@
               "⚔️ Lv.5": {
                 "healingUp_percent": 70
               }
-            }
+            },
+            "type": "conquest"
           },
           {
             "name": "Fortitude",
@@ -849,7 +858,8 @@
               "⚔️ Lv.5": {
                 "defenderHealthUp_percent": 15
               }
-            }
+            },
+            "type": "expedition"
           }
         ]
       }
@@ -939,7 +949,8 @@
               "⚔️ Lv.5": {
                 "attackUp_percent": 24
               }
-            }
+            },
+            "type": "conquest"
           },
           {
             "name": "Dark Lady",
@@ -959,7 +970,8 @@
               "⚔️ Lv.5": {
                 "defenderAttackUp_percent": 15
               }
-            }
+            },
+            "type": "expedition"
           }
         ]
       }
@@ -1049,7 +1061,8 @@
               "⚔️ Lv.5": {
                 "healOnBasic_attackPercent": 15
               }
-            }
+            },
+            "type": "conquest"
           },
           {
             "name": "Admiral of the Line",
@@ -1069,7 +1082,8 @@
               "⚔️ Lv.5": {
                 "rallyLethalityUp_percent": 15
               }
-            }
+            },
+            "type": "expedition"
           }
         ]
       }
@@ -1175,7 +1189,8 @@
               "⚔️ Lv.5": {
                 "fluctuationSpreadUp_percent": 150
               }
-            }
+            },
+            "type": "conquest"
           },
           {
             "name": "Cosmic Eye",
@@ -1195,7 +1210,8 @@
               "⚔️ Lv.5": {
                 "rallyAttackUp_percent": 15
               }
-            }
+            },
+            "type": "expedition"
           }
         ]
       }
@@ -1285,7 +1301,8 @@
               "⚔️ Lv.5": {
                 "damageDealtUp_percent": 30
               }
-            }
+            },
+            "type": "conquest"
           },
           {
             "name": "Vanguard",
@@ -1305,7 +1322,8 @@
               "⚔️ Lv.5": {
                 "defenderDefenseUp_percent": 15
               }
-            }
+            },
+            "type": "expedition"
           }
         ]
       }
@@ -1395,7 +1413,8 @@
               "⚔️ Lv.5": {
                 "defenderHealthUp_percent": 15
               }
-            }
+            },
+            "type": "expedition"
           }
         ]
       }
@@ -1485,7 +1504,8 @@
               "⚔️ Lv.5": {
                 "rallyLethalityUp_percent": 15
               }
-            }
+            },
+            "type": "expedition"
           }
         ]
       }
@@ -1575,7 +1595,8 @@
               "⚔️ Lv.5": {
                 "defenderHealthUp_percent": 15
               }
-            }
+            },
+            "type": "expedition"
           }
         ]
       }
@@ -1681,7 +1702,8 @@
               "⚔️ Lv.5": {
                 "defenderLethalityUp_percent": 15
               }
-            }
+            },
+            "type": "expedition"
           }
         ]
       }
@@ -1776,7 +1798,8 @@
               "⚔️ Lv.5": {
                 "defenderDefenseUp_percent": 15
               }
-            }
+            },
+            "type": "expedition"
           }
         ]
       }
@@ -1866,7 +1889,8 @@
               "⚔️ Lv.5": {
                 "defenderAttackUp_percent": 15
               }
-            }
+            },
+            "type": "expedition"
           }
         ]
       }
@@ -1982,7 +2006,8 @@
               "⚔️ Lv.5": {
                 "rallyLethalityUp_percent": 15
               }
-            }
+            },
+            "type": "expedition"
           }
         ]
       }
@@ -2072,7 +2097,8 @@
               "⚔️ Lv.5": {
                 "rallyLethalityUp_percent": 15
               }
-            }
+            },
+            "type": "expedition"
           }
         ]
       }
@@ -2162,7 +2188,8 @@
               "⚔️ Lv.5": {
                 "defenderDefenseUp_percent": 15
               }
-            }
+            },
+            "type": "expedition"
           }
         ]
       }
@@ -2268,7 +2295,8 @@
               "⚔️ Lv.5": {
                 "defenderLethalityUp_percent": 15
               }
-            }
+            },
+            "type": "expedition"
           }
         ]
       }

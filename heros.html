@@ -251,7 +251,15 @@
       var origSwords = card.querySelectorAll('.sword');
       if (origSwords.length > 0) {
         var currentWidget = +(card.dataset.widget || 0);
-        var widgetRow = buildSheetRow('Widget', function(container) {
+        // Find expedition widget skill name from hero data
+        var wLabel = 'Widget';
+        if (window._HERO_INDEX_REF) {
+          var heroNm = card.querySelector('.hero-name')?.textContent?.trim() || '';
+          var hd = window._HERO_INDEX_REF.get(heroNm);
+          var expWgt = (hd?.widget?.exclusiveSkills || []).find(function(e){ return e.type === 'expedition'; });
+          if (expWgt) wLabel = expWgt.name;
+        }
+        var widgetRow = buildSheetRow(wLabel, function(container) {
           for (var i = 1; i <= 5; i++) {
             (function(val) {
               var swd = document.createElement('span');

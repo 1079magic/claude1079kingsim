@@ -119,18 +119,12 @@
       addFrom(row);
     });
 
-    // Widget (generic + troop-type)
+    // Widget — EXPEDITION only (stats + expedition-tagged exclusive skills)
     const w = hero.widget;
     if (w && +st.widget){
       const LKEY = `Level ${st.widget}`;
       const S = (w.stats || {});
-      addFrom({
-        attackUp_percent    : S.attackUp_percent    && S.attackUp_percent[LKEY],
-        lethalityUp_percent : S.lethalityUp_percent && S.lethalityUp_percent[LKEY],
-        defenseUp_percent   : S.defenseUp_percent   && S.defenseUp_percent[LKEY],
-        healthUp_percent    : S.healthUp_percent    && S.healthUp_percent[LKEY],
-      });
-
+      // Generic stats (cavalryLethality etc.) are expedition stats
       const tt = (hero.troopType || '').toLowerCase();
       const pref = tt.startsWith('inf') ? 'infantry'
                  : tt.startsWith('cav') ? 'cavalry'
@@ -142,6 +136,14 @@
         if (hp   != null) sums.healthUp_percent    += +hp;
         if (leth != null) sums.lethalityUp_percent += +leth;
       }
+      // Only use expedition-tagged exclusive skills
+      (w.exclusiveSkills || [])
+        .filter(ex => ex.type === 'expedition')
+        .forEach(ex => {
+          const key1 = `⚔️ Lv.${st.widget}`, key2 = `Level ${st.widget}`;
+          const row = ex.levels?.[key1] || ex.levels?.[key2] || {};
+          addFrom(row);
+        });
     }
 
     return sums;
@@ -240,11 +242,13 @@
     ctrlWrap.className = 'controls-wrap';
     ctrlWrap.appendChild(lvlRow);
 
-    // Skills (segmented 1..5)
+    // Expedition Skills (segmented 1..5) — show skill name so user knows what they're setting
     const currentSkillVals = state.skills || [];
     (hero.skills || []).forEach((sk, idx)=>{
       const row = document.createElement('div'); row.className = 'row';
-      row.innerHTML = `<div class="label">${sk.name}</div><div class="controls"><div class="seg" data-skill="${idx}"></div></div>`;
+      // Truncate long skill names to keep card compact
+      const shortName = sk.name.length > 18 ? sk.name.slice(0,16)+'…' : sk.name;
+      row.innerHTML = `<div class="label" title="${sk.name}">${shortName}</div><div class="controls"><div class="seg" data-skill="${idx}"></div></div>`;
       const seg = row.querySelector('.seg');
       for (let v=1; v<=5; v++){
         const b = document.createElement('button');
@@ -260,10 +264,17 @@
       ctrlWrap.appendChild(row);
     });
 
-    // Widget swords
-    if (hero.widget && (hero.widget.stats || hero.widget.exclusiveSkills)){
+    // Widget — show expedition widget skill name; show stars only if expedition skill exists
+    const expeditionWidgetSkill = (hero.widget?.exclusiveSkills || []).find(ex => ex.type === 'expedition');
+    const hasWidgetStats = hero.widget && (hero.widget.stats || expeditionWidgetSkill);
+    if (hasWidgetStats){
       const wRow = document.createElement('div'); wRow.className = 'row';
-      wRow.innerHTML = `<div class="label">Widget</div><div class="controls"><div class="swords"></div></div>`;
+      const wLabel = expeditionWidgetSkill
+        ? (expeditionWidgetSkill.name.length > 16
+            ? expeditionWidgetSkill.name.slice(0,14)+'…'
+            : expeditionWidgetSkill.name)
+        : 'Widget';
+      wRow.innerHTML = `<div class="label" title="${expeditionWidgetSkill?.name||'Widget'}">${wLabel}</div><div class="controls"><div class="swords"></div></div>`;
       const swords = wRow.querySelector('.swords');
       for (let i=1;i<=5;i++){
         const swd = swordSVG(i <= (state.widget||0)); swd.dataset.value = i;
@@ -413,20 +424,22 @@
             if (val!=null){ if (totals[stat]==null) totals[stat]=0; totals[stat]+= +val; }
           });
         }
-        // Exclusive skills
+        // Exclusive skills — expedition only
         if (wLevel && heroObj.widget.exclusiveSkills){
-          heroObj.widget.exclusiveSkills.forEach(ex=>{
-            const map = ex.levels || {};
-            const key1 = `⚔️ Lv.${wLevel}`, key2 = `Lv.${wLevel}`;
-            const L = map[key1] || map[key2] || map[`Level ${wLevel}`] || null;
-            if (L){
-              Object.entries(L).forEach(([k,v])=>{
-                if (k.endsWith('_percent')){ if (totals[k]==null) totals[k]=0; totals[k]+= +v; }
-              });
-              const pretty = Object.entries(L).map(([k,v])=> `${k.replace(/_/g,' ')}: ${v}%`).join(', ');
-              details.push(`• <b>${heroName}</b> — Widget: ${ex.name}: ${pretty}`);
-            }
-          });
+          heroObj.widget.exclusiveSkills
+            .filter(ex => ex.type === 'expedition')
+            .forEach(ex=>{
+              const map = ex.levels || {};
+              const key1 = `⚔️ Lv.${wLevel}`, key2 = `Lv.${wLevel}`;
+              const L = map[key1] || map[key2] || map[`Level ${wLevel}`] || null;
+              if (L){
+                Object.entries(L).forEach(([k,v])=>{
+                  if (k.endsWith('_percent')){ if (totals[k]==null) totals[k]=0; totals[k]+= +v; }
+                });
+                const pretty = Object.entries(L).map(([k,v])=> `${k.replace(/_/g,' ')}: ${v}%`).join(', ');
+                details.push(`• <b>${heroName}</b> — Widget: ${ex.name}: ${pretty}`);
+              }
+            });
         }
       }
     });
