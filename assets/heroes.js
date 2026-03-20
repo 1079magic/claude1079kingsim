@@ -93,25 +93,19 @@
     return (hero.troopType || 'Any');
   }
 
-  // Sum ATK/LET/DEF/HP from current selections (skills + widget)
+  // Collect ALL expedition stats from skill+widget selections
   function computeAllFourSums(hero, st){
     const skillLv = (st.skills || []);
-    const sums = {
-      attackUp_percent    : 0,
-      lethalityUp_percent : 0,
-      defenseUp_percent   : 0,
-      healthUp_percent    : 0
-    };
+    const sums = {};
 
     function addFrom(o){
       if (!o) return;
-      if (o.attackUp_percent    != null) sums.attackUp_percent    += +o.attackUp_percent;
-      if (o.lethalityUp_percent != null) sums.lethalityUp_percent += +o.lethalityUp_percent;
-      if (o.defenseUp_percent   != null) sums.defenseUp_percent   += +o.defenseUp_percent;
-      if (o.healthUp_percent    != null) sums.healthUp_percent    += +o.healthUp_percent;
+      Object.entries(o).forEach(([k,v])=>{
+        if (k.endsWith('_percent') && v != null) sums[k] = (sums[k]||0) + +v;
+      });
     }
 
-    // Skills (exact level rows)
+    // Expedition skills — exact level rows
     (hero.skills || []).forEach((sk, idx)=>{
       const lvl = skillLv[idx] || 0;
       if (!lvl) return;
@@ -119,24 +113,16 @@
       addFrom(row);
     });
 
-    // Widget — EXPEDITION only (stats + expedition-tagged exclusive skills)
+    // Widget — EXPEDITION only
     const w = hero.widget;
     if (w && +st.widget){
       const LKEY = `Level ${st.widget}`;
-      const S = (w.stats || {});
-      // Generic stats (cavalryLethality etc.) are expedition stats
-      const tt = (hero.troopType || '').toLowerCase();
-      const pref = tt.startsWith('inf') ? 'infantry'
-                 : tt.startsWith('cav') ? 'cavalry'
-                 : tt.startsWith('arc') ? 'archer'
-                 : null;
-      if (pref){
-        const hp   = S[`${pref}Health_percent`]    && S[`${pref}Health_percent`][LKEY];
-        const leth = S[`${pref}Lethality_percent`] && S[`${pref}Lethality_percent`][LKEY];
-        if (hp   != null) sums.healthUp_percent    += +hp;
-        if (leth != null) sums.lethalityUp_percent += +leth;
-      }
-      // Only use expedition-tagged exclusive skills
+      // Widget stats (cavalryLethality_percent etc.)
+      Object.entries(w.stats || {}).forEach(([k, table])=>{
+        const val = (typeof table==='object') ? table[LKEY] : null;
+        if (val != null) sums[k] = (sums[k]||0) + +val;
+      });
+      // Expedition-tagged exclusive skills only
       (w.exclusiveSkills || [])
         .filter(ex => ex.type === 'expedition')
         .forEach(ex => {
@@ -148,6 +134,51 @@
 
     return sums;
   }
+
+  // Format sums into compact bear-relevant card display lines
+  function formatSumsForCard(sums){
+    const LABELS = {
+      attackUp_percent:           'ATK',
+      lethalityUp_percent:        'LET',
+      rallyAttackUp_percent:      'RallyATK',
+      rallyLethalityUp_percent:   'RallyLET',
+      cavalryLethality_percent:   'CavLET',
+      cavalryHealth_percent:      'CavHP',
+      infantryLethality_percent:  'InfLET',
+      archerLethality_percent:    'ArcLET',
+      damageDealtUp_percent:      'DmgDealt',
+      procChance_percent:         'Proc',
+      damageTakenDown_percent:    'DmgDwn',
+      enemyAttackDown_percent:    'EnemyATK↓',
+      enemyLethalityDown_percent: 'EnemyLET↓',
+      defenseUp_percent:          'DEF',
+      healthUp_percent:           'HP',
+      damagePerTurn_percent:      'DoT',
+      targetDamageTakenUp_percent:'TgtDmg↑',
+      defenderAttackUp_percent:   'DefATK',
+    };
+    const ORDER = [
+      'attackUp_percent','lethalityUp_percent',
+      'rallyAttackUp_percent','rallyLethalityUp_percent',
+      'cavalryLethality_percent','infantryLethality_percent','archerLethality_percent',
+      'damageDealtUp_percent','procChance_percent','damageTakenDown_percent',
+      'enemyAttackDown_percent','enemyLethalityDown_percent',
+      'defenseUp_percent','healthUp_percent',
+      'damagePerTurn_percent','targetDamageTakenUp_percent','defenderAttackUp_percent',
+    ];
+    const parts = [];
+    for(const k of ORDER){
+      const v = sums[k];
+      if (!v) continue;
+      const lbl = LABELS[k] || k.replace(/_percent$/,'').replace(/_/g,' ');
+      parts.push(`${lbl} +${(+v).toFixed(0)}%`);
+    }
+    return {
+      line1: parts.slice(0,3).join(' • ') || '—',
+      line2: parts.slice(3,6).join(' • ')
+    };
+  }
+
 
   // Read current selections from a single card
   function collectLocalStateFromCard(card){
@@ -201,8 +232,8 @@
 
     const text  = document.createElement('div'); text.className  = 'header-text';
     const nm    = document.createElement('div'); nm.className    = 'hero-name'; nm.textContent = hero.name;
-    const sumsAtkLet = document.createElement('div'); sumsAtkLet.className = 'focus-sums'; sumsAtkLet.textContent = 'ATK +0.0% • LET +0.0%';
-    const sumsDefHp  = document.createElement('div'); sumsDefHp.className  = 'focus-sums'; sumsDefHp.textContent  = 'DEF +0.0% • HP +0.0%';
+    const sumsAtkLet = document.createElement('div'); sumsAtkLet.className = 'focus-sums'; sumsAtkLet.textContent = '—';
+    const sumsDefHp  = document.createElement('div'); sumsDefHp.className  = 'focus-sums'; sumsDefHp.textContent  = '';
 
     text.appendChild(nm);
     text.appendChild(sumsAtkLet);
@@ -325,8 +356,10 @@
     function updateHeaderSums(){
       const local = collectLocalStateFromCard(card);
       const s = computeAllFourSums(hero, local);
-      sumsAtkLet.textContent = `ATK +${(s.attackUp_percent||0).toFixed(1)}% • LET +${(s.lethalityUp_percent||0).toFixed(1)}%`;
-      sumsDefHp.textContent  = `DEF +${(s.defenseUp_percent||0).toFixed(1)}% • HP +${(s.healthUp_percent||0).toFixed(1)}%`;
+      const { line1, line2 } = formatSumsForCard(s);
+      sumsAtkLet.textContent = line1;
+      sumsDefHp.textContent  = line2;
+      sumsDefHp.style.display = line2 ? '' : 'none';
     }
     // First paint
     updateHeaderSums();
