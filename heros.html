@@ -233,14 +233,17 @@
                 'color:' + (val === currentVal ? '#fff' : '#cdd3df') + ';font-weight:700;font-size:.8rem;cursor:pointer;';
               btn.addEventListener('click', function(e) {
                 e.stopPropagation();
-                // Directly update the seg dataset value
-                var origSeg = card.querySelector('.seg[data-skill="'+skillIdx+'"]');
-                if (origSeg) origSeg.dataset.value = val;
-                // Fire the original button click to trigger saveState/computeSummary
-                var origBtn = card.querySelector('.seg[data-skill="'+skillIdx+'"] button[data-val="'+val+'"]');
-                if (origBtn) {
-                  origBtn.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true}));
+                // Directly update seg.dataset.value (source of truth for saveState)
+                var seg2 = card.querySelector('.seg[data-skill="'+skillIdx+'"]');
+                if (seg2) {
+                  seg2.dataset.value = val;
+                  seg2.querySelectorAll('button').forEach(function(b){
+                    b.classList.toggle('is-active', +b.dataset.val === val);
+                  });
                 }
+                // Call globals exposed by heroes.js instead of dispatching to hidden DOM
+                if (window._heroSaveState) window._heroSaveState();
+                if (window._heroComputeSummary) window._heroComputeSummary();
                 setTimeout(function(){ refreshSheet(card); }, 60);
               });
               container.appendChild(btn);

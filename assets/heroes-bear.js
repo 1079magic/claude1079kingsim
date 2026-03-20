@@ -31,6 +31,7 @@
     infantryLethality_percent:0.25,
     infantryHealth_percent:   0.10,
     defenderAttackUp_percent: 0.2,
+    healthUp_percent:          1.0,  // Born Leader passive and others
   };
 
   // Joiner names — they get priority for JOIN slots (1 skill only in join)
@@ -44,11 +45,28 @@
     // CALL: all 3 expedition skills; JOIN: only skill[0] (first expedition skill only)
     const maxSkill   = isCall ? skills.length : 1;
 
+    // Use hero level to determine skill effectiveness if skill levels not set
+    // If all skills are 0 (not configured), use hero level as proxy (level 1-5)
+    const heroLevel  = parseInt(cardState.level || 0);
+    const skillProxy = heroLevel > 0 ? heroLevel : 0; // use as fallback
+
     for (let idx = 0; idx < maxSkill; idx++) {
-      const lv  = skillLevs[idx] || 0; if (!lv) continue;
+      const lv  = skillLevs[idx] || skillProxy; // fall back to hero level
+      if (!lv) continue;
       const row = skills[idx]?.levels?.[`Level ${lv}`] || {};
       for (const [k, v] of Object.entries(row)) {
         score += (parseFloat(v) || 0) * (BEAR_W[k] ?? 0.05);
+      }
+    }
+
+    // Born Leader passive (Amadeus only): always-on bonus — add to score at hero level
+    const passive = heroData.passiveAlways;
+    if (passive && heroLevel > 0) {
+      // Use tier1 as base; add significant weight since it always applies
+      const tier = passive.tier1 || {};
+      for (const [stat, lvMap] of Object.entries(tier)) {
+        const val = lvMap[`Level ${heroLevel}`] || 0;
+        score += (parseFloat(val) || 0) * (BEAR_W[stat] ?? 1.0) * 1.5; // 1.5x because always active
       }
     }
 
@@ -106,6 +124,8 @@
     // Also try reading the live #numFormations or #marchSize element
     const marchEl = document.getElementById('numFormations') || document.getElementById('marchSize');
     if (marchEl && marchEl.value) numMarches = Math.max(1, parseInt(marchEl.value) || 1);
+    // Fallback: if still 1 and no marches set, use 3 as sensible default
+    if (numMarches <= 1) numMarches = 3;
 
     // Collect hero data from HERO_INDEX (exposed by heroes.js)
     const heroIndex = window._HERO_INDEX_REF; // set by heroes.js boot
@@ -322,10 +342,20 @@
     startObserving,
   };
 
-  // Auto-start if tables already exist
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', startObserving);
-  } else {
+  // Auto-start + initial render on load
+  function init() {
     startObserving();
+    // Render bear panel on initial load (even before tables exist)
+    ensureHeroIndex().then(() => {
+      const rec = recommend();
+      if (rec) renderBearPanel(rec);
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    // Already loaded — run after current call stack clears
+    setTimeout(init, 0);
   }
 })();

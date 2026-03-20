@@ -482,7 +482,10 @@
 
   // ---------- Boot ----------
   let HERO_INDEX = new Map();
-  window._HERO_INDEX_REF = HERO_INDEX; // expose for heroes-bear.js
+  window._HERO_INDEX_REF = HERO_INDEX;
+  // Expose for mobile sheet cross-call
+  window._heroSaveState = () => saveState();
+  window._heroComputeSummary = () => computeSummary(); // expose for heroes-bear.js
 
   async function boot(){
     try{
