@@ -15,23 +15,48 @@
   //   3. Damage Dealt / proc chance              → 0.8 / 0.5
   //   4. Troop-type lethality (archer/cav/inf)   → 0.4 / 0.3 / 0.25
   //   5. Defensive (damageTakenDown)             → 1.2 (Amadeus unique)
+  // ── Bear scoring weights ─────────────────────────────────────────────────
+  // Priority order (user-specified):
+  //  1. Squad Lethality   (applies to entire march)
+  //  2. Squad Attack      (applies to entire march)
+  //  3. Rally Lethality   (applies to all rally members)
+  //  4. Rally Attack      (applies to all rally members)
+  //  5. Archer Lethality  (archer-specific)
+  //  6. Archer Attack     (archer-specific)
+  //  7. Cavalry Lethality (cavalry-specific)
+  //  8. Cavalry Attack    (cavalry-specific)
   const BEAR_W = {
-    attackUp_percent:         4.0,
-    lethalityUp_percent:      4.0,
-    rallyAttackUp_percent:    3.0,
-    rallyLethalityUp_percent: 3.0,
-    damageDealtUp_percent:    1.0,
-    damageTakenDown_percent:  1.2,
-    procChance_percent:       0.5,
-    damagePerTurn_percent:    0.5,
-    archerLethality_percent:  0.4,
-    archerHealth_percent:     0.15,
-    cavalryLethality_percent: 0.3,
-    cavalryHealth_percent:    0.15,
-    infantryLethality_percent:0.25,
-    infantryHealth_percent:   0.10,
-    defenderAttackUp_percent: 0.2,
-    healthUp_percent:          1.0,  // Born Leader passive and others
+    // Tier 1 — Squad-wide (highest value, applies to whole march)
+    lethalityUp_percent:        8.0,
+    attackUp_percent:           7.0,
+
+    // Tier 2 — Rally-wide (very high, applies to all rally marches)
+    rallyLethalityUp_percent:   6.0,
+    rallyAttackUp_percent:      5.0,
+
+    // Tier 3 — Archer-specific
+    archerLethality_percent:    3.0,
+    archerAttack_percent:       2.5,
+
+    // Tier 4 — Cavalry-specific
+    cavalryLethality_percent:   2.0,
+    cavalryHealth_percent:      0.5,
+
+    // Secondary combat stats
+    damageDealtUp_percent:      1.0,
+    damageTakenDown_percent:    1.2,
+    procChance_percent:         0.5,
+    damagePerTurn_percent:      0.5,
+    targetDamageTakenUp_percent:0.8,
+    enemyLethalityDown_percent: 0.6,
+    enemyAttackDown_percent:    0.6,
+
+    // Defensive / utility
+    infantryLethality_percent:  1.5,  // infantry matters for bear formation
+    infantryDamageUp_percent:   1.0,
+    defenseUp_percent:          0.3,
+    healthUp_percent:           1.0,  // Born Leader passive
+    defenderAttackUp_percent:   0.2,
   };
 
   // Joiner names — they get priority for JOIN slots (1 skill only in join)
