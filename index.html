@@ -210,7 +210,7 @@
 
 
   <!-- SCENE 4: ALL TOOLS OVERVIEW -->
-  <section class="scene fx-reveal container" id="tools-overview" aria-label="All Tools">
+  <section class="scene fx-reveal container" id="tools-overview" aria-label="All Tools" style="margin-top:32px">
     <div style="margin:0 0 18px">
       <h2 style="font-family:'Rajdhani',sans-serif;font-size:1.6rem;font-weight:800;color:#e9eef7;margin:0 0 6px">Every Tool, Explained</h2>
       <p style="color:#a9b3c6;font-size:.9rem;margin:0">Everything runs in your browser — no account, no download, no data sent anywhere.</p>
@@ -218,80 +218,122 @@
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px">
 
       <!-- Home -->
-      <div style="background:rgba(14,20,34,.65);border:1px solid #1e2d40;border-radius:12px;padding:18px;border-left:3px solid #22d3ee">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+      <div class="tool-card" style="background:rgba(14,20,34,.65);border:1px solid #1e2d40;border-radius:12px;padding:0;border-left:3px solid #22d3ee;overflow:hidden">
+        <div class="tool-card-header" style="display:flex;align-items:center;gap:10px;padding:14px 18px;cursor:pointer;user-select:none">
           <span style="font-size:1.4rem">🏠</span>
-          <span style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:1.05rem;color:#e9eef7">Home</span>
+          <span style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:1.05rem;color:#e9eef7;flex:1">Home</span>
+          <span class="tool-card-arrow" style="color:#5a6a80;font-size:.9rem;transition:transform .2s">▼</span>
         </div>
-        <p style="color:#a9b3c6;font-size:.84rem;line-height:1.65;margin:0">Your launchpad into KingSim. Lists all available tools with direct links so you can jump straight to what you need. Think of it as your new in-game best friend — it gives you an immediate sense of what the app offers before you dive into any simulator.</p>
+        <div class="tool-card-body" style="padding:0 18px 14px;display:none">
+          <p style="color:#a9b3c6;font-size:.84rem;line-height:1.65;margin:0">Your launchpad into KingSim. Lists all available tools with direct links so you can jump straight to what you need. Think of it as your new in-game best friend — it gives you an immediate sense of what the app offers before you dive into any simulator.</p>
+        </div>
       </div>
 
       <!-- Mystic Trials -->
-      <div style="background:rgba(14,20,34,.65);border:1px solid #1e2d40;border-radius:12px;padding:18px;border-left:3px solid #22d3ee">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+      <div class="tool-card" style="background:rgba(14,20,34,.65);border:1px solid #1e2d40;border-radius:12px;padding:0;border-left:3px solid #22d3ee;overflow:hidden">
+        <div class="tool-card-header" style="display:flex;align-items:center;gap:10px;padding:14px 18px;cursor:pointer;user-select:none">
           <span style="font-size:1.4rem">🧭</span>
-          <a href="mystic.html" style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:1.05rem;color:#22d3ee;text-decoration:none">Mystic Trials</a>
+          <a href="mystic.html" style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:1.05rem;color:#22d3ee;text-decoration:none;flex:1">Mystic Trials</a>
+          <span class="tool-card-arrow" style="color:#5a6a80;font-size:.9rem;transition:transform .2s">▼</span>
         </div>
-        <p style="color:#a9b3c6;font-size:.84rem;line-height:1.65;margin:0 0 10px">PvE simulator where you fight fixed defender formations set by the trial stage. Import your "Battle Details" bonus screen from each trial report, pick the trial name (Crystal Cave, Molten Fort, etc.), and hit Run.</p>
-        <p style="color:#c8d4e8;font-size:.82rem;line-height:1.6;margin:0">The engine scans <strong style="color:#22d3ee">220+ attacker formations</strong> and recommends the one that deals maximum damage to the fixed defender. Each trial has different stat bonuses baked in — the optimal formation changes every time. The result card and scoreboard show exactly which formation to use before you actually march.</p>
+        <div class="tool-card-body" style="padding:0 18px 14px;display:none">
+          <p style="color:#a9b3c6;font-size:.84rem;line-height:1.65;margin:0 0 10px">PvE simulator where you fight fixed defender formations set by the trial stage. Import your "Battle Details" bonus screen from each trial report, pick the trial name (Crystal Cave, Molten Fort, etc.), and hit Run.</p>
+          <p style="color:#c8d4e8;font-size:.82rem;line-height:1.6;margin:0">The engine scans <strong style="color:#22d3ee">220+ attacker formations</strong> and recommends the one that deals maximum damage to the fixed defender. Each trial has different stat bonuses baked in — the optimal formation changes every time. The result card and scoreboard show exactly which formation to use before you actually march.</p>
+        </div>
       </div>
 
       <!-- PvP -->
-      <div style="background:rgba(14,20,34,.65);border:1px solid #1e2d40;border-radius:12px;padding:18px;border-left:3px solid #f59e0b">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+      <div class="tool-card" style="background:rgba(14,20,34,.65);border:1px solid #1e2d40;border-radius:12px;padding:0;border-left:3px solid #f59e0b;overflow:hidden">
+        <div class="tool-card-header" style="display:flex;align-items:center;gap:10px;padding:14px 18px;cursor:pointer;user-select:none">
           <span style="font-size:1.4rem">⚔</span>
-          <a href="pvp.html" style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:1.05rem;color:#f59e0b;text-decoration:none">PvP Simulator</a>
+          <a href="pvp.html" style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:1.05rem;color:#f59e0b;text-decoration:none;flex:1">PvP Simulator</a>
+          <span class="tool-card-arrow" style="color:#5a6a80;font-size:.9rem;transition:transform .2s">▼</span>
         </div>
-        <p style="color:#a9b3c6;font-size:.84rem;line-height:1.65;margin:0 0 10px">Helps you plan the best troop formation to attack a specific real player's garrison. Two import paths:</p>
-        <ul style="color:#c8d4e8;font-size:.82rem;line-height:1.7;margin:0 0 10px;padding-left:1.2em">
-          <li><strong style="color:#f59e0b">Already fought the defender?</strong> One battle report screenshot fills everything automatically.</li>
-          <li><strong style="color:#f59e0b">Scouting first?</strong> Open the scout report → tap the ! to see Troop Type Ratio → screenshot for defender troops. Scroll to bottom for Defender Stats screenshot. For your own stats: attack a Beast (solo march) or call a Rally on a Terror (rally march) and screenshot those Stat Bonuses.</li>
-        </ul>
-        <p style="color:#c8d4e8;font-size:.82rem;line-height:1.6;margin:0">The engine tests 220+ formations against the defender's exact army and ranks them — <strong style="color:#f59e0b">winners first, fewest own losses</strong>. Turn guesswork into a calculated strike.</p>
+        <div class="tool-card-body" style="padding:0 18px 14px;display:none">
+          <p style="color:#a9b3c6;font-size:.84rem;line-height:1.65;margin:0 0 10px">Helps you plan the best troop formation to attack a specific real player's garrison. Two import paths:</p>
+          <ul style="color:#c8d4e8;font-size:.82rem;line-height:1.7;margin:0 0 10px;padding-left:1.2em">
+            <li><strong style="color:#f59e0b">Already fought the defender?</strong> One battle report screenshot fills everything automatically.</li>
+            <li><strong style="color:#f59e0b">Scouting first?</strong> Open the scout report → tap the ! to see Troop Type Ratio → screenshot for defender troops. Scroll to bottom for Defender Stats screenshot. For your own stats: attack a Beast (solo march) or call a Rally on a Terror (rally march) and screenshot those Stat Bonuses.</li>
+          </ul>
+          <p style="color:#c8d4e8;font-size:.82rem;line-height:1.6;margin:0">The engine tests 220+ formations against the defender's exact army and ranks them — <strong style="color:#f59e0b">winners first, fewest own losses</strong>. Turn guesswork into a calculated strike.</p>
+        </div>
       </div>
 
       <!-- Troops & Stats -->
-      <div style="background:rgba(14,20,34,.65);border:1px solid #1e2d40;border-radius:12px;padding:18px;border-left:3px solid #a78bfa">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+      <div class="tool-card" style="background:rgba(14,20,34,.65);border:1px solid #1e2d40;border-radius:12px;padding:0;border-left:3px solid #a78bfa;overflow:hidden">
+        <div class="tool-card-header" style="display:flex;align-items:center;gap:10px;padding:14px 18px;cursor:pointer;user-select:none">
           <span style="font-size:1.4rem">🪖</span>
-          <a href="troops.html" style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:1.05rem;color:#a78bfa;text-decoration:none">Troops &amp; Stats</a>
+          <a href="troops.html" style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:1.05rem;color:#a78bfa;text-decoration:none;flex:1">Troops &amp; Stats</a>
+          <span class="tool-card-arrow" style="color:#5a6a80;font-size:.9rem;transition:transform .2s">▼</span>
         </div>
-        <p style="color:#a9b3c6;font-size:.84rem;line-height:1.65;margin:0 0 10px">Your personal stats sheet — input your troop counts and stat bonuses across Infantry, Cavalry, and Archers. The data you enter here feeds directly into the Bear Magic and Bear Option-A calculators.</p>
-        <p style="color:#c8d4e8;font-size:.82rem;line-height:1.6;margin:0">Acts as a <strong style="color:#a78bfa">single source of truth</strong> so you don't re-enter the same numbers on every tool. Keep it updated after each power-up or research unlock for accurate results. It's a quick form, not a simulator — enter once, benefit everywhere.</p>
+        <div class="tool-card-body" style="padding:0 18px 14px;display:none">
+          <p style="color:#a9b3c6;font-size:.84rem;line-height:1.65;margin:0 0 10px">Your personal stats sheet — input your troop counts and stat bonuses across Infantry, Cavalry, and Archers. The data you enter here feeds directly into the Bear Magic and Bear Option-A calculators.</p>
+          <p style="color:#c8d4e8;font-size:.82rem;line-height:1.6;margin:0">Acts as a <strong style="color:#a78bfa">single source of truth</strong> so you don't re-enter the same numbers on every tool. Keep it updated after each power-up or research unlock for accurate results. It's a quick form, not a simulator — enter once, benefit everywhere.</p>
+        </div>
       </div>
 
       <!-- Heroes -->
-      <div style="background:rgba(14,20,34,.65);border:1px solid #1e2d40;border-radius:12px;padding:18px;border-left:3px solid #fbbf24">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+      <div class="tool-card" style="background:rgba(14,20,34,.65);border:1px solid #1e2d40;border-radius:12px;padding:0;border-left:3px solid #fbbf24;overflow:hidden">
+        <div class="tool-card-header" style="display:flex;align-items:center;gap:10px;padding:14px 18px;cursor:pointer;user-select:none">
           <span style="font-size:1.4rem">🧙</span>
-          <a href="heros.html" style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:1.05rem;color:#fbbf24;text-decoration:none">Heroes</a>
+          <a href="heros.html" style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:1.05rem;color:#fbbf24;text-decoration:none;flex:1">Heroes</a>
+          <span class="tool-card-arrow" style="color:#5a6a80;font-size:.9rem;transition:transform .2s">▼</span>
         </div>
-        <p style="color:#a9b3c6;font-size:.84rem;line-height:1.65;margin:0 0 10px">Catalogs every hero's battle skills and their effects on troop types during combat. Browse hero abilities, understand which buffs apply to Infantry, Cavalry, or Archers, and see how skills interact during battles.</p>
-        <p style="color:#c8d4e8;font-size:.82rem;line-height:1.6;margin:0">It's a <strong style="color:#fbbf24">reference tool</strong> — no simulation here, just clean data about what each hero does. Use it when building a hero lineup to complement your preferred troop formation. Knowing your hero bonuses before running PvP simulations makes the results far more accurate.</p>
+        <div class="tool-card-body" style="padding:0 18px 14px;display:none">
+          <p style="color:#a9b3c6;font-size:.84rem;line-height:1.65;margin:0 0 10px">Catalogs every hero's battle skills and their effects on troop types during combat. Browse hero abilities, understand which buffs apply to Infantry, Cavalry, or Archers, and see how skills interact during battles.</p>
+          <p style="color:#c8d4e8;font-size:.82rem;line-height:1.6;margin:0">It's a <strong style="color:#fbbf24">reference tool</strong> — no simulation here, just clean data about what each hero does. Use it when building a hero lineup to complement your preferred troop formation. Knowing your hero bonuses before running PvP simulations makes the results far more accurate.</p>
+        </div>
       </div>
 
       <!-- Bear Magic -->
-      <div style="background:rgba(14,20,34,.65);border:1px solid #1e2d40;border-radius:12px;padding:18px;border-left:3px solid #10b981">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+      <div class="tool-card" style="background:rgba(14,20,34,.65);border:1px solid #1e2d40;border-radius:12px;padding:0;border-left:3px solid #10b981;overflow:hidden">
+        <div class="tool-card-header" style="display:flex;align-items:center;gap:10px;padding:14px 18px;cursor:pointer;user-select:none">
           <span style="font-size:1.4rem">🐻</span>
-          <a href="magic.html" style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:1.05rem;color:#10b981;text-decoration:none">Bear Magic</a>
+          <a href="magic.html" style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:1.05rem;color:#10b981;text-decoration:none;flex:1">Bear Magic</a>
+          <span class="tool-card-arrow" style="color:#5a6a80;font-size:.9rem;transition:transform .2s">▼</span>
         </div>
-        <p style="color:#a9b3c6;font-size:.84rem;line-height:1.65;margin:0 0 10px">Damage calculator specific to the Bear troop type used in special game modes. Input your bear's stats and available troops, and it scores different formation mixes to find maximum bear damage output.</p>
-        <p style="color:#c8d4e8;font-size:.82rem;line-height:1.6;margin:0">It's separate from the main battle engine because <strong style="color:#10b981">bear combat uses different mechanics</strong> than standard PvP. If you're competing in bear-mode events, this is the only tool that handles those rules correctly. The scoreboard ranks formations so you can pick the best configuration before the fight.</p>
+        <div class="tool-card-body" style="padding:0 18px 14px;display:none">
+          <p style="color:#a9b3c6;font-size:.84rem;line-height:1.65;margin:0 0 10px">Damage calculator specific to the Bear troop type used in special game modes. Input your bear's stats and available troops, and it scores different formation mixes to find maximum bear damage output.</p>
+          <p style="color:#c8d4e8;font-size:.82rem;line-height:1.6;margin:0">It's separate from the main battle engine because <strong style="color:#10b981">bear combat uses different mechanics</strong> than standard PvP. If you're competing in bear-mode events, this is the only tool that handles those rules correctly. The scoreboard ranks formations so you can pick the best configuration before the fight.</p>
+        </div>
       </div>
 
       <!-- Bear Option-A -->
-      <div style="background:rgba(14,20,34,.65);border:1px solid #1e2d40;border-radius:12px;padding:18px;border-left:3px solid #60a5fa">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+      <div class="tool-card" style="background:rgba(14,20,34,.65);border:1px solid #1e2d40;border-radius:12px;padding:0;border-left:3px solid #60a5fa;overflow:hidden">
+        <div class="tool-card-header" style="display:flex;align-items:center;gap:10px;padding:14px 18px;cursor:pointer;user-select:none">
           <span style="font-size:1.4rem">⚡</span>
-          <a href="optiona.html" style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:1.05rem;color:#60a5fa;text-decoration:none">Bear Option&#8209;A</a>
+          <a href="optiona.html" style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:1.05rem;color:#60a5fa;text-decoration:none;flex:1">Bear Option&#8209;A</a>
+          <span class="tool-card-arrow" style="color:#5a6a80;font-size:.9rem;transition:transform .2s">▼</span>
         </div>
-        <p style="color:#a9b3c6;font-size:.84rem;line-height:1.65;margin:0 0 10px">Formation optimizer specifically for a particular bear attack strategy variant. Set target formation fractions and your available inventory, and it computes the optimal split with a ranked scoreboard.</p>
-        <p style="color:#c8d4e8;font-size:.82rem;line-height:1.6;margin:0">Think of it as <strong style="color:#60a5fa">Bear Magic's sister tool</strong> — same goal, different tactical approach. Use it when your standard bear formation isn't getting results and you want to try an alternate deployment method.</p>
+        <div class="tool-card-body" style="padding:0 18px 14px;display:none">
+          <p style="color:#a9b3c6;font-size:.84rem;line-height:1.65;margin:0 0 10px">Formation optimizer specifically for a particular bear attack strategy variant. Set target formation fractions and your available inventory, and it computes the optimal split with a ranked scoreboard.</p>
+          <p style="color:#c8d4e8;font-size:.82rem;line-height:1.6;margin:0">Think of it as <strong style="color:#60a5fa">Bear Magic's sister tool</strong> — same goal, different tactical approach. Use it when your standard bear formation isn't getting results and you want to try an alternate deployment method.</p>
+        </div>
       </div>
 
     </div>
   </section>
+
+  <!-- Tool card expand/collapse -->
+  <script>
+  (function(){
+    document.querySelectorAll('.tool-card-header').forEach(function(header){
+      header.addEventListener('click', function(e){
+        if (e.target.closest('a')) return; // let links navigate
+        var card = header.closest('.tool-card');
+        var body = card.querySelector('.tool-card-body');
+        var arrow = header.querySelector('.tool-card-arrow');
+        if (body.style.display === 'none') {
+          body.style.display = '';
+          if (arrow) arrow.style.transform = 'rotate(180deg)';
+        } else {
+          body.style.display = 'none';
+          if (arrow) arrow.style.transform = '';
+        }
+      });
+    });
+  })();
+  </script>
 
   <!-- OUTRO CTA -->
   <section class="scene scene-outro fx-reveal container" id="outro" aria-label="Get Started">
