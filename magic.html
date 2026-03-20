@@ -395,17 +395,26 @@
     })();
   </script>
 
-  <!-- Push Heroes button handler -->
+  <!-- Push Heroes handler — auto-triggers after table renders, button as fallback -->
   <script>
   (function(){
     'use strict';
-    function pushHeroes() {
+    function pushHeroes(silent) {
       var status = document.getElementById('pushHeroesStatus');
-      if (status) status.textContent = 'Loading heroes…';
+      var btn = document.getElementById('btnPushHeroes');
 
-      // Ensure hero index is loaded, then inject
+      // Check if heroes already injected
+      var wrap = document.getElementById('optTableWrap');
+      if (wrap && wrap.querySelector('.bear-hero-cell span')) {
+        if (!silent && status) { status.textContent = 'Heroes already shown.'; status.style.color = '#10b981'; }
+        if (btn) btn.style.display = 'none';
+        return;
+      }
+
+      if (!silent && status) status.textContent = 'Loading heroes…';
+
       if (window.HeroesBear && typeof window.HeroesBear.recommendFromCache === 'function') {
-        // Force-load hero index first
+        // Force-load hero index
         var loadIdx = (window._HERO_INDEX_REF && window._HERO_INDEX_REF.size > 0)
           ? Promise.resolve()
           : fetch('tiers.json', { cache: 'force-cache' }).then(function(r){ return r.json(); }).then(function(data){
@@ -419,53 +428,44 @@
 
         loadIdx.then(function() {
           var rec = window.HeroesBear.recommendFromCache();
-          console.log('[PushHeroes] rec:', rec);
           if (rec && (rec.call.length || rec.join.length)) {
             window.HeroesBear.injectOptTableHeroes(rec.call, rec.join);
             window.__bearHeroRec = rec;
             window.HeroesBear.saveRec(rec);
-            if (status) status.textContent = 'Heroes added! (' + rec.call.length + ' call, ' + rec.join.length + ' join)';
-            if (status) status.style.color = '#10b981';
+            if (btn) btn.style.display = 'none';
+            if (status) { status.textContent = ''; }
           } else {
-            if (status) status.textContent = 'No owned heroes found. Set up heroes on the Heroes page first.';
-            if (status) status.style.color = '#ef4444';
-            // Dump debug info
-            console.log('[PushHeroes] _HERO_INDEX_REF size:', window._HERO_INDEX_REF ? window._HERO_INDEX_REF.size : 0);
-            try {
-              var saved = JSON.parse(localStorage.getItem('kingsim_heroes_v2') || '{}');
-              var owned = Object.keys(saved).filter(function(k){ return saved[k] && saved[k].owned; });
-              console.log('[PushHeroes] owned keys:', owned);
-              // Try matching each owned hero
-              owned.forEach(function(id) {
-                var dblIdx = id.indexOf('__');
-                var namePart = (dblIdx >= 0 ? id.slice(dblIdx + 2) : id).replace(/_/g, ' ');
-                var matched = false;
-                if (window._HERO_INDEX_REF) {
-                  window._HERO_INDEX_REF.forEach(function(hData, hName) {
-                    if (hName.toLowerCase() === namePart.toLowerCase()) matched = hName;
-                  });
-                }
-                console.log('[PushHeroes] ' + id + ' → "' + namePart + '" → ' + (matched || 'NO MATCH'));
-              });
-            } catch(e) { console.error('[PushHeroes] debug error:', e); }
+            // Show button as fallback
+            if (btn) btn.style.display = '';
+            if (!silent && status) { status.textContent = 'No owned heroes found. Set them up on the Heroes page.'; status.style.color = '#ef4444'; }
           }
         }).catch(function(e) {
-          if (status) status.textContent = 'Error: ' + e.message;
-          if (status) status.style.color = '#ef4444';
+          if (btn) btn.style.display = '';
+          if (!silent && status) { status.textContent = 'Error: ' + e.message; status.style.color = '#ef4444'; }
         });
       } else {
-        if (status) status.textContent = 'Hero engine not loaded. Refresh the page.';
-        if (status) status.style.color = '#ef4444';
+        if (btn) btn.style.display = '';
       }
     }
 
-    // Wire button after DOM ready
+    // Wire button
     function wireBtn() {
       var btn = document.getElementById('btnPushHeroes');
-      if (btn) btn.addEventListener('click', pushHeroes);
+      if (btn) {
+        btn.style.display = 'none'; // hidden by default — auto-trigger will show if needed
+        btn.addEventListener('click', function(){ pushHeroes(false); });
+      }
     }
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wireBtn);
     else wireBtn();
+
+    // Auto-trigger after delays to catch async table render
+    setTimeout(function(){ pushHeroes(true); }, 600);
+    setTimeout(function(){ pushHeroes(true); }, 1500);
+    setTimeout(function(){ pushHeroes(true); }, 3000);
+
+    // Expose for external use
+    window.pushBearHeroes = pushHeroes;
   })();
   </script>
 
