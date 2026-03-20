@@ -229,7 +229,6 @@
       const s = starSVG(i <= (state.level||0));
       s.dataset.value = i;
       s.addEventListener('click', ()=>{
-        if (card.classList.contains('locked')) return;
         card.dataset.level = i;
         [...stars.children].forEach((el,idx)=> el.classList.toggle('active', idx < i));
         saveState(); computeSummary(); updateHeaderSums();
@@ -252,8 +251,7 @@
         b.type = 'button'; b.textContent = v; b.dataset.val = v;
         if ((currentSkillVals[idx]||0) === v) b.classList.add('is-active');
         b.addEventListener('click', ()=>{
-          if (card.classList.contains('locked')) return;
-          seg.dataset.value = v;
+            seg.dataset.value = v;
           seg.querySelectorAll('button').forEach(k=>k.classList.toggle('is-active', k===b));
           saveState(); computeSummary(); updateHeaderSums();
         });
@@ -270,8 +268,7 @@
       for (let i=1;i<=5;i++){
         const swd = swordSVG(i <= (state.widget||0)); swd.dataset.value = i;
         swd.addEventListener('click', ()=>{
-          if (card.classList.contains('locked')) return;
-          card.dataset.widget = i;
+            card.dataset.widget = i;
           [...swords.children].forEach((el,idx)=> el.classList.toggle('active', idx < i));
           saveState(); computeSummary(); updateHeaderSums();
         });
@@ -291,7 +288,6 @@
       </div>`;
     formRow.querySelectorAll('.pill').forEach(btn=>{
       btn.addEventListener('click', ()=>{
-        if (card.classList.contains('locked')) return;
         formRow.querySelectorAll('.pill').forEach(b=> b.setAttribute('aria-pressed','false'));
         btn.setAttribute('aria-pressed','true');
         card.dataset.formation = btn.dataset.val;
@@ -301,9 +297,11 @@
     ctrlWrap.appendChild(formRow);
     card.appendChild(ctrlWrap);
 
-    // Lock behavior
+    // Lock behavior — only affects visual style, not interactions
+    // Owned is used by the engine for bear recommendations, not as a UI gate
     const setLock = (owned)=>{
-      card.classList.toggle('locked', !owned);
+      // Subtle opacity difference: not-owned = slightly dimmed, not blocked
+      card.style.opacity = owned ? '' : '0.72';
       if(owned) {
         card.classList.add('just-owned');
         setTimeout(()=>card.classList.remove('just-owned'), 400);

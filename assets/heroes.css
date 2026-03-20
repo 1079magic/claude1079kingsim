@@ -39,10 +39,11 @@
 .icon-wrap svg{ width:16px; height:16px; fill:#ffb74d; opacity:.95; }
 .header-text{ display:flex; flex-direction:column; gap:2px; min-width:0; }
 .hero-name{
-  font-weight:900; letter-spacing:.2px; line-height:1.1;
+  font-weight:900; letter-spacing:.3px; line-height:1.15;
   background: linear-gradient(to bottom,var(--gold-top),var(--gold-mid),var(--gold-bot));
   -webkit-background-clip:text; background-clip:text; color:transparent;
-  font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  font-size:16px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  filter: drop-shadow(0 1px 3px rgba(255,180,0,.18));
 }
 .hero-meta{ color: var(--muted); font-size: 12px; }
 
@@ -142,34 +143,60 @@
 /* ===== Mobile: compact cards + bottom-sheet ===== */
 @media (max-width: 640px) {
   .group-grid {
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 8px !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 6px !important;
   }
 
+  /* Compact card: emoji + name only. Whole card is the tap target. */
   .hero-card {
-    padding: 8px 10px !important;
+    padding: 10px 8px !important;
     cursor: pointer !important;
     position: relative !important;
+    min-height: 56px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    gap: 4px !important;
   }
-  .hero-card .controls { display: none !important; }
-  .hero-card .focus-sums { display: none !important; }
-  .hero-name { font-size: 12px !important; }
-  .hero-meta { font-size: 10px !important; }
-
-  /* Edit badge */
-  .hero-card::after {
-    content: '✎ Edit';
-    position: absolute;
-    bottom: 6px; right: 8px;
-    font-size: 10px;
-    color: var(--muted, #a9b3c6);
-    font-weight: 600;
+  /* Hide everything except icon and name on mobile cards */
+  .hero-card .controls-wrap { display: none !important; }
+  .hero-card .focus-sums    { display: none !important; }
+  .hero-card .own-flag      { display: none !important; }
+  /* Center the icon+name block */
+  .hero-card .card-head {
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 4px !important;
+    padding-right: 0 !important;
+    width: 100% !important;
   }
+  .hero-card .header-text {
+    align-items: center !important;
+    text-align: center !important;
+  }
+  .hero-card .icon-wrap {
+    width: 28px; height: 28px;
+    font-size: 18px !important;
+    border-radius: 8px !important;
+  }
+  .hero-card .hero-name {
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 90px;
+    text-align: center;
+  }
+  /* No ::after edit badge — whole card is the button */
+  .hero-card::after { display: none !important; }
 
   /* Bottom sheet overlay */
   .hero-sheet-overlay {
     position: fixed; inset: 0;
-    background: rgba(0,0,0,.55);
+    background: rgba(0,0,0,.58);
     z-index: 9000;
     display: none;
     align-items: flex-end;
@@ -182,11 +209,10 @@
     width: 100%;
     max-height: 85vh;
     overflow-y: auto;
-    padding: 16px;
-    padding-bottom: 32px;
+    padding: 16px 16px 40px;
     position: relative;
     transform: translateY(100%);
-    transition: transform .25s ease;
+    transition: transform .28s cubic-bezier(.22,.68,0,1.1);
   }
   .hero-sheet-overlay.open .hero-sheet {
     transform: translateY(0);
@@ -200,13 +226,12 @@
     display: flex; align-items: center; justify-content: center;
   }
   .hero-sheet-title {
-    font-family: 'Rajdhani', sans-serif;
-    font-size: 1.3rem; font-weight: 700;
+    font-size: 1.25rem; font-weight: 700;
     color: var(--ink, #e9eef7);
     margin: 0 44px 14px 0;
+    background: linear-gradient(to bottom,var(--gold-top,#ffd54f),var(--gold-mid,#ffb300),var(--gold-bot,#e65100));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
   }
-  /* Show controls inside sheet */
-  .hero-sheet-body .controls { display: flex !important; flex-direction: column; gap: 8px; }
 }
 
 /* ===== Hero Recommendation — Bear table injections ===== */

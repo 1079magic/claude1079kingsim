@@ -184,13 +184,7 @@
       ownRow.appendChild(toggle);
       body.appendChild(ownRow);
 
-      if (isLocked) {
-        var lockMsg = document.createElement('div');
-        lockMsg.style.cssText = 'color:#6b7fa3;font-size:.82rem;text-align:center;padding:16px 0;font-style:italic;';
-        lockMsg.textContent = 'Toggle Owned to enable controls';
-        body.appendChild(lockMsg);
-        return;
-      }
+      // Controls always shown — Owned is used by engine, not a display gate
 
       // ── Level (stars) ──
       var levelRow = buildSheetRow('Level', function(container) {
