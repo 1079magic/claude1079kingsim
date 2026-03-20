@@ -507,6 +507,14 @@
   }
 
   // ------------------- Rendering -------------------
+  function _bearInjectRec() {
+    var HB = window.HeroesBear;
+    if (!HB) return;
+    var rec = (HB.recommend && HB.recommend()) || (HB.loadRec && HB.loadRec()) || window.__bearHeroRec;
+    if (!rec || !rec.call || !rec.call.length) return;
+    HB.injectCallHeroNames(rec.call);
+    HB.injectJoinHeroNames(rec.join);
+  }
   function renderCallTable(r){
     $("callRallyTable").innerHTML = `
       <table>
@@ -524,6 +532,7 @@
         </tbody>
       </table>
     `;
+    _bearInjectRec();
   }
   function renderJoinTable(joins){
     let out = `
@@ -546,6 +555,7 @@
     });
     out += `</tbody></table>`;
     $("joinTableWrap").innerHTML = out;
+    _bearInjectRec();
   }
   function renderScoreboardCompact(rally, joins, tierKey){
     const callScore = computeFormationDamage(rally, tierKey).finalScore;
@@ -925,17 +935,6 @@
     // Display
     renderCallTable(rally);
     renderJoinTable(joins);
-    // Inject hero names — defer by one frame so table DOM is settled
-    (function() {
-      var HB = window.HeroesBear;
-      if (!HB) return;
-      var rec = (HB.recommend && HB.recommend()) || (HB.loadRec && HB.loadRec()) || window.__bearHeroRec;
-      if (!rec || !rec.call || !rec.call.length) return;
-      requestAnimationFrame(function() {
-        HB.injectCallHeroNames(rec.call);
-        HB.injectJoinHeroNames(rec.join);
-      });
-    })();
     $("fractionReadout").textContent = `Using: ${toPctTriplet(fractions)} (Inf/Cav/Arc)`;
     const formed = joins.reduce((s,p)=>s+sumTroops(p),0);
     const before = sumTroops(stock0);
@@ -984,15 +983,7 @@ Stock used: ${used} / ${before}.`;
     }
 
     function computeAndInject(mode) {
-      compute(mode);
-      var HB = window.HeroesBear;
-      if (HB) {
-        var rec = (HB.recommend && HB.recommend()) || (HB.loadRec && HB.loadRec()) || window.__bearHeroRec;
-        if (rec && rec.call && rec.call.length) {
-          HB.injectCallHeroNames(rec.call);
-          HB.injectJoinHeroNames(rec.join);
-        }
-      }
+      compute(mode); // renderCallTable/renderJoinTable inject heroes automatically
     }
     $("btnMagic12")?.addEventListener("click", () => { resetRecButtonState(); computeAndInject("magic12"); });
     $("btnRecompute")?.addEventListener("click", () => {
@@ -1037,17 +1028,7 @@ Stock used: ${used} / ${before}.`;
     });
 
     inited = true;
-    compute("magic12");
-    // Hero names inject — runs here because tiers.json await is done, tables are rendered
-    (function(){
-      var HB = window.HeroesBear;
-      if (!HB) return;
-      var rec = (HB.recommend && HB.recommend()) || (HB.loadRec && HB.loadRec()) || window.__bearHeroRec;
-      if (rec && rec.call && rec.call.length) {
-        HB.injectCallHeroNames(rec.call);
-        HB.injectJoinHeroNames(rec.join);
-      }
-    })();
+    compute("magic12"); // renderCallTable/renderJoinTable inject heroes automatically
   }
 
   // Expose
