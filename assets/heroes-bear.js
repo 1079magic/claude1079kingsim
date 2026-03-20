@@ -252,7 +252,11 @@
       catch(_) { return {}; }
     })();
     if (!Object.keys(savedState).length) { console.log('[recommendFromCache] empty savedState'); return null; }
-    console.log('[recommendFromCache] heroIndex size:', heroIndex.size, 'savedState keys:', Object.keys(savedState).length, 'sample keys:', Object.keys(savedState).slice(0, 3));
+    console.log('[recommendFromCache] heroIndex size:', heroIndex.size, 'savedState keys:', Object.keys(savedState).length);
+    // Log which heroes are owned
+    var ownedList = [];
+    for (var _k of Object.keys(savedState)) { if (savedState[_k] && savedState[_k].owned) ownedList.push(_k); }
+    console.log('[recommendFromCache] owned heroes:', ownedList);
 
     // Read numMarches
     let numMarches = 1;
@@ -532,21 +536,25 @@
 
   function doInject() {
     const rec = recommend() || recommendFromCache() || loadRec();
-    if (!rec || (!rec.call?.length && !rec.join?.length)) return;
+    if (!rec || (!rec.call?.length && !rec.join?.length)) {
+      console.log('[doInject] no valid rec, will retry on next mutation');
+      return;
+    }
+    console.log('[doInject] injecting call=' + rec.call.length + ' join=' + rec.join.length);
     injectCallHeroNames(rec.call);
     injectJoinHeroNames(rec.join);
     injectOptTableHeroes(rec.call, rec.join);
     _lastInjectionTime = Date.now();
     const freshRec = recommend() || recommendFromCache();
-    if (freshRec) { saveRec(freshRec); renderBearPanel(freshRec); }
+    if (freshRec && (freshRec.call?.length || freshRec.join?.length)) {
+      saveRec(freshRec);
+      renderBearPanel(freshRec);
+    }
     window.__bearHeroRec = rec;
   }
 
   function scheduleInjection() {
     if (_injectionScheduled) return;
-    // If we just injected within the last 500ms, skip — this is likely our own
-    // DOM write triggering the observer, not a real table re-render
-    if (Date.now() - _lastInjectionTime < 500) return;
     _injectionScheduled = true;
     requestAnimationFrame(() => {
       _injectionScheduled = false;

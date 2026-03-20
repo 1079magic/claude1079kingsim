@@ -278,6 +278,11 @@
         <div id="bm_tables" class="bm-tables">
           <div style="margin-top:14px">
             <div id="optTableWrap" class="table-glass" style="margin-top:10px"></div>
+            <!-- Manual hero injection button -->
+            <div style="text-align:center;margin-top:10px;">
+              <button id="btnPushHeroes" type="button" style="background:linear-gradient(90deg,#10b981,#22d3ee);color:#05121f;border:0;font-weight:700;padding:8px 18px;border-radius:10px;font-size:.85rem;cursor:pointer;box-shadow:0 4px 12px rgba(16,185,129,.25);">🐻 Push Heroes to Table</button>
+              <div id="pushHeroesStatus" class="muted" style="font-size:.72rem;margin-top:4px;"></div>
+            </div>
           </div>
         </div>
 
@@ -388,6 +393,80 @@
       else run();
       window.runBearMagic = run;
     })();
+  </script>
+
+  <!-- Push Heroes button handler -->
+  <script>
+  (function(){
+    'use strict';
+    function pushHeroes() {
+      var status = document.getElementById('pushHeroesStatus');
+      if (status) status.textContent = 'Loading heroes…';
+
+      // Ensure hero index is loaded, then inject
+      if (window.HeroesBear && typeof window.HeroesBear.recommendFromCache === 'function') {
+        // Force-load hero index first
+        var loadIdx = (window._HERO_INDEX_REF && window._HERO_INDEX_REF.size > 0)
+          ? Promise.resolve()
+          : fetch('tiers.json', { cache: 'force-cache' }).then(function(r){ return r.json(); }).then(function(data){
+              var pool = (data.heroes || []).concat(data.joiners || []);
+              if (pool.length) {
+                var idx = new Map();
+                pool.forEach(function(h){ idx.set(h.name, h); });
+                window._HERO_INDEX_REF = idx;
+              }
+            });
+
+        loadIdx.then(function() {
+          var rec = window.HeroesBear.recommendFromCache();
+          console.log('[PushHeroes] rec:', rec);
+          if (rec && (rec.call.length || rec.join.length)) {
+            window.HeroesBear.injectOptTableHeroes(rec.call, rec.join);
+            window.__bearHeroRec = rec;
+            window.HeroesBear.saveRec(rec);
+            if (status) status.textContent = 'Heroes added! (' + rec.call.length + ' call, ' + rec.join.length + ' join)';
+            if (status) status.style.color = '#10b981';
+          } else {
+            if (status) status.textContent = 'No owned heroes found. Set up heroes on the Heroes page first.';
+            if (status) status.style.color = '#ef4444';
+            // Dump debug info
+            console.log('[PushHeroes] _HERO_INDEX_REF size:', window._HERO_INDEX_REF ? window._HERO_INDEX_REF.size : 0);
+            try {
+              var saved = JSON.parse(localStorage.getItem('kingsim_heroes_v2') || '{}');
+              var owned = Object.keys(saved).filter(function(k){ return saved[k] && saved[k].owned; });
+              console.log('[PushHeroes] owned keys:', owned);
+              // Try matching each owned hero
+              owned.forEach(function(id) {
+                var dblIdx = id.indexOf('__');
+                var namePart = (dblIdx >= 0 ? id.slice(dblIdx + 2) : id).replace(/_/g, ' ');
+                var matched = false;
+                if (window._HERO_INDEX_REF) {
+                  window._HERO_INDEX_REF.forEach(function(hData, hName) {
+                    if (hName.toLowerCase() === namePart.toLowerCase()) matched = hName;
+                  });
+                }
+                console.log('[PushHeroes] ' + id + ' → "' + namePart + '" → ' + (matched || 'NO MATCH'));
+              });
+            } catch(e) { console.error('[PushHeroes] debug error:', e); }
+          }
+        }).catch(function(e) {
+          if (status) status.textContent = 'Error: ' + e.message;
+          if (status) status.style.color = '#ef4444';
+        });
+      } else {
+        if (status) status.textContent = 'Hero engine not loaded. Refresh the page.';
+        if (status) status.style.color = '#ef4444';
+      }
+    }
+
+    // Wire button after DOM ready
+    function wireBtn() {
+      var btn = document.getElementById('btnPushHeroes');
+      if (btn) btn.addEventListener('click', pushHeroes);
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wireBtn);
+    else wireBtn();
+  })();
   </script>
 
 
