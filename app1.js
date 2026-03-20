@@ -925,14 +925,17 @@
     // Display
     renderCallTable(rally);
     renderJoinTable(joins);
-    // Inject hero names into tables (from heroes page selections)
-    if (window.HeroesBear) {
-      var _rec = window.HeroesBear.recommend() || (window.HeroesBear.loadRec ? window.HeroesBear.loadRec() : null) || window.__bearHeroRec;
-      if (_rec) {
-        window.HeroesBear.injectCallHeroNames(_rec.call);
-        window.HeroesBear.injectJoinHeroNames(_rec.join);
-      }
-    }
+    // Inject hero names — defer by one frame so table DOM is settled
+    (function() {
+      var HB = window.HeroesBear;
+      if (!HB) return;
+      var rec = (HB.recommend && HB.recommend()) || (HB.loadRec && HB.loadRec()) || window.__bearHeroRec;
+      if (!rec || !rec.call || !rec.call.length) return;
+      requestAnimationFrame(function() {
+        HB.injectCallHeroNames(rec.call);
+        HB.injectJoinHeroNames(rec.join);
+      });
+    })();
     $("fractionReadout").textContent = `Using: ${toPctTriplet(fractions)} (Inf/Cav/Arc)`;
     const formed = joins.reduce((s,p)=>s+sumTroops(p),0);
     const before = sumTroops(stock0);

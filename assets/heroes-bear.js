@@ -246,12 +246,14 @@
   // Hero names go between the Type/# column and the Infantry column.
 
   function injectCallHeroNames(callHeroes) {
+    // Only inject when we actually have heroes to show
+    if (!callHeroes || !callHeroes.length) return;
     const callTable = document.getElementById('callRallyTable');
     if (!callTable) return;
     const tbody = callTable.querySelector('tbody');
-    if (!tbody) return; // table not rendered yet — MutationObserver will retry
+    if (!tbody) return;
 
-    // ── thead: add "Heroes" th after Type (idempotent) ──
+    // Add "Heroes" th after Type — idempotent
     const thead = callTable.querySelector('thead tr');
     if (thead && !thead.querySelector('.bear-hero-th')) {
       const th = document.createElement('th');
@@ -261,7 +263,7 @@
       thead.insertBefore(th, thead.cells[1] || null);
     }
 
-    // ── CALL row: insert hero names td after Type td (idempotent) ──
+    // Add heroTd after first td in CALL row — idempotent
     const callRow = tbody.querySelector('tr');
     if (!callRow) return;
     let heroTd = callRow.querySelector('.bear-hero-cell');
@@ -273,7 +275,7 @@
     }
 
     const TYPE_EMOJI = { Infantry:'⚔️', Cavalry:'🐎', Archer:'🏹' };
-    heroTd.innerHTML = (callHeroes || []).map(h => {
+    heroTd.innerHTML = callHeroes.map(h => {
       const em = TYPE_EMOJI[h.troopType] || '';
       return `<div style="white-space:nowrap;line-height:1.5">` +
         `<span class="bear-hero-pill bear-hero-pill--call" style="font-size:.6rem;padding:1px 5px">${em} ${h.name}</span>` +
@@ -282,12 +284,14 @@
   }
 
   function injectJoinHeroNames(joinHeroes) {
+    // Only inject when we have heroes to show
+    if (!joinHeroes || !joinHeroes.length) return;
     const joinWrap = document.getElementById('joinTableWrap');
     if (!joinWrap) return;
     const tbody = joinWrap.querySelector('tbody');
-    if (!tbody) return; // not rendered yet
+    if (!tbody) return;
 
-    // ── thead: add "Hero" th after # (idempotent) ──
+    // Add "Hero" th after # — idempotent
     const thead = joinWrap.querySelector('thead tr');
     if (thead && !thead.querySelector('.bear-hero-th')) {
       const th = document.createElement('th');
@@ -306,10 +310,10 @@
         heroTd.style.cssText = 'padding:3px 5px;vertical-align:middle';
         row.insertBefore(heroTd, row.cells[1] || null);
       }
-      const hero = (joinHeroes || [])[i];
-      heroTd.innerHTML = hero
-        ? `<span class="bear-hero-pill bear-hero-pill--join" style="font-size:.6rem;padding:1px 5px;display:inline-block">${hero.name}</span>`
-        : '';
+      const hero = joinHeroes[i];
+      if (hero) {
+        heroTd.innerHTML = `<span class="bear-hero-pill bear-hero-pill--join" style="font-size:.6rem;padding:1px 5px;display:inline-block">${hero.name}</span>`;
+      }
     });
   }
 
