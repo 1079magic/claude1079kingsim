@@ -52,13 +52,25 @@
     }
     #optTableWrap thead th{
       text-align: center;
-      padding: 10px;
+      padding: 10px 8px;
       color: #f1f6ff;
-      background: linear-gradient(180deg, rgba(35, 16, 16, 0.66), rgba(30, 12, 12, 0.55)); /* brighter */
-      border-bottom: 1px solid #2b4670;
-      font-weight: 600;
-      font-size: 14px;
+      background: linear-gradient(180deg, rgba(35, 16, 16, 0.85), rgba(30, 12, 12, 0.75));
+      border-bottom: 2px solid #2b4670;
+      font-weight: 700;
+      font-size: 13px;
       letter-spacing: .2px;
+      /* Ensure background fills full height with no gap */
+      line-height: 1.3;
+      vertical-align: middle;
+      box-sizing: border-box;
+    }
+    /* Kill any table border-spacing that creates gaps */
+    #optTableWrap table {
+      border-spacing: 0;
+      border-collapse: collapse;
+    }
+    #optTableWrap thead {
+      display: table-header-group; /* ensure thead renders as block */
     }
     #optTableWrap tbody td{
       padding: 9px 10px;
@@ -84,9 +96,17 @@
       }
       body.optiona-page #optTableWrap th,
       body.optiona-page #optTableWrap td{
-        padding: 6px 8px !important;
-        font-size: 12px !important;
-        word-wrap: break-word;
+        padding: 5px 4px !important;
+        font-size: 11px !important;
+        word-break: break-word !important;
+        white-space: normal !important;
+        vertical-align: middle !important;
+        box-sizing: border-box !important;
+      }
+      body.optiona-page #optTableWrap thead th {
+        background: linear-gradient(180deg, rgba(35,16,16,.9), rgba(30,12,12,.8)) !important;
+        line-height: 1.2 !important;
+        height: auto !important;
       }
     }
 
@@ -140,18 +160,19 @@
 
     
   <!-- Page Info Banner -->
-  <div style="max-width:1150px;margin:0 auto 14px;padding:0 14px;box-sizing:border-box">
-    <div style="background:linear-gradient(135deg,rgba(14,20,34,.7),rgba(9,14,26,.6));border:1px solid #60a5fa33;border-left:3px solid #60a5fa;border-radius:12px;padding:14px 18px;">
-      <div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;">
-        <span style="font-size:1.5rem;flex-shrink:0;line-height:1.2">⚡</span>
-        <div style="flex:1;min-width:0">
-          <div style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:1.05rem;color:#e9eef7;margin-bottom:6px">Bear Option-A — Alternate Bear Formation Optimizer</div>
-          <p style="color:#a9b3c6;font-size:.84rem;line-height:1.65;margin:0 0 6px">Bear Magic's sister tool for a specific bear attack strategy variant. Set target formation fractions and your available inventory — it computes the optimal split and outputs a ranked scoreboard. Use it when your standard bear formation isn't getting results and you want to try an alternate deployment method.</p>
-          <div style="color:#c8d4e8;font-size:.8rem;line-height:1.6"><strong style="color:#60a5fa">Same goal as Bear Magic, different tactical approach.</strong> Maximises archer-heavy CALL formations using your exact Attack and Lethality stats.</div>
+    <div class="info-banner" style="background:linear-gradient(135deg,rgba(14,20,34,.7),rgba(9,14,26,.6));border:1px solid #60a5fa33;border-left:3px solid #60a5fa;">
+      <div class="info-banner-header">
+        <span class="info-banner-emoji">⚡</span>
+        <span class="info-banner-title">Bear Option-A — Alternate Bear Formation Optimizer</span>
+        <div class="info-banner-toggle">
+          <span class="info-banner-arrows">&#8963;<br>&#8964;</span>
         </div>
       </div>
+      <div class="info-banner-body">
+        <p>Bear Magic's sister tool for a specific bear attack strategy variant. Set target formation fractions and your available inventory — it computes the optimal split and outputs a ranked scoreboard. Use it when your standard bear formation isn't getting results.</p>
+        <div class="info-tip"><strong style="color:#60a5fa">Same goal as Bear Magic, different tactical approach.</strong> Maximises archer-heavy CALL formations using your exact Attack and Lethality stats.</div>
+      </div>
     </div>
-  </div>
   <section class="panel panel-glass fx-enter">
         <h2 class="h2" style="text-align: center;">⚡🐻 Bear Option‑A 🐻⚡<br>Formation Optimizer</h2>
       <div class="cta-band" style="text-align:center;display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:center;margin-bottom:14px">
@@ -347,5 +368,16 @@
 
   <!-- PAGE-SPECIFIC JS -->
   <script src="assets/optiona.js"></script>
+<script>
+(function(){
+  document.querySelectorAll('.info-banner').forEach(function(banner){
+    var header = banner.querySelector('.info-banner-header');
+    if(!header) return;
+    header.addEventListener('click', function(){
+      banner.classList.toggle('open');
+    });
+  });
+})();
+</script>
 </body>
 </html>

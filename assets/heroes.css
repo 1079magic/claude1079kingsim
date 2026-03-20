@@ -11,11 +11,12 @@
 
 .group-grid{
   display:grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 12px;
 }
-@media (max-width: 1100px){ .group-grid{ grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 640px){  .group-grid{ grid-template-columns: 1fr; } }
+/* Always 3 columns — user requested fixed 3-col layout */
+@media (max-width: 1100px){ .group-grid{ grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 640px){  .group-grid{ grid-template-columns: repeat(2, 1fr); } }
 
 /* ===== Much more compact hero cards ===== */
 .hero-card{
