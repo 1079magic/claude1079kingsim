@@ -275,12 +275,16 @@
     }
 
     const TYPE_EMOJI = { Infantry:'⚔️', Cavalry:'🐎', Archer:'🏹' };
-    heroTd.innerHTML = callHeroes.map(h => {
+    const newHtml = callHeroes.map(h => {
       const em = TYPE_EMOJI[h.troopType] || '';
       return `<div style="white-space:nowrap;line-height:1.5">` +
         `<span class="bear-hero-pill bear-hero-pill--call" style="font-size:.6rem;padding:1px 5px">${em} ${h.name}</span>` +
         `</div>`;
     }).join('');
+    // Only write if content actually changed — prevents MutationObserver loops
+    if (heroTd.innerHTML !== newHtml) {
+      heroTd.innerHTML = newHtml;
+    }
   }
 
   function injectJoinHeroNames(joinHeroes) {
@@ -312,7 +316,10 @@
       }
       const hero = joinHeroes[i];
       if (hero) {
-        heroTd.innerHTML = `<span class="bear-hero-pill bear-hero-pill--join" style="font-size:.6rem;padding:1px 5px;display:inline-block">${hero.name}</span>`;
+        const newHtml = `<span class="bear-hero-pill bear-hero-pill--join" style="font-size:.6rem;padding:1px 5px;display:inline-block">${hero.name}</span>`;
+        if (heroTd.innerHTML !== newHtml) {
+          heroTd.innerHTML = newHtml;
+        }
       }
     });
   }
@@ -413,23 +420,26 @@
       }
 
       if (isCall) {
-        heroTd.innerHTML = (callHeroes || []).map(h => {
+        const newCallHtml = (callHeroes || []).map(h => {
           const em = TYPE_EMOJI[h.troopType] || '';
           return `<div style="white-space:nowrap;line-height:1.5">` +
             `<span class="bear-hero-pill bear-hero-pill--call" style="font-size:.6rem;padding:1px 5px">${em} ${h.name}</span>` +
             `</div>`;
         }).join('');
+        if (heroTd.innerHTML !== newCallHtml) heroTd.innerHTML = newCallHtml;
       } else {
         const h = (joinHeroes || [])[joinIdx++];
-        heroTd.innerHTML = h
+        const newJoinHtml = h
           ? `<span class="bear-hero-pill bear-hero-pill--join" style="font-size:.6rem;padding:1px 5px;display:inline-block">${h.name}</span>`
           : '';
+        if (heroTd.innerHTML !== newJoinHtml) heroTd.innerHTML = newJoinHtml;
       }
     });
   }
 
   // ── Table injection — MutationObserver + polling fallback ──────────────────
   let _injectionScheduled = false;
+  let _lastInjectionTime = 0; // cooldown to break MutationObserver cycles
 
   function doInject() {
     const rec = recommend() || loadRec();
@@ -437,6 +447,7 @@
     injectCallHeroNames(rec.call);
     injectJoinHeroNames(rec.join);
     injectOptTableHeroes(rec.call, rec.join);
+    _lastInjectionTime = Date.now();
     const freshRec = recommend();
     if (freshRec) { saveRec(freshRec); renderBearPanel(freshRec); }
     window.__bearHeroRec = rec;
@@ -444,6 +455,9 @@
 
   function scheduleInjection() {
     if (_injectionScheduled) return;
+    // If we just injected within the last 500ms, skip — this is likely our own
+    // DOM write triggering the observer, not a real table re-render
+    if (Date.now() - _lastInjectionTime < 500) return;
     _injectionScheduled = true;
     requestAnimationFrame(() => {
       _injectionScheduled = false;
@@ -510,6 +524,33 @@
         injectOptTableHeroes(rec.call, rec.join);
       }
     });
+
+    // Safety-net retries for async page init (magic.html fetches tiers.json before
+    // rendering tables, so the initial doInject often finds empty table wrappers).
+    // These retries ensure heroes appear even if the MutationObserver cycle misses.
+    function retryInject() {
+      const rec = recommend() || loadRec() || window.__bearHeroRec;
+      if (!rec || (!rec.call?.length && !rec.join?.length)) return;
+      // Only inject if tables exist and don't already have hero columns
+      const callTbl = document.getElementById('callRallyTable');
+      const joinTbl = document.getElementById('joinTableWrap');
+      const optTbl  = document.getElementById('optTableWrap');
+      if (callTbl && callTbl.querySelector('tbody') && !callTbl.querySelector('.bear-hero-th')) {
+        injectCallHeroNames(rec.call);
+        _lastInjectionTime = Date.now();
+      }
+      if (joinTbl && joinTbl.querySelector('tbody') && !joinTbl.querySelector('.bear-hero-th')) {
+        injectJoinHeroNames(rec.join);
+        _lastInjectionTime = Date.now();
+      }
+      if (optTbl && optTbl.querySelector('table') && !optTbl.querySelector('.bear-hero-th')) {
+        injectOptTableHeroes(rec.call, rec.join);
+        _lastInjectionTime = Date.now();
+      }
+      window.__bearHeroRec = rec;
+    }
+    setTimeout(retryInject, 800);
+    setTimeout(retryInject, 2500);
   }
 
   if (document.readyState === 'loading') {

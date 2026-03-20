@@ -526,7 +526,10 @@
     `;
     if (window.HeroesBear) {
       var _rc = window.HeroesBear.recommend() || (window.HeroesBear.loadRec && window.HeroesBear.loadRec()) || window.__bearHeroRec;
-      if (_rc) window.HeroesBear.injectCallHeroNames(_rc.call);
+      if (_rc) {
+        window.HeroesBear.injectCallHeroNames(_rc.call);
+        window.__bearHeroRec = _rc;
+      }
     }
   }
   function renderJoinTable(joins){
@@ -552,7 +555,10 @@
     $("joinTableWrap").innerHTML = out;
     if (window.HeroesBear) {
       var _rj = window.HeroesBear.recommend() || (window.HeroesBear.loadRec && window.HeroesBear.loadRec()) || window.__bearHeroRec;
-      if (_rj) window.HeroesBear.injectJoinHeroNames(_rj.join);
+      if (_rj) {
+        window.HeroesBear.injectJoinHeroNames(_rj.join);
+        window.__bearHeroRec = _rj;
+      }
     }
   }
   function renderScoreboardCompact(rally, joins, tierKey){
