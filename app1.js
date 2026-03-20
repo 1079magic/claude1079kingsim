@@ -965,6 +965,15 @@ Stock used: ${used} / ${before}.`;
         TIERS = (raw && raw.troops && raw.troops.tiers)
           ? { tiers: raw.troops.tiers }
           : raw;
+        // Also populate hero index so recommendFromCache() works on this page
+        if (!window._HERO_INDEX_REF || !window._HERO_INDEX_REF.size) {
+          var _pool = (raw.heroes || []).concat(raw.joiners || []);
+          if (_pool.length) {
+            var _idx = new Map();
+            _pool.forEach(function(h){ _idx.set(h.name, h); });
+            window._HERO_INDEX_REF = _idx;
+          }
+        }
       } catch(e){
         console.error("tiers.json failed", e);
         if (location.protocol === "file:") {
