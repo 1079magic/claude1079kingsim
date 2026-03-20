@@ -447,7 +447,7 @@
     });
   }
 
-  // Observe table containers; also poll every 400ms for 8s as fallback
+  // Observe tables for content changes + hero state changes
   function startObserving() {
     const ids = ['callRallyTable', 'joinTableWrap', 'optTableWrap'];
     ids.forEach(id => {
@@ -456,24 +456,14 @@
       new MutationObserver(scheduleInjection)
         .observe(el, { childList: true, subtree: true });
     });
+    // Re-inject when hero selections change (on heros.html)
     window.addEventListener('heroStateChanged', scheduleInjection);
-
-    // Polling fallback — catches tables rendered after observer was set up
-    let attempts = 0;
-    const poll = setInterval(() => {
-      attempts++;
-      const callEl = document.getElementById('callRallyTable');
-      const optEl  = document.getElementById('optTableWrap');
-      const hasRows = (callEl && callEl.querySelector('tbody tr')) ||
-                      (optEl  && optEl.querySelector('tbody tr'));
-      if (hasRows) { ensureHeroIndex().then(doInject); clearInterval(poll); }
-      if (attempts >= 20) clearInterval(poll);
-    }, 400);
   }
 
   // Expose public API
   window.HeroesBear = {
     recommend,
+    loadRec,
     renderBearPanel,
     scoreHero,
     BEAR_W,

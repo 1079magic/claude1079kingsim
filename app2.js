@@ -648,7 +648,14 @@ function buildRally(fractions, rallySize, stock) {
     });
     html += `</tbody></table>`;
     const tableEl = document.getElementById("optTableWrap");
-    if (tableEl) tableEl.innerHTML = html;
+    if (tableEl) {
+      tableEl.innerHTML = html;
+      // Inject hero names into table (from heroes page selections)
+      if (window.HeroesBear) {
+        var _rec2 = window.HeroesBear.recommend() || (window.HeroesBear.loadRec ? window.HeroesBear.loadRec() : null) || window.__bearHeroRec;
+        if (_rec2) window.HeroesBear.injectOptTableHeroes(_rec2.call, _rec2.join);
+      }
+    }
 
     // inventory readout
     const formedTroops = packs.reduce((s,p)=>s+p.inf+p.cav+p.arc, 0);
