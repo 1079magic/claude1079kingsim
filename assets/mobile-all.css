@@ -146,8 +146,8 @@
   }
 }
 @media (min-width: 641px){
-  /* Hide Add Troops + Menu on desktop/tablet */
-  .nav .nav-inner .nav-ctas{
+  /* Keep shortcut buttons visible on desktop, hide only menu toggle */
+  .nav .nav-inner .nav-ctas .nav-toggle{
     display: none !important;
   }
 }
@@ -182,9 +182,8 @@
     margin-left: auto;
   }
 }
-/* hard-hide on tablet/desktop no matter WHERE the toggle lives */
+/* hard-hide menu toggle on tablet/desktop no matter WHERE it lives */
 @media (min-width: 641px){
-  .nav .nav-inner .nav-ctas{ display: none !important; }
   .nav .nav-toggle,
   .nav .nav-inner > .nav-toggle,
   header .nav-toggle,

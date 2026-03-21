@@ -331,8 +331,8 @@ html, body { overflow-x: hidden; }
   }
 }
 @media (min-width: 641px){
-  /* Hide Add Troops + Menu on desktop/tablet */
-  .nav .nav-inner .nav-ctas{
+  /* Hide Menu toggle on desktop, keep shortcut buttons */
+  .nav .nav-inner .nav-ctas .nav-toggle{
     display: none !important;
   }
 }

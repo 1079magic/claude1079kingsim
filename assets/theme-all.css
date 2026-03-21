@@ -359,8 +359,21 @@ body.fx-ready:not(.nav-seen) .nav-toggle{
     margin-left:auto !important;
   }
 }
+/* Desktop/tablet: show shortcut buttons, hide menu toggle */
 @media (min-width:641px){
-  .nav .nav-inner .nav-ctas{ display:none !important; }
+  .nav .nav-inner .nav-ctas{
+    display:flex !important;
+    align-items:center !important;
+    gap:6px !important;
+    margin-left:auto !important;
+  }
+  .nav .nav-inner .nav-ctas a.btn-primary--compact{
+    display:inline-flex !important;
+    height:32px !important;
+    min-width:32px !important;
+    padding:0 8px !important;
+    font-size:13px !important;
+  }
   .nav .nav-toggle{ display:none !important; }
 }
 
@@ -380,9 +393,8 @@ body.fx-ready:not(.nav-seen) .nav-toggle{
   .nav .nav-links{ flex:1 1 auto !important; min-width:0 !important; }
 }
 
-/* Desktop hide cluster */
+/* Desktop: keep shortcut buttons visible, hide menu toggle only */
 @media (min-width:641px){
-  .nav .nav-inner .nav-ctas{ display:none !important; }
   .nav .nav-toggle{ display:none !important; }
 }
 
