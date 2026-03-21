@@ -65,6 +65,15 @@
 
   function sumTroops(map){ return TYPES.reduce((s,t)=>s+(map[t]||0),0); }
 
+  // TG special abilities — expected value modifiers
+  const TG_ABILITIES = {
+    'T10.TG3': { inf: { defBonus: 0.25*0.36 }, cav: { atkBonus: 0.10*1.00 }, arc: { atkBonus: 0.20*0.50 } },
+    'T10.TG4': { inf: { defBonus: 0.3125*0.36 }, cav: { atkBonus: 0.125*1.00 }, arc: { atkBonus: 0.25*0.50 } },
+    'T10.TG5': { inf: { defBonus: 0.375*0.36 }, cav: { atkBonus: 0.15*1.00 }, arc: { atkBonus: 0.30*0.50 } },
+  };
+  function tgAtkMul(tier, type) { return 1 + ((TG_ABILITIES[tier]?.[type]?.atkBonus) || 0); }
+  function tgDefMul(tier, type) { return 1 + ((TG_ABILITIES[tier]?.[type]?.defBonus) || 0); }
+
   async function runBattle(cfg, trialMod){
     if (!TIERS) await loadTiersOnce();
 
@@ -100,8 +109,9 @@
           const vs   = (trialMod.vs?.[aT]?.[dT] ?? 1.0);
           const rand = (1 - variance) + 2*variance*rnd.float();
           const AoD  = A.A[aT]/D.D[dT];
-          const mul  = (trialMod.globalMul ?? 1.0) * tri * vs * rand;
-          const k    = Math.min(Nd, Math.max(0, Math.floor(M.estimateKills(Na/3, baseA[aT].atk, baseD[dT].hp, AoD, mul))));
+          const mul  = (trialMod.globalMul ?? 1.0) * tri * vs * rand * tgAtkMul(A.tier, aT);
+          const defTgMul = tgDefMul(D.tier, dT);
+          const k    = Math.min(Nd, Math.max(0, Math.floor(M.estimateKills(Na/3, baseA[aT].atk, baseD[dT].hp * defTgMul, AoD, mul))));
           def[dT]   -= k;
           detail.kills.att[aT] = (detail.kills.att[aT]||0) + k;
           detail.rng.push(rand);
@@ -117,8 +127,9 @@
           const vs   = (trialMod.vs?.[aT]?.[dT] ?? 1.0);
           const rand = (1 - variance) + 2*variance*rnd.float();
           const AoD  = D.A[aT]/A.D[dT];
-          const mul  = (trialMod.globalMul ?? 1.0) * tri * vs * rand;
-          const k    = Math.min(Nd, Math.max(0, Math.floor(M.estimateKills(Na/3, baseD[aT].atk, baseA[dT].hp, AoD, mul))));
+          const mul  = (trialMod.globalMul ?? 1.0) * tri * vs * rand * tgAtkMul(D.tier, aT);
+          const attTgMul = tgDefMul(A.tier, dT);
+          const k    = Math.min(Nd, Math.max(0, Math.floor(M.estimateKills(Na/3, baseD[aT].atk, baseA[dT].hp * attTgMul, AoD, mul))));
           att[dT]   -= k;
           detail.kills.def[aT] = (detail.kills.def[aT]||0) + k;
           detail.rng.push(rand);

@@ -286,6 +286,8 @@
       const shortName = sk.name.length > 18 ? sk.name.slice(0,16)+'…' : sk.name;
       row.innerHTML = `<div class="label" title="${sk.name}">${shortName}</div><div class="controls"><div class="seg" data-skill="${idx}"></div></div>`;
       const seg = row.querySelector('.seg');
+      // Restore saved skill level value on the seg element
+      if (currentSkillVals[idx]) seg.dataset.value = currentSkillVals[idx];
       for (let v=1; v<=5; v++){
         const b = document.createElement('button');
         b.type = 'button'; b.textContent = v; b.dataset.val = v;

@@ -65,6 +65,7 @@
     const let_ = s.lethality || { inf: 0, cav: 0, arc: 0 };
     const hp   = s.health    || { inf: 0, cav: 0, arc: 0 };
     return {
+      tier: tier,
       troops: {
         inf: Math.max(0, Math.round(Number(input.troops?.inf || 0))),
         cav: Math.max(0, Math.round(Number(input.troops?.cav || 0))),
@@ -88,11 +89,45 @@
     };
   }
 
+  // True Gold special abilities — expected value modifiers
+  // Infantry: chance to reduce incoming damage
+  // Cavalry: chance to deal double damage
+  // Archer: chance to deal 50% extra damage
+  const TG_ABILITIES = {
+    'T10.TG3': {
+      inf: { defBonus: 0.25 * 0.36 },   // 25% chance × 36% reduction = 9% avg reduction
+      cav: { atkBonus: 0.10 * 1.00 },   // 10% chance × double (100% extra) = 10% avg extra
+      arc: { atkBonus: 0.20 * 0.50 },   // 20% chance × 50% extra = 10% avg extra
+    },
+    'T10.TG4': {  // interpolated between TG3 and TG5
+      inf: { defBonus: 0.3125 * 0.36 },
+      cav: { atkBonus: 0.125 * 1.00 },
+      arc: { atkBonus: 0.25 * 0.50 },
+    },
+    'T10.TG5': {
+      inf: { defBonus: 0.375 * 0.36 },  // 37.5% chance × 36% = 13.5% avg reduction
+      cav: { atkBonus: 0.15 * 1.00 },   // 15% chance × double = 15% avg extra
+      arc: { atkBonus: 0.30 * 0.50 },   // 30% chance × 50% extra = 15% avg extra
+    },
+  };
+
+  function getTgAbility(tier, type) {
+    const tg = TG_ABILITIES[tier];
+    return tg ? (tg[type] || {}) : {};
+  }
+
   // kills from src type → tgt type
-  function calcKills(srcN, tgtN, srcBase, tgtBase, srcAtkF, tgtDefF) {
+  function calcKills(srcN, tgtN, srcBase, tgtBase, srcAtkF, tgtDefF, srcTier, srcType, tgtTier, tgtType) {
     if (srcN <= 0 || tgtN <= 0) return 0;
-    const dmg    = Math.sqrt(srcN) * srcBase.atk * srcAtkF * SCALE;
-    const hpEach = tgtBase.hp * tgtDefF;
+    // Base damage
+    let dmg = Math.sqrt(srcN) * srcBase.atk * srcAtkF * SCALE;
+    // TG attack bonus (cavalry/archer extra damage)
+    const srcTg = getTgAbility(srcTier, srcType);
+    if (srcTg.atkBonus) dmg *= (1 + srcTg.atkBonus);
+    // Target HP with TG defense bonus (infantry damage reduction)
+    let hpEach = tgtBase.hp * tgtDefF;
+    const tgtTg = getTgAbility(tgtTier, tgtType);
+    if (tgtTg.defBonus) hpEach *= (1 + tgtTg.defBonus);
     return Math.min(tgtN, Math.max(0, Math.floor(dmg / Math.max(1, hpEach))));
   }
 
@@ -109,7 +144,8 @@
         const k = calcKills(
           s[srcType], defTroops[tgtType],
           attSnap.base[srcType], defSide.base[tgtType],
-          attSnap.atkF[srcType], defSide.defF[tgtType]
+          attSnap.atkF[srcType], defSide.defF[tgtType],
+          attSnap.tier, srcType, defSide.tier, tgtType
         );
         if (k > 0) {
           defTroops[tgtType] -= k;
@@ -137,8 +173,8 @@
       if (attTotal <= 0 || defTotal <= 0) break;
 
       // SIMULTANEOUS: both sides attack using SNAPSHOT of current troops
-      const attSnap = { troops: { ...attTroops }, base: att.base, atkF: att.atkF };
-      const defSnap = { troops: { ...defTroops }, base: def.base, atkF: def.atkF };
+      const attSnap = { troops: { ...attTroops }, base: att.base, atkF: att.atkF, tier: att.tier };
+      const defSnap = { troops: { ...defTroops }, base: def.base, atkF: def.atkF, tier: def.tier };
 
       applyAttacks(attSnap, defTroops, def);
       applyAttacks(defSnap, attTroops, att);

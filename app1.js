@@ -85,6 +85,13 @@
   function perTroopAttack(baseAtk){
     return baseAtk * (1 + BEAR_ATK_BONUS) * (BASE_LETHALITY/100);
   }
+  // TG special ability expected-value multipliers for Bear scoring
+  const TG_ATK_BONUS = {
+    'T10.TG3': { cav: 0.10, arc: 0.10 },  // cav 10% chance × double, arc 20% × 50%
+    'T10.TG4': { cav: 0.125, arc: 0.125 },
+    'T10.TG5': { cav: 0.15, arc: 0.15 },   // cav 15% chance × double, arc 30% × 50%
+  };
+
   function computeFormationDamage(pack, tierKey){
     const t = TIERS?.tiers?.[tierKey];
     if(!t){
@@ -101,9 +108,11 @@
     const atkInf = perTroopAttack(t.inf[0]);
     const atkCav = perTroopAttack(t.cav[0]);
     const atkArc = perTroopAttack(t.arc[0]);
+    // TG attack bonuses (cavalry/archer extra damage)
+    const tgBonus = TG_ATK_BONUS[tierKey] || {};
     const dInf = Math.sqrt(nInf*armyMin)*(atkInf/BEAR_DEF_PER_TROOP)/100*SKILLMOD_INF;
-    const dCav = Math.sqrt(nCav*armyMin)*(atkCav/BEAR_DEF_PER_TROOP)/100*SKILLMOD_CAV;
-    const dArc = Math.sqrt(nArc*armyMin)*(atkArc/BEAR_DEF_PER_TROOP)/100*SKILLMOD_ARC;
+    const dCav = Math.sqrt(nCav*armyMin)*(atkCav/BEAR_DEF_PER_TROOP)/100*SKILLMOD_CAV * (1 + (tgBonus.cav||0));
+    const dArc = Math.sqrt(nArc*armyMin)*(atkArc/BEAR_DEF_PER_TROOP)/100*SKILLMOD_ARC * (1 + (tgBonus.arc||0));
     const total0 = dInf+dCav+dArc;
     const total10 = total0*10;
     return {
