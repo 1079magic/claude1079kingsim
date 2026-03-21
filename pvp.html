@@ -264,6 +264,33 @@
           <span class="muted" id="pvp_run_status">Ready — import data or enter manually below</span>
         </div>
         <p class="engine-note">Rankings are reliable. Counter-priority targeting: Inf→Cav, Cav→Arc, Arc→Inf. Absolute estimates ±15-25%.</p>
+
+        <!-- Rally Joiner Setup -->
+        <div style="margin-top:12px">
+          <button class="btn-run" id="pvp_rally_btn" type="button" style="background:linear-gradient(90deg,#a78bfa,#60a5fa);font-size:.9rem;padding:9px 22px;" disabled>🏰 Rally</button>
+          <span class="muted" id="pvp_rally_hint" style="font-size:.78rem;margin-left:8px">Run simulation first to unlock</span>
+        </div>
+
+        <!-- Rally panel (hidden until button clicked) -->
+        <div id="pvp_rally_panel" style="display:none;margin-top:14px;background:rgba(14,20,34,.7);border:1px solid #3b2d6b;border-left:3px solid #a78bfa;border-radius:12px;padding:16px;">
+          <div style="font-size:.75rem;font-weight:700;color:#a78bfa;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">🏰 Rally Joiner Setup</div>
+          <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:12px">
+            <div>
+              <label for="pvp_rally_size" style="font-size:.72rem;color:#cdd6e8;margin:0 0 3px;display:block">Rally Size (total capacity)</label>
+              <input id="pvp_rally_size" type="number" min="0" placeholder="e.g. 2100000" style="width:180px;padding:8px 10px;border-radius:8px;border:1px solid #2a3f60;background:#0d1520;color:#e9eef7;font-size:.9rem;" />
+            </div>
+            <div id="pvp_rally_result_hint" class="muted" style="font-size:.78rem;"></div>
+          </div>
+          <!-- Result table -->
+          <div id="pvp_rally_result" style="display:none">
+            <div style="font-size:.72rem;color:#7dd3fc;font-weight:600;margin-bottom:6px">Per Joiner Troop Set (×15 members)</div>
+            <div id="pvp_rally_table_wrap"></div>
+            <div style="margin-top:8px;display:flex;gap:8px;align-items:center;">
+              <button id="pvp_rally_copy" type="button" style="background:#1a2c44;color:#90b8d8;border:1px solid #3a5878;font-weight:600;padding:6px 14px;border-radius:8px;font-size:.78rem;cursor:pointer;">📋 Copy Set</button>
+              <span id="pvp_rally_copy_status" class="muted" style="font-size:.72rem;"></span>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -853,6 +880,180 @@
     wireButtons();
     restoreSession();
   });
+})();
+</script>
+
+<!-- Rally Joiner Setup Logic -->
+<script>
+(function(){
+  'use strict';
+  var $ = function(id){ return document.getElementById(id); };
+
+  // Store best formation after simulation
+  window.__pvpBestFormation = null;
+
+  // Hook into the simulation complete flow - enable rally button
+  var origRunClick = null;
+  function enableRally(bestFi, bestFc, attTotal) {
+    window.__pvpBestFormation = { fi: bestFi, fc: bestFc, attTotal: attTotal };
+    var btn = $('pvp_rally_btn');
+    if (btn) {
+      btn.disabled = false;
+      btn.style.opacity = '1';
+    }
+    var hint = $('pvp_rally_hint');
+    if (hint) hint.textContent = 'Click to set up rally joiners';
+  }
+
+  // Patch the run button handler to capture best formation
+  var origBtn = $('pvp_run_btn');
+  if (origBtn) {
+    var origListeners = origBtn.onclick;
+    // We'll use a MutationObserver on the best card to detect when simulation completes
+    var bestCard = $('pvp_best_val');
+    if (bestCard) {
+      new MutationObserver(function() {
+        // Read the best formation from the displayed result
+        var bestSub = $('pvp_best_sub');
+        if (!bestSub) return;
+        var text = bestSub.textContent || '';
+        // Parse "Infantry: 60,000 | Cavalry: 30,000 | Archers: 60,000"
+        var nums = text.match(/[\d,]+/g);
+        if (nums && nums.length >= 3) {
+          var inf = parseInt(nums[0].replace(/,/g,'')) || 0;
+          var cav = parseInt(nums[1].replace(/,/g,'')) || 0;
+          var arc = parseInt(nums[2].replace(/,/g,'')) || 0;
+          var total = inf + cav + arc;
+          if (total > 0) {
+            enableRally(inf/total, cav/total, total);
+          }
+        }
+      }).observe(bestCard, { childList: true, characterData: true, subtree: true });
+    }
+  }
+
+  // Rally button click - toggle panel
+  var rallyBtn = $('pvp_rally_btn');
+  if (rallyBtn) {
+    rallyBtn.addEventListener('click', function() {
+      var panel = $('pvp_rally_panel');
+      if (!panel) return;
+      panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+      if (panel.style.display === 'block') {
+        panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        // Auto-calculate if rally size already entered
+        var rsInput = $('pvp_rally_size');
+        if (rsInput && rsInput.value) calcRally();
+      }
+    });
+  }
+
+  // Rally size input - auto calculate
+  var rsInput = $('pvp_rally_size');
+  if (rsInput) {
+    rsInput.addEventListener('input', calcRally);
+  }
+
+  function calcRally() {
+    var form = window.__pvpBestFormation;
+    if (!form) return;
+
+    var rallySize = parseInt(($('pvp_rally_size') || {}).value) || 0;
+    if (rallySize <= 0) {
+      $('pvp_rally_result').style.display = 'none';
+      $('pvp_rally_result_hint').textContent = 'Enter rally size above';
+      return;
+    }
+
+    // Get march size from troops page (stored in state-sync localStorage)
+    var marchSize = 0;
+    try {
+      var sync = JSON.parse(localStorage.getItem('kingSim_shared_inputs_v1') || '{}');
+      marchSize = parseInt(sync.rallySize) || 0;
+    } catch(e) {}
+    // Also try reading the live element if on same page context
+    var marchEl = document.getElementById('rallySize');
+    if (marchEl && marchEl.value) marchSize = parseInt(marchEl.value) || marchSize;
+
+    if (marchSize <= 0) {
+      $('pvp_rally_result_hint').textContent = 'Set your March size on the Troops & Stats page first';
+      $('pvp_rally_result_hint').style.color = '#ef4444';
+      $('pvp_rally_result').style.display = 'none';
+      return;
+    }
+    $('pvp_rally_result_hint').style.color = '';
+
+    // Formula: (Rally Size - March Size) / 15
+    var remaining = Math.max(0, rallySize - marchSize);
+    var perJoiner = Math.floor(remaining / 15);
+
+    if (perJoiner <= 0) {
+      $('pvp_rally_result_hint').textContent = 'Rally size must be larger than your March size (' + marchSize.toLocaleString() + ')';
+      $('pvp_rally_result_hint').style.color = '#ef4444';
+      $('pvp_rally_result').style.display = 'none';
+      return;
+    }
+
+    // Spread per joiner using best formation fractions
+    var jInf = Math.round(form.fi * perJoiner);
+    var jCav = Math.round(form.fc * perJoiner);
+    var jArc = Math.max(0, perJoiner - jInf - jCav);
+
+    $('pvp_rally_result_hint').textContent = 'Rally: ' + rallySize.toLocaleString() +
+      ' − Your march: ' + marchSize.toLocaleString() +
+      ' = ' + remaining.toLocaleString() + ' ÷ 15 = ' + perJoiner.toLocaleString() + ' per joiner';
+
+    // Build result table
+    var tableHtml = '<table style="width:100%;border-collapse:collapse;max-width:500px">' +
+      '<thead><tr style="color:#a78bfa;font-size:10px;text-transform:uppercase;letter-spacing:.03em">' +
+      '<th style="padding:6px 8px;border-bottom:1px solid rgba(100,60,180,.3);text-align:left">Joiner Set</th>' +
+      '<th style="padding:6px 8px;border-bottom:1px solid rgba(100,60,180,.3);text-align:right">Infantry</th>' +
+      '<th style="padding:6px 8px;border-bottom:1px solid rgba(100,60,180,.3);text-align:right">Cavalry</th>' +
+      '<th style="padding:6px 8px;border-bottom:1px solid rgba(100,60,180,.3);text-align:right">Archers</th>' +
+      '<th style="padding:6px 8px;border-bottom:1px solid rgba(100,60,180,.3);text-align:right">Total</th>' +
+      '</tr></thead><tbody>' +
+      '<tr style="color:#e9eef7;font-weight:600">' +
+      '<td style="padding:8px;font-size:.85rem">×15</td>' +
+      '<td style="padding:8px;text-align:right;font-size:.85rem">' + jInf.toLocaleString() + '</td>' +
+      '<td style="padding:8px;text-align:right;font-size:.85rem">' + jCav.toLocaleString() + '</td>' +
+      '<td style="padding:8px;text-align:right;font-size:.85rem">' + jArc.toLocaleString() + '</td>' +
+      '<td style="padding:8px;text-align:right;font-size:.85rem;color:#a78bfa">' + perJoiner.toLocaleString() + '</td>' +
+      '</tr></tbody></table>';
+
+    $('pvp_rally_table_wrap').innerHTML = tableHtml;
+    $('pvp_rally_result').style.display = 'block';
+
+    // Store for copy
+    window.__pvpRallySet = { inf: jInf, cav: jCav, arc: jArc, total: perJoiner };
+  }
+
+  // Copy button
+  var copyBtn = $('pvp_rally_copy');
+  if (copyBtn) {
+    copyBtn.addEventListener('click', function() {
+      var set = window.__pvpRallySet;
+      if (!set) return;
+      var text = 'Rally Joiner Set (per person):\n' +
+        'Infantry: ' + set.inf.toLocaleString() + '\n' +
+        'Cavalry: ' + set.cav.toLocaleString() + '\n' +
+        'Archers: ' + set.arc.toLocaleString() + '\n' +
+        'Total: ' + set.total.toLocaleString();
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function() {
+          var s = $('pvp_rally_copy_status');
+          if (s) { s.textContent = 'Copied!'; s.style.color = '#10b981'; setTimeout(function(){ s.textContent=''; }, 2000); }
+        });
+      } else {
+        // Fallback
+        var ta = document.createElement('textarea');
+        ta.value = text; ta.style.position = 'fixed'; ta.style.left = '-9999px';
+        document.body.appendChild(ta); ta.select(); document.execCommand('copy');
+        document.body.removeChild(ta);
+        var s = $('pvp_rally_copy_status');
+        if (s) { s.textContent = 'Copied!'; s.style.color = '#10b981'; setTimeout(function(){ s.textContent=''; }, 2000); }
+      }
+    });
+  }
 })();
 </script>
 </body>
