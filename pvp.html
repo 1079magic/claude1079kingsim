@@ -1021,7 +1021,8 @@
     $('pvp_rally_result').style.display = 'block';
 
     // Store for copy
-    window.__pvpRallySet = { inf: jInf, cav: jCav, arc: jArc, total: perJoiner };
+    var formLabel = window.__pvpBestFormation ? (Math.round(form.fi*100) + '/' + Math.round(form.fc*100) + '/' + Math.round((1-form.fi-form.fc)*100)) : '';
+    window.__pvpRallySet = { inf: jInf, cav: jCav, arc: jArc, total: perJoiner, label: formLabel };
   }
 
   // Copy button
@@ -1031,6 +1032,7 @@
       var set = window.__pvpRallySet;
       if (!set) return;
       var text = 'Rally Joiner Set (per person):\n' +
+        set.label + '\n' +
         'Infantry: ' + set.inf.toLocaleString() + '\n' +
         'Cavalry: ' + set.cav.toLocaleString() + '\n' +
         'Archers: ' + set.arc.toLocaleString() + '\n' +
