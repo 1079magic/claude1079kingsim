@@ -781,8 +781,10 @@
       renderHistory(hist, state.attTotal);
       updateMainBestCard(nb, state.attTotal);
 
-      // Update Rally Planner with recalibrated formation
+      // Update Rally Planner with recalibrated formation and auto-refresh strikes
       window.__pvpBestFormation = { fi: nb.fi, fc: nb.fc };
+      // Auto-refresh rally strikes if panel is open
+      if (typeof window.__refreshRallyStrikes === 'function') window.__refreshRallyStrikes();
 
       // Show Win/Lost — do NOT auto-open next row
       const or=$('pvp_outcome_row'); if(or) or.style.display='flex';
@@ -1014,6 +1016,8 @@
 
   // Strike button clicks
   var strikeBtns = document.querySelectorAll('.pvp-strike-btn');
+  var _selectedStrikes = 0;
+
   strikeBtns.forEach(function(btn) {
     btn.addEventListener('click', function() {
       var form = window.__pvpBestFormation;
@@ -1023,16 +1027,26 @@
       strikeBtns.forEach(function(b) {
         b.style.background = '#1a2c44';
         b.style.borderColor = '#3b2d6b';
+        b.style.color = '#a78bfa';
       });
       btn.style.background = '#a78bfa';
       btn.style.borderColor = '#a78bfa';
       btn.style.color = '#05121f';
 
-      var n = parseInt(btn.getAttribute('data-strikes')) || 1;
-      var strikes = computeStrikes(n, form.fi, form.fc);
+      _selectedStrikes = parseInt(btn.getAttribute('data-strikes')) || 1;
+      var strikes = computeStrikes(_selectedStrikes, form.fi, form.fc);
       renderStrikes(strikes);
     });
   });
+
+  // Auto-refresh rally strikes when recalibration updates the formation
+  window.__refreshRallyStrikes = function() {
+    if (_selectedStrikes <= 0) return; // user hasn't selected strikes yet
+    var form = window.__pvpBestFormation;
+    if (!form) return;
+    var strikes = computeStrikes(_selectedStrikes, form.fi, form.fc);
+    renderStrikes(strikes);
+  };
 })();
 </script>
 </body>

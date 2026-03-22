@@ -173,7 +173,7 @@
 
     const prev        = history.length > 0 ? history[history.length - 1] : null;
     const prevLoss    = prev ? prev.attLosses / Math.max(1, prev.attTotal) : lossRate;
-    const prevKill    = prev ? prev.defKilled / Math.max(1, prev.defTotal) : 0;
+    const prevKill    = prev ? prev.defKilled / Math.max(1, prev.defTotal) : killRate;
     const killDelta   = killRate - prevKill;
     const lossImprove = lossRate < prevLoss;
 
@@ -187,40 +187,22 @@
       shift = lossImprove ? 0.01 : 0.03;
     }
 
-    // Kill-rate amplifiers
+    // ── Kill-rate amplifiers ──────────────────────────────────────
     if (killDelta > 0.50) shift = Math.min(0.50, shift * 2.0);
     else if (killDelta > 0.30) shift = Math.min(0.50, shift * 1.5);
     if (Math.abs(killDelta) < 0.05 && lossRate < 0.50) shift = Math.max(0.01, shift * 0.5);
 
+    // Almost won (killed >90% of defender) → tiny fine-tuning only
+    if (killRate > 0.90) shift = Math.min(shift, 0.05);
+
     shift = Math.min(0.50, Math.max(0.01, parseFloat(shift.toFixed(3))));
 
-    // ── Direction-aware bounds ─────────────────────────────────────
-    // When worsening (kill rate dropped or losses increased), don't center
-    // on current best — shift AWAY from it toward more balanced formations.
-    // This prevents getting stuck exploring around a bad formation.
-    let fi = currentBest.fi;
-    let fc = currentBest.fc;
-
-    const isWorsening = !lossImprove || killDelta < -0.10;
-
-    if (isWorsening && lossRate > 0.50) {
-      // Heavy losses AND worsening: pull toward a more balanced center
-      // Move infantry toward 50%, boost archers
-      const pullTarget = 0.50; // target inf fraction
-      fi = fi + (pullTarget - fi) * 0.4; // blend 40% toward target
-      fc = Math.max(0.05, fc * 0.8);     // reduce cav slightly
-    }
-
-    if (isWorsening && killDelta < -0.20) {
-      // Kill rate dropped sharply — reverse direction more aggressively
-      fi = fi + (0.45 - fi) * 0.5;
-      fc = Math.max(0.05, Math.min(0.15, fc));
-      shift = Math.max(shift, 0.20); // widen search
-    }
-
+    // ── New search bounds centred on current best ─────────────────
+    const fi = currentBest.fi;
+    const fc = currentBest.fc;
     const infMin = parseFloat(Math.max(0.15, fi - shift).toFixed(3));
     const infMax = parseFloat(Math.min(0.85, fi + shift).toFixed(3));
-    const cavMin = parseFloat(Math.max(0.03, fc - shift / 2).toFixed(3));
+    const cavMin = parseFloat(Math.max(0.02, fc - shift / 2).toFixed(3));
     const cavMax = parseFloat(Math.min(0.50, fc + shift / 2).toFixed(3));
     const arcMin = parseFloat(Math.max(0.10, 1 - infMax - cavMax).toFixed(3));
 
