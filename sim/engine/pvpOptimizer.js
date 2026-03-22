@@ -134,7 +134,13 @@
     if (isBalancedDef) {
       targetInf = 0.50; targetCav = 0.18; balWeight = 0.45;
     } else if (isNoArcDef) {
-      targetInf = 0.55; targetCav = 0.03; balWeight = 0.45;
+      // Dynamic target: scale attacker inf based on defender inf ratio
+      // Def 70% inf → target 55% atk inf, Def 50% inf → target 50% atk inf
+      // Def 64% inf → target ~53% atk inf
+      const defInfPct = (defenderTroops.inf||0) / defTotal2;
+      targetInf = 0.50 + (defInfPct - 0.50) * 0.25; // slight increase with def inf
+      targetInf = Math.max(0.48, Math.min(0.56, targetInf)); // clamp 48-56%
+      targetCav = 0.03; balWeight = 0.55;
     } else if (isNoCavDef) {
       targetInf = 0.45; targetCav = 0.05; balWeight = 0.40;
     }
@@ -150,21 +156,23 @@
       const aWin = a.winner === 'attacker' ? 1 : 0;
       const bWin = b.winner === 'attacker' ? 1 : 0;
       if (bWin !== aWin) return bWin - aWin;
-      if (aWin === 1) {
-        const aSurv = 1 - a.attackerInjured / attackerTotal;
-        const bSurv = 1 - b.attackerInjured / attackerTotal;
-        const aInfDist = Math.abs(a.fi - targetInf);
-        const bInfDist = Math.abs(b.fi - targetInf);
-        const aCavDist = Math.abs(a.fc - targetCav);
-        const bCavDist = Math.abs(b.fc - targetCav);
-        const aBalance = 1 - aInfDist * 1.5 - aCavDist * 0.8;
-        const bBalance = 1 - bInfDist * 1.5 - bCavDist * 0.8;
-        const survW = balWeight > 0 ? (1 - balWeight) : 1.0;
-        const aBlend = aSurv * survW + aBalance * balWeight;
-        const bBlend = bSurv * survW + bBalance * balWeight;
-        return bBlend - aBlend;
-      }
-      return b.score - a.score;
+
+      // Blended scoring for both winners and losers
+      // Effectiveness: for winners = survival (fewer own losses), for losers = damage dealt
+      const aEff = aWin ? (1 - a.attackerInjured / attackerTotal) : (a.defenderInjured / defTotal2);
+      const bEff = bWin ? (1 - b.attackerInjured / attackerTotal) : (b.defenderInjured / defTotal2);
+      // Formation balance
+      const aInfDist = Math.abs(a.fi - targetInf);
+      const bInfDist = Math.abs(b.fi - targetInf);
+      const aCavDist = Math.abs(a.fc - targetCav);
+      const bCavDist = Math.abs(b.fc - targetCav);
+      const aBalance = 1 - aInfDist * 1.5 - aCavDist * 0.8;
+      const bBalance = 1 - bInfDist * 1.5 - bCavDist * 0.8;
+      // Blend
+      const survW = balWeight > 0 ? (1 - balWeight) : 1.0;
+      const aBlend = aEff * survW + aBalance * balWeight;
+      const bBlend = bEff * survW + bBalance * balWeight;
+      return bBlend - aBlend;
     });
 
     const top = results.slice(0, maxTop).map((r, i) => ({ ...r, rank: i + 1 }));
