@@ -130,19 +130,19 @@
     const isNoCavDef = defTotal2 > 0 && (defenderTroops.cav||0) / defTotal2 < 0.05;
 
     // Set formation targets based on defender composition
-    // Disable balance bias during recalibration — let the engine explore freely
     let targetInf = 0.50, targetCav = 0.18, balWeight = 0.0;
-    if (!isRecalibration) {
-      if (isBalancedDef) {
-        targetInf = 0.50; targetCav = 0.18; balWeight = 0.45;
-      } else if (isNoArcDef) {
-        const defInfPct = (defenderTroops.inf||0) / defTotal2;
-        targetInf = 0.50 + (defInfPct - 0.50) * 0.25;
-        targetInf = Math.max(0.48, Math.min(0.56, targetInf));
-        targetCav = 0.03; balWeight = 0.55;
-      } else if (isNoCavDef) {
-        targetInf = 0.45; targetCav = 0.05; balWeight = 0.40;
-      }
+    if (isBalancedDef) {
+      targetInf = 0.50; targetCav = 0.18; balWeight = 0.45;
+    } else if (isNoArcDef) {
+      // Dynamic target: scale attacker inf based on defender inf ratio
+      // Def 70% inf → target 55% atk inf, Def 50% inf → target 50% atk inf
+      // Def 64% inf → target ~53% atk inf
+      const defInfPct = (defenderTroops.inf||0) / defTotal2;
+      targetInf = 0.50 + (defInfPct - 0.50) * 0.25; // slight increase with def inf
+      targetInf = Math.max(0.48, Math.min(0.56, targetInf)); // clamp 48-56%
+      targetCav = 0.03; balWeight = 0.55;
+    } else if (isNoCavDef) {
+      targetInf = 0.45; targetCav = 0.05; balWeight = 0.40;
     }
 
     if (balWeight > 0) {
