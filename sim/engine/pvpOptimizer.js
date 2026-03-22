@@ -42,50 +42,43 @@
       defenderStats   = {},
       defenderTier    = 'T10',
       sparsity  = 0.01,
-      infMin, infMax, cavMin, cavMax, arcMin,
+      infMin = 0.40, infMax = 0.80,
+      cavMin = 0.15, cavMax = 0.22,
+      arcMin = 0.15,
       maxTop = 10,
+      isRecalibration = false,
     } = opts;
 
     if (!defenderTroops) throw new Error('defenderTroops required for PvP scan');
 
-    // Check if caller passed explicit bounds (recalibration) vs using defaults (initial scan)
-    const hasExplicitBounds = (opts.infMin !== undefined || opts.infMax !== undefined ||
-                               opts.cavMin !== undefined || opts.cavMax !== undefined);
-
-    if (hasExplicitBounds) {
-      // Recalibration: use caller's bounds, fill in any missing with safe defaults
-      infMin = infMin ?? 0.15; infMax = infMax ?? 0.85;
-      cavMin = cavMin ?? 0.05; cavMax = cavMax ?? 0.50;
-      arcMin = arcMin ?? 0.10;
-    } else {
-      // Initial scan: start with defaults then adapt to defender composition
-      infMin = 0.40; infMax = 0.80;
-      cavMin = 0.15; cavMax = 0.22;
-      arcMin = 0.15;
-
+    // Adapt bounds based on defender composition — only on initial scan, not recalibration
+    if (!isRecalibration) {
       const defTotal = (defenderTroops.inf||0) + (defenderTroops.cav||0) + (defenderTroops.arc||0);
       if (defTotal > 0) {
         const defArcPct = (defenderTroops.arc||0) / defTotal;
         const defInfPct = (defenderTroops.inf||0) / defTotal;
         const defCavPct = (defenderTroops.cav||0) / defTotal;
 
+        // No archers → pure defense build. Counter: heavy DPS (archers), minimal tank
         if (defArcPct < 0.05) {
-          infMin = 0.20; infMax = 0.65;
-          cavMin = 0.03; cavMax = 0.20;
-          arcMin = 0.25;
+          infMin = 0.15; infMax = 0.60;
+          cavMin = 0.03; cavMax = 0.15;
+          arcMin = 0.30;
         } else if (defArcPct < 0.15) {
-          infMin = 0.30; infMax = 0.70;
-          cavMin = 0.05; cavMax = 0.22;
-          arcMin = 0.20;
+          infMin = 0.25; infMax = 0.65;
+          cavMin = 0.05; cavMax = 0.20;
+          arcMin = 0.25;
         }
 
+        // No cavalry → archers undefended. Boost cav to kill archers
         if (defCavPct < 0.05 && defArcPct > 0.30) {
           cavMin = 0.10; cavMax = 0.35;
         }
 
+        // No infantry → boost archers
         if (defInfPct < 0.05) {
-          arcMin = 0.25;
-          infMin = 0.20; infMax = 0.55;
+          arcMin = 0.30;
+          infMin = 0.15; infMax = 0.50;
         }
       }
     }
