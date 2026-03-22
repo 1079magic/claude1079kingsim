@@ -119,6 +119,28 @@
 
     // PvP scoring: WIN first, then among winners sort by most attacker survivors,
     // among losers sort by most defender damage dealt.
+    // For balanced defenders (all 3 types ≥10%), apply slight infantry-stability bias
+    // to prefer formations around 50% infantry (solid tank + balanced DPS).
+    const defTotal = (defenderTroops.inf||0) + (defenderTroops.cav||0) + (defenderTroops.arc||0);
+    const isBalancedDef = defTotal > 0 &&
+      (defenderTroops.inf||0) / defTotal >= 0.10 &&
+      (defenderTroops.cav||0) / defTotal >= 0.10 &&
+      (defenderTroops.arc||0) / defTotal >= 0.10;
+
+    if (isBalancedDef) {
+      // Add a small bias: penalize formations far from ~50% infantry
+      // This is a tiebreaker — at equal damage, prefer higher infantry
+      const TARGET_INF = 0.50;
+      const BIAS_WEIGHT = 0.15; // 15% of score as max bias — strong preference for ~50% inf
+      for (const r of results) {
+        const infDist = Math.abs(r.fi - TARGET_INF);
+        // Reduce score slightly for formations far from 50% inf
+        // At 35% inf (15pp away): penalty = 0.03 * 0.15 * score = 0.45% of score
+        // At 50% inf (0pp away): no penalty
+        r.score = r.defenderInjured * (1 - BIAS_WEIGHT * infDist);
+      }
+    }
+
     results.sort((a, b) => {
       const aWin = a.winner === 'attacker' ? 1 : 0;
       const bWin = b.winner === 'attacker' ? 1 : 0;
