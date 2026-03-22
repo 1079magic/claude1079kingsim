@@ -121,49 +121,50 @@
     // among losers sort by most defender damage dealt.
     // For balanced defenders (all 3 types ≥10%), apply slight infantry-stability bias
     // to prefer formations around 50% infantry (solid tank + balanced DPS).
-    const defTotal = (defenderTroops.inf||0) + (defenderTroops.cav||0) + (defenderTroops.arc||0);
-    const isBalancedDef = defTotal > 0 &&
-      (defenderTroops.inf||0) / defTotal >= 0.10 &&
-      (defenderTroops.cav||0) / defTotal >= 0.10 &&
-      (defenderTroops.arc||0) / defTotal >= 0.10;
+    const defTotal2 = (defenderTroops.inf||0) + (defenderTroops.cav||0) + (defenderTroops.arc||0);
+    const isBalancedDef = defTotal2 > 0 &&
+      (defenderTroops.inf||0) / defTotal2 >= 0.10 &&
+      (defenderTroops.cav||0) / defTotal2 >= 0.10 &&
+      (defenderTroops.arc||0) / defTotal2 >= 0.10;
+    const isNoArcDef = defTotal2 > 0 && (defenderTroops.arc||0) / defTotal2 < 0.05;
+    const isNoCavDef = defTotal2 > 0 && (defenderTroops.cav||0) / defTotal2 < 0.05;
 
+    // Set formation targets based on defender composition
+    let targetInf = 0.50, targetCav = 0.18, balWeight = 0.0;
     if (isBalancedDef) {
-      // Add a small bias: penalize formations far from ~50% infantry
-      // This is a tiebreaker — at equal damage, prefer higher infantry
-      const TARGET_INF = 0.50;
-      const BIAS_WEIGHT = 0.15; // 15% of score as max bias — strong preference for ~50% inf
+      targetInf = 0.50; targetCav = 0.18; balWeight = 0.45;
+    } else if (isNoArcDef) {
+      targetInf = 0.55; targetCav = 0.03; balWeight = 0.45;
+    } else if (isNoCavDef) {
+      targetInf = 0.45; targetCav = 0.05; balWeight = 0.40;
+    }
+
+    if (balWeight > 0) {
       for (const r of results) {
-        const infDist = Math.abs(r.fi - TARGET_INF);
-        // Reduce score slightly for formations far from 50% inf
-        // At 35% inf (15pp away): penalty = 0.03 * 0.15 * score = 0.45% of score
-        // At 50% inf (0pp away): no penalty
-        r.score = r.defenderInjured * (1 - BIAS_WEIGHT * infDist);
+        const infDist = Math.abs(r.fi - targetInf);
+        r.score = r.defenderInjured * (1 - 0.15 * infDist);
       }
     }
 
     results.sort((a, b) => {
       const aWin = a.winner === 'attacker' ? 1 : 0;
       const bWin = b.winner === 'attacker' ? 1 : 0;
-      if (bWin !== aWin) return bWin - aWin;                          // winners first
+      if (bWin !== aWin) return bWin - aWin;
       if (aWin === 1) {
-        // Both win: blend attacker survival with formation balance
         const aSurv = 1 - a.attackerInjured / attackerTotal;
         const bSurv = 1 - b.attackerInjured / attackerTotal;
-        // Formation balance: prefer ~50% inf, ~18% cav, ~32% arc
-        const aInfDist = Math.abs(a.fi - 0.50);
-        const bInfDist = Math.abs(b.fi - 0.50);
-        const aCavDist = Math.abs(a.fc - 0.18);
-        const bCavDist = Math.abs(b.fc - 0.18);
-        const aBalance = 1 - aInfDist * 1.5 - aCavDist * 0.8; // inf matters more
+        const aInfDist = Math.abs(a.fi - targetInf);
+        const bInfDist = Math.abs(b.fi - targetInf);
+        const aCavDist = Math.abs(a.fc - targetCav);
+        const bCavDist = Math.abs(b.fc - targetCav);
+        const aBalance = 1 - aInfDist * 1.5 - aCavDist * 0.8;
         const bBalance = 1 - bInfDist * 1.5 - bCavDist * 0.8;
-        // Blend: 55% survival + 45% balance (for balanced defenders)
-        const survW = isBalancedDef ? 0.55 : 1.0;
-        const balW  = isBalancedDef ? 0.45 : 0.0;
-        const aBlend = aSurv * survW + aBalance * balW;
-        const bBlend = bSurv * survW + bBalance * balW;
+        const survW = balWeight > 0 ? (1 - balWeight) : 1.0;
+        const aBlend = aSurv * survW + aBalance * balWeight;
+        const bBlend = bSurv * survW + bBalance * balWeight;
         return bBlend - aBlend;
       }
-      return b.score - a.score;                                        // both lose: more def damage (biased)
+      return b.score - a.score;
     });
 
     const top = results.slice(0, maxTop).map((r, i) => ({ ...r, rank: i + 1 }));
