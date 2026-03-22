@@ -146,11 +146,24 @@
       const bWin = b.winner === 'attacker' ? 1 : 0;
       if (bWin !== aWin) return bWin - aWin;                          // winners first
       if (aWin === 1) {
-        // Both win: prefer more attacker survivors (attackerTotal - attackerInjured)
-        const aLeft = (a.score - a.defenderInjured) + a.defenderInjured; // trick: use attacker context
-        return b.attackerInjured - a.attackerInjured;                  // fewer own losses
+        // Both win: blend attacker survival with formation balance
+        const aSurv = 1 - a.attackerInjured / attackerTotal;
+        const bSurv = 1 - b.attackerInjured / attackerTotal;
+        // Formation balance: prefer ~50% inf, ~18% cav, ~32% arc
+        const aInfDist = Math.abs(a.fi - 0.50);
+        const bInfDist = Math.abs(b.fi - 0.50);
+        const aCavDist = Math.abs(a.fc - 0.18);
+        const bCavDist = Math.abs(b.fc - 0.18);
+        const aBalance = 1 - aInfDist * 1.5 - aCavDist * 0.8; // inf matters more
+        const bBalance = 1 - bInfDist * 1.5 - bCavDist * 0.8;
+        // Blend: 55% survival + 45% balance (for balanced defenders)
+        const survW = isBalancedDef ? 0.55 : 1.0;
+        const balW  = isBalancedDef ? 0.45 : 0.0;
+        const aBlend = aSurv * survW + aBalance * balW;
+        const bBlend = bSurv * survW + bBalance * balW;
+        return bBlend - aBlend;
       }
-      return b.score - a.score;                                        // both lose: more def damage
+      return b.score - a.score;                                        // both lose: more def damage (biased)
     });
 
     const top = results.slice(0, maxTop).map((r, i) => ({ ...r, rank: i + 1 }));
