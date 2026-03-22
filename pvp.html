@@ -490,7 +490,7 @@
         const _perType=_ai+_ac+_aa;
         const attTotal=_perType>0?_perType:(num('pvp_att_total',0)||150000);
         await new Promise(r=>setTimeout(r,20));
-        const out=opt.scanPvP({attackerTotal:attTotal,attackerStats:readStats('pvp_att'),attackerTier:$('pvp_att_tier').value,defenderTroops:{inf:defInf,cav:defCav,arc:defArc},defenderStats:readStats('pvp_def'),defenderTier:$('pvp_def_tier').value,sparsity:.01,infMin:.40,infMax:.80,cavMin:.15,cavMax:.22,arcMin:.15,maxTop:10});
+        const out=opt.scanPvP({attackerTotal:attTotal,attackerStats:readStats('pvp_att'),attackerTier:$('pvp_att_tier').value,defenderTroops:{inf:defInf,cav:defCav,arc:defArc},defenderStats:readStats('pvp_def'),defenderTier:$('pvp_def_tier').value,sparsity:.01,infMin:.45,infMax:.60,cavMin:.05,cavMax:.20,arcMin:.20,maxTop:10});
         const best=out.best;if(!best)throw new Error('No results');
         const fi=best.fi,fc=best.fc;
         const inf=Math.round(fi*attTotal),cav=Math.round(fc*attTotal),arc=Math.max(0,attTotal-inf-cav);
