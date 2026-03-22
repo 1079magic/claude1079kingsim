@@ -42,16 +42,17 @@
       defenderStats   = {},
       defenderTier    = 'T10',
       sparsity  = 0.01,
-      infMin = 0.40, infMax = 0.80,
-      cavMin = 0.15, cavMax = 0.22,
-      arcMin = 0.15,
+      // Wide defaults — let the engine find the true optimum
+      infMin = 0.35, infMax = 0.75,
+      cavMin = 0.05, cavMax = 0.30,
+      arcMin = 0.10,
       maxTop = 10,
       isRecalibration = false,
     } = opts;
 
     if (!defenderTroops) throw new Error('defenderTroops required for PvP scan');
 
-    // Adapt bounds based on defender composition — only on initial scan, not recalibration
+    // Adapt bounds ONLY when defender is missing a troop type — not for balanced defenders
     if (!isRecalibration) {
       const defTotal = (defenderTroops.inf||0) + (defenderTroops.cav||0) + (defenderTroops.arc||0);
       if (defTotal > 0) {
@@ -59,32 +60,27 @@
         const defInfPct = (defenderTroops.inf||0) / defTotal;
         const defCavPct = (defenderTroops.cav||0) / defTotal;
 
-        // No/very few archers → defense-heavy build
-        // Counter: infantry tank ~50%, archers DPS ~45%, minimal cavalry
+        // ONLY adapt when a troop type is missing or nearly absent (<5%)
+        // Balanced defenders (all types present) use the wide defaults above
+
+        // No/very few archers → defense-heavy, need DPS
         if (defArcPct < 0.05) {
           infMin = 0.48; infMax = 0.58;
           cavMin = 0.02; cavMax = 0.08;
           arcMin = 0.35;
-
-          // More defender infantry → slightly more attacker infantry
           if (defInfPct > 0.60) {
             infMin = 0.50; infMax = 0.58;
             cavMin = 0.02; cavMax = 0.07;
             arcMin = 0.36;
           }
-        } else if (defArcPct < 0.15) {
-          // Few archers: moderate DPS boost
-          infMin = 0.40; infMax = 0.65;
-          cavMin = 0.05; cavMax = 0.15;
-          arcMin = 0.25;
         }
 
-        // No cavalry → archers undefended, boost cav to kill archers
+        // No/very few cavalry → boost cav to kill undefended archers
         if (defCavPct < 0.05 && defArcPct > 0.30) {
-          cavMin = 0.10; cavMax = 0.30;
+          cavMin = 0.15; cavMax = 0.35;
         }
 
-        // No infantry → lighter tank needed, more DPS
+        // No/very few infantry → lighter tank, more DPS
         if (defInfPct < 0.05) {
           infMin = 0.30; infMax = 0.50;
           arcMin = 0.35;
