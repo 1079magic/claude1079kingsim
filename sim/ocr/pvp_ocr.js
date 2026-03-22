@@ -372,7 +372,21 @@
       }
     }
 
-    // Find three percentages summing to ~100%
+    // Last resort for total: scan ALL lines for M/K numbers in troop range
+    if (!total) {
+      for (const line of allLines) {
+        const mAll = line.match(/[\d][,.\d:lI]*[KkMmBb]/gi);
+        if (mAll) {
+          for (const candidate of mAll) {
+            const v = parseAmount(candidate);
+            if (v && v > 100000 && v < 15000000) { total = v; break; }
+          }
+        }
+        if (total) break;
+      }
+    }
+
+    // Find percentages from all lines
     const allPcts = [];
     const fullText = allLines.join(' ');
     let m;
@@ -382,18 +396,42 @@
       if (v >= 0 && v <= 100) allPcts.push(v);
     }
 
+    // Find ratio: try consecutive triplets first (tighter sum)
     let ratio = null;
     for (let i = 0; i <= allPcts.length - 3 && !ratio; i++) {
       const [a, b, c] = allPcts.slice(i, i + 3);
-      if (a + b + c >= 95 && a + b + c <= 105) ratio = { inf:a, cav:b, arc:c };
+      if (a + b + c >= 98 && a + b + c <= 102) ratio = { inf:a, cav:b, arc:c };
     }
+    // Widen tolerance
+    if (!ratio) {
+      for (let i = 0; i <= allPcts.length - 3 && !ratio; i++) {
+        const [a, b, c] = allPcts.slice(i, i + 3);
+        if (a + b + c >= 95 && a + b + c <= 105) ratio = { inf:a, cav:b, arc:c };
+      }
+    }
+    // Try any 3-combination
     if (!ratio) {
       outer: for (let i = 0; i < allPcts.length; i++)
         for (let j = i+1; j < allPcts.length; j++)
           for (let k = j+1; k < allPcts.length; k++) {
             const sum = allPcts[i]+allPcts[j]+allPcts[k];
-            if (sum >= 95 && sum <= 105) { ratio = { inf:allPcts[i], cav:allPcts[j], arc:allPcts[k] }; break outer; }
+            if (sum >= 98 && sum <= 102) { ratio = { inf:allPcts[i], cav:allPcts[j], arc:allPcts[k] }; break outer; }
           }
+    }
+    // Handle 2-percentage case: if two pcts sum to ~100%, third type is 0%
+    if (!ratio) {
+      for (let i = 0; i < allPcts.length; i++) {
+        for (let j = i+1; j < allPcts.length; j++) {
+          const sum = allPcts[i] + allPcts[j];
+          if (sum >= 98 && sum <= 102) {
+            // Order: largest first = inf, second = cav, third = arc (0%)
+            const sorted = [allPcts[i], allPcts[j]].sort((a,b) => b-a);
+            ratio = { inf: sorted[0], cav: sorted[1], arc: 0 };
+            break;
+          }
+        }
+        if (ratio) break;
+      }
     }
 
     console.log('[pvpOcr] total:', total, 'ratio:', ratio, 'allPcts:', allPcts);
