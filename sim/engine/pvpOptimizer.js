@@ -59,26 +59,37 @@
         const defInfPct = (defenderTroops.inf||0) / defTotal;
         const defCavPct = (defenderTroops.cav||0) / defTotal;
 
-        // No archers → pure defense build. Counter: heavy DPS (archers), minimal tank
+        // No/very few archers → defense-heavy build
+        // Counter: keep solid infantry tank, boost archers for DPS, minimize cavalry
+        // Target range: ~50-55% inf, 2-8% cav, 40-48% arc
         if (defArcPct < 0.05) {
-          infMin = 0.15; infMax = 0.60;
-          cavMin = 0.03; cavMax = 0.15;
-          arcMin = 0.30;
+          infMin = 0.40; infMax = 0.60;
+          cavMin = 0.02; cavMax = 0.10;
+          arcMin = 0.35;
+
+          // Fine-tune based on defender's infantry ratio
+          // More defender infantry → slightly more attacker infantry to absorb
+          if (defInfPct > 0.60) {
+            infMin = 0.45; infMax = 0.60;
+            cavMin = 0.02; cavMax = 0.08;
+            arcMin = 0.35;
+          }
         } else if (defArcPct < 0.15) {
-          infMin = 0.25; infMax = 0.65;
-          cavMin = 0.05; cavMax = 0.20;
+          // Few archers: moderate DPS boost
+          infMin = 0.40; infMax = 0.65;
+          cavMin = 0.05; cavMax = 0.15;
           arcMin = 0.25;
         }
 
-        // No cavalry → archers undefended. Boost cav to kill archers
+        // No cavalry → archers undefended, boost cav to kill archers
         if (defCavPct < 0.05 && defArcPct > 0.30) {
-          cavMin = 0.10; cavMax = 0.35;
+          cavMin = 0.10; cavMax = 0.30;
         }
 
-        // No infantry → boost archers
+        // No infantry → lighter tank needed, more DPS
         if (defInfPct < 0.05) {
-          arcMin = 0.30;
-          infMin = 0.15; infMax = 0.50;
+          infMin = 0.30; infMax = 0.50;
+          arcMin = 0.35;
         }
       }
     }
