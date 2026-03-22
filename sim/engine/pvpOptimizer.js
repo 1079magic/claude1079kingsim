@@ -34,7 +34,7 @@
     const core = window.KingSim && window.KingSim.battleCore;
     if (!core) throw new Error('battleCore not loaded');
 
-    const {
+    let {
       attackerTotal   = 150000,
       attackerStats   = {},
       attackerTier    = 'T10',
@@ -44,11 +44,43 @@
       sparsity  = 0.01,
       infMin = 0.40, infMax = 0.80,
       cavMin = 0.15, cavMax = 0.22,
-      arcMin = 0.15,   // always ≥15% archers — archers are DPS, must be present
+      arcMin = 0.15,
       maxTop = 10,
     } = opts;
 
     if (!defenderTroops) throw new Error('defenderTroops required for PvP scan');
+
+    // ── Adaptive bounds: adjust based on defender composition ──
+    // If defender is missing a troop type, shift attacker toward more DPS (archers)
+    const defTotal = (defenderTroops.inf||0) + (defenderTroops.cav||0) + (defenderTroops.arc||0);
+    if (defTotal > 0) {
+      const defArcPct = (defenderTroops.arc||0) / defTotal;
+      const defInfPct = (defenderTroops.inf||0) / defTotal;
+      const defCavPct = (defenderTroops.cav||0) / defTotal;
+
+      // Defender has no/very few archers → defense-heavy, lower DPS
+      // Counter: more archers for DPS, less infantry needed as meat shield
+      if (defArcPct < 0.05) {
+        infMin = 0.20; infMax = 0.65;
+        cavMin = 0.03; cavMax = 0.20;
+        arcMin = 0.25;  // boost archers significantly
+      } else if (defArcPct < 0.15) {
+        infMin = 0.30; infMax = 0.70;
+        cavMin = 0.05; cavMax = 0.22;
+        arcMin = 0.20;
+      }
+
+      // Defender has no/very few cavalry → counter with more cav (cav kills archers)
+      if (defCavPct < 0.05 && defArcPct > 0.30) {
+        cavMin = 0.10; cavMax = 0.35;
+      }
+
+      // Defender has no/very few infantry → counter with more archers (arc kills inf counters)
+      if (defInfPct < 0.05) {
+        arcMin = 0.25;
+        infMin = 0.20; infMax = 0.55;
+      }
+    }
 
     const results = [];
 
