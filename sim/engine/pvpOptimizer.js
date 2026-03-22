@@ -237,9 +237,19 @@
 
     shift = Math.min(0.50, Math.max(0.01, parseFloat(shift.toFixed(3))));
 
-    // ── New search bounds centred on current best ─────────────────
-    const fi = currentBest.fi;
-    const fc = currentBest.fc;
+    // ── New search bounds ──────────────────────────────────────────
+    let fi = currentBest.fi;
+    let fc = currentBest.fc;
+
+    // When almost won (>90% kill rate), shift toward MORE DPS:
+    // Reduce infantry slightly, boost archers to finish the defender
+    if (killRate > 0.90) {
+      // Shift center toward DPS: lower inf, keep/lower cav, higher arc
+      const dpsShift = 0.03; // 3pp toward DPS per attempt
+      fi = Math.max(0.15, fi - dpsShift);
+      fc = Math.max(0.02, fc - dpsShift * 0.3);
+    }
+
     const infMin = parseFloat(Math.max(0.15, fi - shift).toFixed(3));
     const infMax = parseFloat(Math.min(0.85, fi + shift).toFixed(3));
     const cavMin = parseFloat(Math.max(0.02, fc - shift / 2).toFixed(3));
