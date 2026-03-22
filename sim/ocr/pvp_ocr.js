@@ -298,17 +298,28 @@
     const text = await ocrText(canvas);
     const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
 
-    // Find "Troops Total: 1.1M" — ONLY extract from this specific line
+    // The "Troops Total: 1.1M" text sits in a dark banner that full-image OCR often misses.
+    // Do a dedicated crop of the banner area (27-35% of image height) to catch it.
+    let bannerLines = [];
+    try {
+      const { canvas: bannerCanvas } = toCanvas(img, 1200, 0.27, 0.35);
+      const bannerText = await ocrText(bannerCanvas);
+      bannerLines = bannerText.split('\n').map(l => l.trim()).filter(Boolean);
+    } catch(_) {}
+
+    // Combine all lines, banner lines first (higher priority for Troops Total)
+    const allLines = bannerLines.concat(lines);
+
+    // Find "Troops Total: 1.1M" — search all lines
     let total = null;
 
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      // Match "Troops Total" even with OCR garbling
+    for (let i = 0; i < allLines.length; i++) {
+      const line = allLines[i];
       const cleaned = line.replace(/[^a-zA-Z0-9.:,\s]/g, ' ');
       const lineClean = line.replace(/[)\]|(){}]/g, '.').replace(/[^a-zA-Z0-9.:,\s]/g, ' ');
       if (/troops?\s*total/i.test(cleaned) || /roops?\W*total/i.test(cleaned) ||
           /roops\W*otal/i.test(line) || /otal\s*[:\s.]\s*[\d]/i.test(cleaned) ||
-          /roops.*otal/i.test(lineClean)) {
+          /roops.*otal/i.test(lineClean) || /[tTiIl]roops.*[tTiIl]otal/i.test(line)) {
         // Extract everything after "total" marker
         const after = lineClean.replace(/.*otal\s*[:\s.]*/i, '').trim();
         // Try parsing the remainder as a number with M/K suffix
@@ -335,7 +346,7 @@
 
     // If Troops Total line not found at all, try "Total:" pattern
     if (!total) {
-      for (const line of lines) {
+      for (const line of allLines) {
         if (/total\s*[:\s]\s*[\d]/i.test(line) && !/power|might|score|rating/i.test(line)) {
           const mAll = line.match(/[\d][,.\dlI]*[KkMmBb]/gi);
           if (mAll) {
@@ -351,7 +362,7 @@
 
     // Find three percentages summing to ~100%
     const allPcts = [];
-    const fullText = lines.join(' ');
+    const fullText = allLines.join(' ');
     let m;
     const pctRe = /(\d{1,3}(?:[.,]\d{1,2})?)\s*%/g;
     while ((m = pctRe.exec(fullText)) !== null) {
@@ -371,21 +382,6 @@
             const sum = allPcts[i]+allPcts[j]+allPcts[k];
             if (sum >= 95 && sum <= 105) { ratio = { inf:allPcts[i], cav:allPcts[j], arc:allPcts[k] }; break outer; }
           }
-    }
-
-    // Pick best total: prefer candidates in realistic troop range (100K-10M)
-    // Sort candidates: realistic range first, then by proximity to common troop counts
-    if (totalCandidates.length) {
-      // Remove duplicates
-      const unique = [...new Set(totalCandidates)];
-      // Prefer realistic troop counts (100K-10M), then 10M-20M, then anything
-      const scored = unique.map(t => ({
-        val: t,
-        score: (t >= 100000 && t <= 10000000) ? 3 :
-               (t >= 50000 && t <= 20000000)  ? 2 : 1
-      }));
-      scored.sort((a, b) => b.score - a.score || a.val - b.val);
-      total = scored[0].val;
     }
 
     const troops = total && ratio ? {
