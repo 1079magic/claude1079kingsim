@@ -89,9 +89,11 @@
     if (!s) return null;
     s = String(s).trim();
     // OCR normalization: fix common misreads in numeric strings
-    s = s.replace(/(\.)[lI]/g, '.1');       // "1.lM" / "1.IM" → "1.1M" (l/I read as 1)
+    s = s.replace(/(\.)[lI]/g, '.1');       // "1.lM" / "1.IM" → "1.1M"
     s = s.replace(/(\d)[lI]/g, '$11');       // "1lM" → "11M"
     s = s.replace(/[Oo]/g, '0');              // O/o → 0
+    // Parenthesis/bracket as decimal: "1)1M" → "1.1M", "1]1M" → "1.1M"
+    s = s.replace(/^(\d+)[)\]|](\d{1,2})([KkMmBb])$/i, '$1.$2$3');
     // European decimal: "1,1M" → "1.1M" (single digit, comma, 1-2 digits, then suffix)
     s = s.replace(/^(\d+),(\d{1,2})([KkMmBb])$/i, '$1.$2$3');
     // Colon-as-decimal: "1:1M" → "1.1M"
@@ -296,29 +298,54 @@
     const text = await ocrText(canvas);
     const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
 
-    // Find "Troops Total: 1.1M" line
+    // Find "Troops Total: 1.1M" — ONLY extract from this specific line
     let total = null;
-    const totalCandidates = []; // collect all possible totals
 
     for (let i = 0; i < lines.length; i++) {
-      if (/troops?\s*total/i.test(lines[i])) {
-        const after = lines[i].replace(/.*troops?\s*total\s*[:\s]*/i, '').trim();
-        const t = parseAmount(after.replace(/[^0-9,.KkMmBblI]/g, ''));
-        if (t) totalCandidates.push(t);
-        if (!t && i + 1 < lines.length) {
-          const t2 = parseAmount(lines[i + 1].replace(/[^0-9,.KkMmBblI]/g, ''));
-          if (t2) totalCandidates.push(t2);
+      const line = lines[i];
+      // Match "Troops Total" even with OCR garbling
+      const cleaned = line.replace(/[^a-zA-Z0-9.:,\s]/g, ' ');
+      const lineClean = line.replace(/[)\]|(){}]/g, '.').replace(/[^a-zA-Z0-9.:,\s]/g, ' ');
+      if (/troops?\s*total/i.test(cleaned) || /roops?\W*total/i.test(cleaned) ||
+          /roops\W*otal/i.test(line) || /otal\s*[:\s.]\s*[\d]/i.test(cleaned) ||
+          /roops.*otal/i.test(lineClean)) {
+        // Extract everything after "total" marker
+        const after = lineClean.replace(/.*otal\s*[:\s.]*/i, '').trim();
+        // Try parsing the remainder as a number with M/K suffix
+        const parsed = parseAmount(after.replace(/[^0-9,.KkMmBblI:]/g, ''));
+        if (parsed && parsed > 50000 && parsed < 20000000) total = parsed;
+        // If that fails, scan the cleaned line for any M/K pattern in realistic range
+        if (!total) {
+          const mAll = lineClean.match(/[\d][,.\d:lI]*[KkMmBb]/gi);
+          if (mAll) {
+            for (const candidate of mAll) {
+              const v = parseAmount(candidate);
+              if (v && v > 50000 && v < 20000000) { total = v; break; }
+            }
+          }
         }
+        // If that fails, try the next line
+        if (!total && i + 1 < lines.length) {
+          const nextParsed = parseAmount(lines[i + 1].replace(/[^0-9,.KkMmBblI:]/g, ''));
+          if (nextParsed && nextParsed > 50000 && nextParsed < 20000000) total = nextParsed;
+        }
+        break; // Only use the Troops Total line, stop searching
       }
     }
 
-    // Also collect ALL M/K numbers from the entire text as candidates
-    for (const line of lines) {
-      const re = /([\d][\d,\.lI]*[KkMmBb])/g;
-      let m;
-      while ((m = re.exec(line)) !== null) {
-        const c = parseAmount(m[1]);
-        if (c && c > 50000) totalCandidates.push(c);
+    // If Troops Total line not found at all, try "Total:" pattern
+    if (!total) {
+      for (const line of lines) {
+        if (/total\s*[:\s]\s*[\d]/i.test(line) && !/power|might|score|rating/i.test(line)) {
+          const mAll = line.match(/[\d][,.\dlI]*[KkMmBb]/gi);
+          if (mAll) {
+            for (const candidate of mAll) {
+              const v = parseAmount(candidate);
+              if (v && v > 50000 && v < 20000000) { total = v; break; }
+            }
+          }
+          if (total) break;
+        }
       }
     }
 
