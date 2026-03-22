@@ -308,7 +308,18 @@
         if (total) break;
       }
     }
-    // Fallback: scan ALL lines for any M/K suffixed number > 50,000 (likely troop total)
+    // Fallback: scan for M/K suffixed number that looks like a troop count (100K-10M range)
+    // Avoid matching power ratings which are 50M+ (e.g., "183.4M")
+    if (!total) {
+      for (const line of lines) {
+        const m = line.match(/([\d][\d,\.lI]*[KkMmBb])/);
+        if (m) {
+          const candidate = parseAmount(m[1]);
+          if (candidate && candidate > 50000 && candidate < 20000000) { total = candidate; break; }
+        }
+      }
+    }
+    // Last resort: any M/K number (could be power rating, but better than nothing)
     if (!total) {
       for (const line of lines) {
         const m = line.match(/([\d][\d,\.lI]*[KkMmBb])/);
