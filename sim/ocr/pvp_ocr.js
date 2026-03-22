@@ -89,9 +89,10 @@
     if (!s) return null;
     s = String(s).trim();
     // OCR normalization: fix common misreads in numeric strings
-    s = s.replace(/(\.)[lI]/g, '.1');       // "1.lM" / "1.IM" → "1.1M"
-    s = s.replace(/(\d)[lI]/g, '$11');       // "1lM" → "11M"
-    s = s.replace(/[Oo]/g, '0');              // O/o → 0
+    s = s.replace(/[lI]([KkMmBb])/g, '1$1');   // "IM" → "1M", "lM" → "1M" (I/l before suffix)
+    s = s.replace(/([\d.:,])[lI]/g, '$11');     // "1.I" / "1:I" / "1,l" → "1.1" / "1:1" / "1,1"
+    s = s.replace(/^[lI](\d)/g, '1$1');          // "l1" at start → "11"
+    s = s.replace(/[Oo]/g, '0');                  // O/o → 0
     // Parenthesis/bracket as decimal: "1)1M" → "1.1M", "1]1M" → "1.1M"
     s = s.replace(/^(\d+)[)\]|](\d{1,2})([KkMmBb])$/i, '$1.$2$3');
     // European decimal: "1,1M" → "1.1M" (single digit, comma, 1-2 digits, then suffix)
@@ -334,8 +335,9 @@
           /roops.*otal/i.test(lineClean) || /[tTiIl]roops.*[tTiIl]otal/i.test(line)) {
         // Extract everything after "total" marker
         const after = lineClean.replace(/.*otal\s*[:\s.]*/i, '').trim();
-        // Try parsing the remainder as a number with M/K suffix
-        const parsed = parseAmount(after.replace(/[^0-9,.KkMmBblI:]/g, ''));
+        // Clean: keep only digits, dots, commas, colons, M/K/B, l/I; strip trailing noise
+        const numStr = after.replace(/[^0-9,.KkMmBblI:]/g, '').replace(/[.,:\s]+$/, '');
+        const parsed = parseAmount(numStr);
         if (parsed && parsed > 50000 && parsed < 20000000) total = parsed;
         // If that fails, scan the cleaned line for any M/K pattern in realistic range
         if (!total) {
