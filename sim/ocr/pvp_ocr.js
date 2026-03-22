@@ -298,35 +298,27 @@
 
     // Find "Troops Total: 1.1M" line
     let total = null;
+    const totalCandidates = []; // collect all possible totals
+
     for (let i = 0; i < lines.length; i++) {
       if (/troops?\s*total/i.test(lines[i])) {
         const after = lines[i].replace(/.*troops?\s*total\s*[:\s]*/i, '').trim();
-        total = parseAmount(after.replace(/[^0-9,.KkMmBblI]/g, '')); // include lI for OCR fix
-        if (!total && i + 1 < lines.length) {
-          total = parseAmount(lines[i + 1].replace(/[^0-9,.KkMmBblI]/g, ''));
-        }
-        if (total) break;
-      }
-    }
-    // Fallback: scan for M/K suffixed number that looks like a troop count (100K-10M range)
-    // Avoid matching power ratings which are 50M+ (e.g., "183.4M")
-    if (!total) {
-      for (const line of lines) {
-        const m = line.match(/([\d][\d,\.lI]*[KkMmBb])/);
-        if (m) {
-          const candidate = parseAmount(m[1]);
-          if (candidate && candidate > 50000 && candidate < 20000000) { total = candidate; break; }
+        const t = parseAmount(after.replace(/[^0-9,.KkMmBblI]/g, ''));
+        if (t) totalCandidates.push(t);
+        if (!t && i + 1 < lines.length) {
+          const t2 = parseAmount(lines[i + 1].replace(/[^0-9,.KkMmBblI]/g, ''));
+          if (t2) totalCandidates.push(t2);
         }
       }
     }
-    // Last resort: any M/K number (could be power rating, but better than nothing)
-    if (!total) {
-      for (const line of lines) {
-        const m = line.match(/([\d][\d,\.lI]*[KkMmBb])/);
-        if (m) {
-          const candidate = parseAmount(m[1]);
-          if (candidate && candidate > 50000) { total = candidate; break; }
-        }
+
+    // Also collect ALL M/K numbers from the entire text as candidates
+    for (const line of lines) {
+      const re = /([\d][\d,\.lI]*[KkMmBb])/g;
+      let m;
+      while ((m = re.exec(line)) !== null) {
+        const c = parseAmount(m[1]);
+        if (c && c > 50000) totalCandidates.push(c);
       }
     }
 
@@ -352,6 +344,21 @@
             const sum = allPcts[i]+allPcts[j]+allPcts[k];
             if (sum >= 95 && sum <= 105) { ratio = { inf:allPcts[i], cav:allPcts[j], arc:allPcts[k] }; break outer; }
           }
+    }
+
+    // Pick best total: prefer candidates in realistic troop range (100K-10M)
+    // Sort candidates: realistic range first, then by proximity to common troop counts
+    if (totalCandidates.length) {
+      // Remove duplicates
+      const unique = [...new Set(totalCandidates)];
+      // Prefer realistic troop counts (100K-10M), then 10M-20M, then anything
+      const scored = unique.map(t => ({
+        val: t,
+        score: (t >= 100000 && t <= 10000000) ? 3 :
+               (t >= 50000 && t <= 20000000)  ? 2 : 1
+      }));
+      scored.sort((a, b) => b.score - a.score || a.val - b.val);
+      total = scored[0].val;
     }
 
     const troops = total && ratio ? {
