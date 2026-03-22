@@ -307,8 +307,20 @@
       bannerLines = bannerText.split('\n').map(l => l.trim()).filter(Boolean);
     } catch(_) {}
 
-    // Combine all lines, banner lines first (higher priority for Troops Total)
-    const allLines = bannerLines.concat(lines);
+    // Also crop the percentage area (35-48% of image height) for the ratio popup
+    let pctLines = [];
+    try {
+      const { canvas: pctCanvas } = toCanvas(img, 1200, 0.34, 0.48);
+      const pctText = await ocrText(pctCanvas);
+      pctLines = pctText.split('\n').map(l => l.trim()).filter(Boolean);
+    } catch(_) {}
+
+    // Combine: banner lines + pct crop + full image lines
+    const allLines = bannerLines.concat(pctLines).concat(lines);
+
+    console.log('[pvpOcr] bannerLines:', bannerLines);
+    console.log('[pvpOcr] pctLines:', pctLines);
+    console.log('[pvpOcr] fullLines count:', lines.length);
 
     // Find "Troops Total: 1.1M" — search all lines
     let total = null;
@@ -383,6 +395,8 @@
             if (sum >= 95 && sum <= 105) { ratio = { inf:allPcts[i], cav:allPcts[j], arc:allPcts[k] }; break outer; }
           }
     }
+
+    console.log('[pvpOcr] total:', total, 'ratio:', ratio, 'allPcts:', allPcts);
 
     const troops = total && ratio ? {
       inf: Math.round(total * ratio.inf / 100),
