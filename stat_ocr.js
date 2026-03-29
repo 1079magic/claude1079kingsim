@@ -202,30 +202,49 @@ const STAT_KEYWORDS = {
     const img = await fileToImage(file);
     setStatus('🔍 Reading stats…', '#a0b4d0');
 
+    // Full-width OCR — reads lines like "+534.5% Infantry Attack +660.0%"
+    // Left value = user's stat, right value = comparison (ignored)
     const isDarkPixel = (r, g, b) => (r + g + b) < 500;
-    const valsBW = buildBWCanvas(img, 0.07, 0, 0.33, 1, isDarkPixel, 3);
-    const valsText = await runOCR(valsBW, 6, '0123456789+.,');
-    const vals = extractStatValues(valsText);
+    const fullBW = buildBWCanvas(img, 0.05, 0, 0.95, 1, isDarkPixel, 3);
+    const fullText = await runOCR(fullBW, 6, null);
 
-    const namesBW = buildBWCanvas(img, 0.33, 0, 0.63, 1, isDarkPixel, 3);
-    const namesText = await runOCR(namesBW, 6, null);
+    const results = {};
+    const lines = fullText.split('\n').map(l => l.trim()).filter(Boolean);
 
-    let results = {};
-
-    if (vals.length === 12) {
-      for (let i = 0; i < 12; i++) {
-        const key = STAT_ROW_KEYS[i];
-        if (STAT_TARGETS.has(key)) results[key] = vals[i];
+    for (const line of lines) {
+      // Match stat label
+      let statKey = null;
+      for (const [key, re] of Object.entries(STAT_KEYWORDS)) {
+        if (re.test(line)) { statKey = key; break; }
       }
-    } else {
-      results = matchNamesToCols(namesText, vals);
-    }
+      if (!statKey) continue;
 
-    for (const [key, re] of Object.entries(STAT_KEYWORDS)) {
-      if (results[key] != null) continue;
-      if (re.test(namesText)) {
-        const rowIdx = STAT_ROW_KEYS.indexOf(key);
-        if (rowIdx >= 0 && rowIdx < vals.length) results[key] = vals[rowIdx];
+      // Find all percentage/number values on this line
+      // Format: "+534.5% Infantry Attack +660.0%" or "534.5 Infantry Attack 660.0"
+      const numMatches = [];
+      const numRe = /[+]?(\d{2,4}(?:[.,]\d{1,2})?)\s*%?/g;
+      let m;
+      while ((m = numRe.exec(line)) !== null) {
+        const v = parseFloat(m[1].replace(',', '.'));
+        if (v >= 50 && v <= 2000) numMatches.push({ val: v, idx: m.index });
+      }
+      if (numMatches.length === 0) continue;
+
+      // Find label position to determine which value is LEFT (user's stat)
+      const labelMatch = line.match(/infantry|cavalry|archer/i);
+      if (labelMatch) {
+        const labelPos = labelMatch.index;
+        // Values BEFORE label = left column (user's stat)
+        const before = numMatches.filter(n => n.idx < labelPos);
+        if (before.length > 0) {
+          results[statKey] = before[before.length - 1].val;
+          continue;
+        }
+      }
+
+      // Fallback: use first value
+      if (numMatches.length >= 1) {
+        results[statKey] = numMatches[0].val;
       }
     }
 
