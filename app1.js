@@ -744,6 +744,86 @@
     }
   }
 
+  // ── Redistribute leftover archers into formations ──────────────
+  // If archers remain in leftover, spread them equally across all
+  // formations (call + joins) by replacing cavalry first, then infantry.
+  // Infantry can only be reduced down to its minimum %.
+  function redistributeLeftoverArchers(rally, joins, leftover, rallySize, joinCap) {
+    if (leftover.arc <= 0) return;
+
+    const formations = [{ m: rally, cap: rallySize }];
+    for (const j of joins) formations.push({ m: j, cap: joinCap });
+    const N = formations.length;
+    if (N === 0) return;
+
+    // Spread equally: each formation gets arcPerFormation archers
+    let remaining = leftover.arc;
+    let progressed = true;
+
+    // Multiple passes to distribute evenly
+    while (remaining > 0 && progressed) {
+      progressed = false;
+      const perFormation = Math.ceil(remaining / N);
+
+      for (const f of formations) {
+        if (remaining <= 0) break;
+        const m = f.m;
+        const cap = f.cap;
+        const total = m.inf + m.cav + m.arc;
+        if (total <= 0) continue;
+
+        const give = Math.min(perFormation, remaining);
+        if (give <= 0) continue;
+
+        // Try to replace cavalry first (cavalry is least valuable for score)
+        const minCav = Math.ceil(cap * 0.05); // keep at least 5% cav
+        const cavCanGive = Math.max(0, m.cav - minCav);
+
+        if (cavCanGive >= give) {
+          // All from cavalry
+          m.cav -= give;
+          m.arc += give;
+          leftover.arc -= give;
+          leftover.cav += give;
+          remaining -= give;
+          progressed = true;
+        } else if (cavCanGive > 0) {
+          // Take what cavalry can give, rest from infantry if possible
+          m.cav -= cavCanGive;
+          m.arc += cavCanGive;
+          leftover.arc -= cavCanGive;
+          leftover.cav += cavCanGive;
+          remaining -= cavCanGive;
+
+          const minInf = Math.ceil(cap * INF_MIN_PCT);
+          const infCanGive = Math.max(0, m.inf - minInf);
+          const infGive = Math.min(infCanGive, give - cavCanGive, remaining);
+          if (infGive > 0) {
+            m.inf -= infGive;
+            m.arc += infGive;
+            leftover.arc -= infGive;
+            leftover.inf += infGive;
+            remaining -= infGive;
+          }
+          progressed = true;
+        } else {
+          // No cavalry to give, try infantry
+          const minInf = Math.ceil(cap * INF_MIN_PCT);
+          const infCanGive = Math.max(0, m.inf - minInf);
+          const infGive = Math.min(infCanGive, give, remaining);
+          if (infGive > 0) {
+            m.inf -= infGive;
+            m.arc += infGive;
+            leftover.arc -= infGive;
+            leftover.inf += infGive;
+            remaining -= infGive;
+            progressed = true;
+          }
+        }
+      }
+    }
+  }
+
   function deriveJoinFractions(joins){
     let I=0,C=0,A=0;
     for (const p of joins){ I+=p.inf; C+=p.cav; A+=p.arc; }
@@ -847,6 +927,7 @@
           maxInfPct: 0.20, maxCavPct: 0.30, arcBiasPct: 0.03
         });
         applyPriorityPostFix(rallyBest, joinsBest, leftoverBest, rallySize, joinCap);
+        redistributeLeftoverArchers(rallyBest, joinsBest, leftoverBest, rallySize, joinCap);
 
         renderFinalScoreboard(rallyBest, joinsBest, tierKey);
 
@@ -857,6 +938,7 @@
           maxInfPct: 0.20, maxCavPct: 0.30, arcBiasPct: 0.03
         });
         applyPriorityPostFix(rallyBest, joinsBest, leftoverBest, rallySize, joinCap);
+        redistributeLeftoverArchers(rallyBest, joinsBest, leftoverBest, rallySize, joinCap);
 
         renderFinalScoreboard(rallyBest, joinsBest, tierKey);
       }
