@@ -773,6 +773,8 @@
         arcMin:rc.arcMin,
         maxTop:10,
         isRecalibration: true,
+        recalCenterFi: state.best.fi,
+        recalCenterFc: state.best.fc,
       });
 
       if(!out.best) throw new Error('No results from recalibration');

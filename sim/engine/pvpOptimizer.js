@@ -130,9 +130,14 @@
     const isNoCavDef = defTotal2 > 0 && (defenderTroops.cav||0) / defTotal2 < 0.05;
 
     // Set formation targets based on defender composition
-    // During recalibration, disable balance bias — let engine explore freely
     let targetInf = 0.50, targetCav = 0.18, balWeight = 0.0;
-    if (!isRecalibration) {
+    if (isRecalibration) {
+      // During recalibration: light bias toward the current best formation
+      // This prevents raw simulation from always pushing infantry up
+      targetInf = opts.recalCenterFi || 0.50;
+      targetCav = opts.recalCenterFc || 0.18;
+      balWeight = 0.30; // lighter than initial scan but enough to prevent drift
+    } else {
       if (isBalancedDef) {
         targetInf = 0.50; targetCav = 0.18; balWeight = 0.45;
       } else if (isNoArcDef) {
