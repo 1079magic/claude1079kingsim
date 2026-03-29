@@ -136,7 +136,7 @@
       // This prevents raw simulation from always pushing infantry up
       targetInf = opts.recalCenterFi || 0.50;
       targetCav = opts.recalCenterFc || 0.18;
-      balWeight = 0.30; // lighter than initial scan but enough to prevent drift
+      balWeight = 0.35;
     } else {
       if (isBalancedDef) {
         targetInf = 0.50; targetCav = 0.18; balWeight = 0.45;
@@ -246,35 +246,40 @@
     let fi = currentBest.fi;
     let fc = currentBest.fc;
 
-    if (killRate >= 0.90) {
-      // Almost won — keep infantry stable, tiny cav→arc shift for more DPS
-      fc = Math.max(0.02, fc - 0.01);
-      // Don't touch fi — infantry level is working
-      shift = Math.min(shift, 0.03); // tight search
+    if (killRate >= 0.95) {
+      // Very close to winning (>95%) — keep infantry, shift 2pp cav→arc
+      fc = Math.max(0.02, fc - 0.02);
+      shift = Math.min(shift, 0.03);
+    } else if (killRate >= 0.90) {
+      // Almost won (90-95%) — bump infantry slightly (+3pp), shift 2pp cav→arc
+      fi = fi + 0.03;
+      fc = Math.max(0.02, fc - 0.02);
+      shift = Math.min(shift, 0.03);
     } else if (killRate >= 0.75 && improving) {
-      // Getting closer — keep infantry, small cav→arc shift
-      fc = Math.max(0.02, fc - 0.01);
+      // Getting closer and improving — bump inf +2pp, shift 2pp cav→arc
+      fi = fi + 0.02;
+      fc = Math.max(0.02, fc - 0.02);
       shift = Math.min(shift, 0.04);
     } else if (killRate >= 0.75 && worsening) {
-      // Was close but worsened — troops need to survive longer
-      // Add tiny infantry, reduce archers slightly (not cavalry)
-      fi = Math.min(0.55, fi + 0.01);
+      // Was close but worsened — troops dying, need more infantry (+2pp)
+      // Keep cavalry stable — don't shift it
+      fi = fi + 0.02;
       shift = Math.min(shift, 0.04);
     } else if (killRate >= 0.50 && worsening) {
-      // Moderate and worsening — need more tank
-      fi = Math.min(0.55, fi + 0.02);
+      // Moderate and worsening — need more tank (+3pp inf)
+      fi = fi + 0.03;
       fc = Math.max(0.02, fc - 0.01);
     } else if (killRate >= 0.50 && !improving) {
       // Moderate stagnant — slight infantry increase
-      fi = Math.min(0.55, fi + 0.01);
+      fi = fi + 0.02;
     } else if (killRate < 0.50) {
       // Far from winning — bigger shift toward more tank
-      fi = Math.min(0.58, fi + 0.03);
+      fi = fi + 0.04;
       fc = Math.max(0.02, fc - 0.01);
     }
 
-    // Hard floor: infantry never below 49% in recalibration
-    fi = Math.max(0.49, fi);
+    // Clamp infantry: 49% floor, 60% ceiling
+    fi = Math.max(0.49, Math.min(0.60, fi));
 
     const infMin = parseFloat(Math.max(0.49, fi - shift).toFixed(3));
     const infMax = parseFloat(Math.min(0.60, fi + shift).toFixed(3));
@@ -287,6 +292,7 @@
 
     return {
       shift, infMin, infMax, cavMin, cavMax, arcMin,
+      centerFi: fi, centerFc: fc,
       verdict, direction, lossRate: 1.0, killRate,
       summary: `Injured ${(killRate*100).toFixed(1)}% — ${verdict}, ${direction}`
     };
