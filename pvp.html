@@ -678,9 +678,16 @@
   function buildHistory(state){
     // Use stored initial formation (not current best which changes after recalibration)
     const init = state.initial || state.best;
-    const h=[{fi:init.fi,fc:init.fc,fa:init.fa,isBase:true,attemptNum:0,summary:''}];
+    const defT = state.defTotal || 150000;
+    const h=[{fi:init.fi,fc:init.fc,fa:init.fa,isBase:true,attemptNum:0,summary:'',defKill:0,defPct:0}];
     (state.attempts||[]).forEach((a,i)=>{
-      if(a.newBest) h.push({fi:a.newBest.fi,fc:a.newBest.fc,fa:a.newBest.fa,isBase:false,attemptNum:i+1,summary:a.summary||''});
+      const dk = a.defKill || 0;
+      const pct = (dk / defT * 100).toFixed(1);
+      const prevDk = i > 0 ? (state.attempts[i-1].defKill||0) : 0;
+      const dir = i === 0 ? '' : dk > prevDk ? ' \u2191' : dk < prevDk ? ' \u2193' : '';
+      if(a.newBest) h.push({fi:a.newBest.fi,fc:a.newBest.fc,fa:a.newBest.fa,isBase:false,attemptNum:i+1,
+        summary: dk > 0 ? 'Injured '+dk.toLocaleString()+' ('+pct+'%)'+dir : (a.summary||''),
+        defKill:dk,defPct:parseFloat(pct)});
     });
     return h;
   }
@@ -693,31 +700,34 @@
     const row=document.createElement('div');
     row.className='pvp-attempt-row lost'; row.id='pvp_attempt_'+n;
     row.innerHTML=
-      '<div class="pvp-attempt-label">Attempt #'+n+(isFinal?'\u2002\u00b7\u2002Last attempt today':'')+' \u2014 enter battle results</div>'+
+      '<div class="pvp-attempt-label">Attempt #'+n+(isFinal?'\u2002\u00b7\u2002Last attempt today':'')+' \u2014 enter defender injured</div>'+
       '<div class="pvp-injured-row">'+
-        '<span class="pvp-injured-label">Own losses:</span>'+
-        '<input class="pvp-injured-input" id="pvp_att_loss_'+n+'" type="number" placeholder="e.g.\u202f90\u202f000" min="0" step="1000" />'+
-      '</div>'+
-      '<div class="pvp-injured-row">'+
-        '<span class="pvp-injured-label">Def killed:</span>'+
-        '<input class="pvp-injured-input" id="pvp_def_kill_'+n+'" type="number" placeholder="e.g.\u202f72\u202f000" min="0" step="1000" />'+
+        '<span class="pvp-injured-label">Def injured:</span>'+
+        '<input class="pvp-injured-input" id="pvp_def_kill_'+n+'" type="number" placeholder="e.g.\u202f150\u202f000" min="0" step="1000" />'+
         '<button class="pvp-apply-btn" id="pvp_apply_'+n+'">Recalibrate \u21bb</button>'+
       '</div>'+
       '<div class="pvp-attempt-status" id="pvp_status_'+n+'"></div>';
     track.appendChild(row);
     $('pvp_apply_'+n)?.addEventListener('click',()=>applyAttempt(n));
-    ['pvp_att_loss_'+n,'pvp_def_kill_'+n].forEach(id=>{
-      $(id)?.addEventListener('keydown',e=>{ if(e.key==='Enter') applyAttempt(n); });
-    });
-    setTimeout(()=>$('pvp_att_loss_'+n)?.focus(),60);
+    $('pvp_def_kill_'+n)?.addEventListener('keydown',e=>{ if(e.key==='Enter') applyAttempt(n); });
+    setTimeout(()=>$('pvp_def_kill_'+n)?.focus(),60);
   }
 
   function sealAttemptRow(n, attLoss, defKill, summary){
     const st=$('pvp_status_'+n);
-    const state=rcGet(); const tot=state?.attTotal||150000; const defT=state?.defTotal||150000;
-    const lp=(attLoss/tot*100).toFixed(0), kp=(defKill/defT*100).toFixed(0);
-    if(st) st.textContent='Own losses: '+attLoss.toLocaleString()+' ('+lp+'%)  \u00b7  Def killed: '+defKill.toLocaleString()+' ('+kp+'%)  \u00b7  '+summary;
-    [$('pvp_att_loss_'+n),$('pvp_def_kill_'+n),$('pvp_apply_'+n)].forEach(el=>{
+    const state=rcGet(); const defT=state?.defTotal||150000;
+    const kp=(defKill/defT*100).toFixed(1);
+    // Determine direction based on previous attempt
+    const prevAttempts=state?.attempts||[];
+    let direction='';
+    if(prevAttempts.length>=2){
+      const prev=prevAttempts[prevAttempts.length-2];
+      if(prev&&prev.defKill){
+        direction=defKill>prev.defKill?' \u2191 improving':defKill<prev.defKill?' \u2193 worsening':' \u2192 same';
+      }
+    }
+    if(st) st.textContent='Def injured: '+defKill.toLocaleString()+' ('+kp+'%)'+direction;
+    [$('pvp_def_kill_'+n),$('pvp_apply_'+n)].forEach(el=>{
       if(el){ el.disabled=true; if(el.tagName==='BUTTON') el.style.display='none'; }
     });
   }
@@ -727,9 +737,9 @@
     const state=rcGet(); if(!state){ alert('Run simulation first.'); return; }
     if(state.won) return;
 
-    const attLoss=parseFloat(($('pvp_att_loss_'+n)?.value||'').replace(/,/g,''))||0;
     const defKill=parseFloat(($('pvp_def_kill_'+n)?.value||'').replace(/,/g,''))||0;
-    if(!attLoss||attLoss<=0){ $('pvp_att_loss_'+n)?.focus(); return; }
+    if(!defKill||defKill<=0){ $('pvp_def_kill_'+n)?.focus(); return; }
+    const attLoss=state.attTotal; // attacker always loses 100% when failed
 
     const opt=window.KingSim?.pvpOptimizer;
     if(!opt?.pvpRecalibrate||!opt?.scanPvP){ alert('Optimizer not loaded'); return; }

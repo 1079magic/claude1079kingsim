@@ -208,46 +208,54 @@
    * @returns {{ shift, infMin, infMax, cavMin, cavMax, arcMin, verdict, direction, summary }}
    */
   function pvpRecalibrate(currentBest, attLosses, attTotal, defKilled, defTotal, history) {
-    const lossRate = attLosses / Math.max(1, attTotal);
     const killRate = defKilled / Math.max(1, defTotal);
 
-    const prev        = history.length > 0 ? history[history.length - 1] : null;
-    const prevLoss    = prev ? prev.attLosses / Math.max(1, prev.attTotal) : lossRate;
-    const prevKill    = prev ? prev.defKilled / Math.max(1, prev.defTotal) : killRate;
-    const killDelta   = killRate - prevKill;
-    const lossImprove = lossRate < prevLoss;
+    // Compare with previous attempt's kill rate
+    const prev = history.length > 0 ? history[history.length - 1] : null;
+    const prevKill = prev ? prev.defKilled / Math.max(1, prev.defTotal || defTotal) : killRate;
+    const killDelta = killRate - prevKill;
+    const improving = killDelta > 0.005; // more defender injured = improving
+    const worsening = killDelta < -0.005;
 
-    // ── Base shift by loss severity ───────────────────────────────
+    // ── Shift size based on how far from winning ──────────────────
     let shift;
-    if (lossRate > 0.60) {
-      shift = lossImprove ? 0.07 : 0.15;
-    } else if (lossRate > 0.30) {
-      shift = lossImprove ? 0.04 : 0.08;
+    if (killRate < 0.50) {
+      // Very far from winning — large shifts needed
+      shift = 0.10;
+    } else if (killRate < 0.75) {
+      // Getting closer — moderate shifts
+      shift = improving ? 0.05 : 0.08;
+    } else if (killRate < 0.90) {
+      // Close — smaller shifts
+      shift = improving ? 0.03 : 0.05;
     } else {
-      shift = lossImprove ? 0.01 : 0.03;
+      // Almost won (>90%) — fine-tuning
+      shift = improving ? 0.02 : 0.04;
     }
-
-    // ── Kill-rate amplifiers ──────────────────────────────────────
-    if (killDelta > 0.50) shift = Math.min(0.50, shift * 2.0);
-    else if (killDelta > 0.30) shift = Math.min(0.50, shift * 1.5);
-    if (Math.abs(killDelta) < 0.05 && lossRate < 0.50) shift = Math.max(0.01, shift * 0.5);
-
-    // Almost won (killed >90% of defender) → tiny fine-tuning only
-    if (killRate > 0.90) shift = Math.min(shift, 0.05);
 
     shift = Math.min(0.50, Math.max(0.01, parseFloat(shift.toFixed(3))));
 
-    // ── New search bounds ──────────────────────────────────────────
+    // ── Directional center shift based on defender injured ─────────
     let fi = currentBest.fi;
     let fc = currentBest.fc;
 
-    // When almost won (>90% kill rate), shift toward MORE DPS:
-    // Reduce infantry slightly, boost archers to finish the defender
-    if (killRate > 0.90) {
-      // Shift center toward DPS: lower inf, keep/lower cav, higher arc
-      const dpsShift = 0.03; // 3pp toward DPS per attempt
-      fi = Math.max(0.15, fi - dpsShift);
-      fc = Math.max(0.02, fc - dpsShift * 0.3);
+    if (killRate < 0.75 && worsening) {
+      // Troops dying too fast, need more infantry to survive longer
+      fi = Math.min(0.75, fi + 0.03);
+      fc = Math.max(0.02, fc - 0.01);
+    } else if (killRate < 0.75 && !improving) {
+      // Stagnant and low — slightly more infantry
+      fi = Math.min(0.70, fi + 0.02);
+    } else if (killRate >= 0.75 && worsening) {
+      // Was close but got worse — less infantry, more archers for DPS
+      fi = Math.max(0.20, fi - 0.02);
+    } else if (killRate >= 0.90) {
+      // Almost won — shift toward DPS to finish
+      fi = Math.max(0.20, fi - 0.03);
+      fc = Math.max(0.02, fc - 0.01);
+    } else if (improving && killRate >= 0.75) {
+      // Improving and close — keep going in same direction, small tweak
+      fi = Math.max(0.20, fi - 0.01);
     }
 
     const infMin = parseFloat(Math.max(0.15, fi - shift).toFixed(3));
@@ -256,13 +264,13 @@
     const cavMax = parseFloat(Math.min(0.50, fc + shift / 2).toFixed(3));
     const arcMin = parseFloat(Math.max(0.10, 1 - infMax - cavMax).toFixed(3));
 
-    const verdict   = lossRate > 0.50 ? 'heavy' : lossRate > 0.20 ? 'moderate' : 'light';
-    const direction = lossImprove ? 'improving' : 'worsening';
+    const verdict = killRate > 0.90 ? 'almost won' : killRate > 0.75 ? 'close' : killRate > 0.50 ? 'moderate' : 'far';
+    const direction = improving ? 'improving' : worsening ? 'worsening' : 'stable';
 
     return {
       shift, infMin, infMax, cavMin, cavMax, arcMin,
-      verdict, direction, lossRate, killRate,
-      summary: `±${(shift*100).toFixed(0)}pp — ${verdict} losses (${(lossRate*100).toFixed(0)}%), ${direction}`
+      verdict, direction, lossRate: 1.0, killRate,
+      summary: `Injured ${(killRate*100).toFixed(1)}% — ${verdict}, ${direction}`
     };
   }
 
