@@ -848,15 +848,6 @@
         });
         applyPriorityPostFix(rallyBest, joinsBest, leftoverBest, rallySize, joinCap);
 
-        // Apply archer priority optimization AFTER existing logic
-        const archerOptimized = planArcherPriorityAlloc(
-          stock0, rallySize, X, joinCap, INF_MIN_PCT, INF_MAX_PCT, CAV_MIN_PCT
-        );
-        if (archerOptimized.leftover.arc < leftoverBest.arc) {
-          rallyBest = archerOptimized.rally;
-          joinsBest = archerOptimized.packs;
-          leftoverBest = archerOptimized.leftover;
-        }
         renderFinalScoreboard(rallyBest, joinsBest, tierKey);
 
       } else {
@@ -867,14 +858,6 @@
         });
         applyPriorityPostFix(rallyBest, joinsBest, leftoverBest, rallySize, joinCap);
 
-        const archerOptimized = planArcherPriorityAlloc(
-          stock0, rallySize, X, joinCap, INF_MIN_PCT, INF_MAX_PCT, CAV_MIN_PCT
-        );
-        if (archerOptimized.leftover.arc < leftoverBest.arc) {
-          rallyBest = archerOptimized.rally;
-          joinsBest = archerOptimized.packs;
-          leftoverBest = archerOptimized.leftover;
-        }
         renderFinalScoreboard(rallyBest, joinsBest, tierKey);
       }
       rally = rallyBest; joins = joinsBest; leftover = leftoverBest;
