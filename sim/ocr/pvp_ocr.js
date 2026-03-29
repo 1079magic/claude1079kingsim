@@ -202,7 +202,8 @@
 
     const words = await ocrWords(canvas);
 
-    // Filter to words that look like troop numbers: digits+commas, value 1000-9999999
+    // Filter to words that look like troop numbers: digits+commas, value 5000-9999999
+    // Minimum 5000 to filter out "Lv 10.0" → "1000" and similar OCR artifacts
     const leftNums  = [];
     const rightNums = [];
 
@@ -210,7 +211,7 @@
       const cleaned = word.text.replace(/[^0-9,]/g, '');
       if (!cleaned) continue;
       const n = parseAmount(cleaned);
-      if (n == null || n < 1000 || n > 9999999) continue;
+      if (n == null || n < 5000 || n > 9999999) continue;
 
       // Classify by center x-position
       const centerX = (word.x0 + word.x1) / 2;
@@ -636,18 +637,17 @@
     const worker = await T.createWorker('eng', 1, {});
 
     async function voteSide(cands) {
-      // Collect one reading per icon (up to 3 icons per side = 3 badge candidates)
-      // Then return floor(average), e.g. (3+3+4)/3 = 3.33 → TG3
-      const top = cands.slice(0, 4);  // up to 4 candidates (some icons may have 2 clusters)
+      const top = cands.slice(0, 4);
       const digits = [];
       for (const badge of top) {
         const digit = await readBadgeDigit(worker, img, badge);
         if (digit >= 1 && digit <= 5) digits.push(digit);
       }
-      if (!digits.length) return 0;
-      // Average of all valid readings, floor to nearest integer
+      // Require at least 2 consistent readings to confirm TG level
+      // Single reading could be noise/false positive
+      if (digits.length < 2) return 0;
       const avg = digits.reduce((s, d) => s + d, 0) / digits.length;
-      return Math.round(avg);  // (2+3+3)/3 = 2.67 → TG3, (3+3+4)/3 = 3.33 → TG3
+      return Math.round(avg);
     }
 
     try {

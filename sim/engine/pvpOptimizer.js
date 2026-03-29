@@ -241,27 +241,31 @@
 
     if (killRate < 0.75 && worsening) {
       // Troops dying too fast, need more infantry to survive longer
-      fi = Math.min(0.75, fi + 0.03);
+      fi = Math.min(0.60, fi + 0.02);
       fc = Math.max(0.02, fc - 0.01);
     } else if (killRate < 0.75 && !improving) {
       // Stagnant and low — slightly more infantry
-      fi = Math.min(0.70, fi + 0.02);
+      fi = Math.min(0.58, fi + 0.01);
     } else if (killRate >= 0.75 && worsening) {
-      // Was close but got worse — less infantry, more archers for DPS
-      fi = Math.max(0.20, fi - 0.02);
+      // Was close but got worse — boost DPS via cavalry/archer shift, keep infantry
+      fc = Math.max(0.02, fc - 0.02);
+      // Don't reduce infantry — it's needed to survive
     } else if (killRate >= 0.90) {
-      // Almost won — shift toward DPS to finish
-      fi = Math.max(0.20, fi - 0.03);
-      fc = Math.max(0.02, fc - 0.01);
+      // Almost won — fine-tune: slightly less cavalry, more archers
+      fc = Math.max(0.02, fc - 0.02);
+      fi = Math.max(0.49, fi - 0.01); // tiny infantry reduction, floor at 49%
     } else if (improving && killRate >= 0.75) {
-      // Improving and close — keep going in same direction, small tweak
-      fi = Math.max(0.20, fi - 0.01);
+      // Improving and close — small cavalry-to-archer shift
+      fc = Math.max(0.02, fc - 0.01);
     }
 
-    const infMin = parseFloat(Math.max(0.15, fi - shift).toFixed(3));
-    const infMax = parseFloat(Math.min(0.85, fi + shift).toFixed(3));
+    // Hard floor: infantry never below 49% in recalibration
+    fi = Math.max(0.49, fi);
+
+    const infMin = parseFloat(Math.max(0.49, fi - shift).toFixed(3));
+    const infMax = parseFloat(Math.min(0.60, fi + shift).toFixed(3));
     const cavMin = parseFloat(Math.max(0.02, fc - shift / 2).toFixed(3));
-    const cavMax = parseFloat(Math.min(0.50, fc + shift / 2).toFixed(3));
+    const cavMax = parseFloat(Math.min(0.30, fc + shift / 2).toFixed(3));
     const arcMin = parseFloat(Math.max(0.10, 1 - infMax - cavMax).toFixed(3));
 
     const verdict = killRate > 0.90 ? 'almost won' : killRate > 0.75 ? 'close' : killRate > 0.50 ? 'moderate' : 'far';
