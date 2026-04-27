@@ -20,7 +20,6 @@ exports.handler = async (event) => {
   if (!emailRx.test(email)) return err('Invalid email address');
   if (password.length < 8) return err('Password must be at least 8 characters');
 
-  // Check if already verified
   const existing = await query('SELECT id, verified FROM users WHERE email = $1', [email.toLowerCase()]);
   if (existing.rows.length && existing.rows[0].verified) {
     return err('Email already registered');
@@ -51,7 +50,6 @@ exports.handler = async (event) => {
   try {
     await sendVerificationCode(email, code);
   } catch (e) {
-    // Return the actual Resend error so we can diagnose
     console.error('[auth-register] Email send failed:', e.message);
     return err('Email send failed: ' + e.message, 500);
   }
