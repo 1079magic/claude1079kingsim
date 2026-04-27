@@ -15,18 +15,13 @@ exports.handler = async (event) => {
   if (!userId || !code) return err('userId and code required');
 
   const ALLIANCES = ['WHO', 'HRD', '404', 'UNT'];
-
-  // Normalize: userId as integer, code as trimmed string (CHAR(6) pads with spaces)
-  const uid  = parseInt(userId, 10);
+  const uid     = parseInt(userId, 10);
   const codeStr = String(code).trim();
 
-  if (isNaN(uid)) return err('Invalid userId');
+  if (isNaN(uid))              return err('Invalid userId');
   if (!/^\d{6}$/.test(codeStr)) return err('Code must be 6 digits');
 
-  // Debug log so we can see exactly what's being compared
-  console.log('[auth-verify] uid:', uid, '| code:', JSON.stringify(codeStr));
-
-  // Use TRIM() on the stored code to handle CHAR(6) padding
+  // Match code — TRIM() handles any legacy CHAR(6) padding
   const res = await query(
     `SELECT id FROM verification_codes
      WHERE user_id=$1 AND TRIM(code)=$2 AND expires_at > NOW() AND used=FALSE
@@ -34,35 +29,24 @@ exports.handler = async (event) => {
     [uid, codeStr]
   );
 
-  console.log('[auth-verify] matching rows:', res.rows.length);
+  if (!res.rows.length) return err('Invalid or expired verification code');
 
-  if (!res.rows.length) {
-    // Extra debug — show what codes exist for this user
-    const dbg = await query(
-      `SELECT TRIM(code) as code, expires_at, used FROM verification_codes WHERE user_id=$1 ORDER BY created_at DESC LIMIT 3`,
-      [uid]
-    );
-    console.log('[auth-verify] codes in DB for user:', JSON.stringify(dbg.rows));
-    return err('Invalid or expired verification code');
-  }
+  // Mark code used
+  await query('UPDATE verification_codes SET used=TRUE WHERE id=$1', [res.rows[0].id]);
 
-  const codeId = res.rows[0].id;
-  await query('UPDATE verification_codes SET used=TRUE WHERE id=$1', [codeId]);
+  // Build UPDATE — userId is $1, optional fields follow as $2, $3...
+  // This fixes the previous bug where WHERE id=$2 was built with only 1 param
+  const params = [uid];  // $1 always
+  const sets   = ['verified=TRUE'];
 
-  // Mark verified
-  const updates = ['verified=TRUE'];
-  const params = [];
-  let pi = 1;
-
-  if (full_name) { updates.push(`full_name=$${++pi}`); params.push(full_name.trim()); }
-  if (game_nick) { updates.push(`game_nick=$${++pi}`); params.push(game_nick.trim()); }
+  if (full_name) { params.push(full_name.trim()); sets.push(`full_name=$${params.length}`); }
+  if (game_nick) { params.push(game_nick.trim()); sets.push(`game_nick=$${params.length}`); }
   if (alliance && ALLIANCES.includes(alliance)) {
-    updates.push(`alliance=$${++pi}`);
     params.push(alliance);
+    sets.push(`alliance=$${params.length}`);
   }
 
-  params.push(uid);
-  await query(`UPDATE users SET ${updates.join(',')} WHERE id=$${++pi}`, params);
+  await query(`UPDATE users SET ${sets.join(',')} WHERE id=$1`, params);
 
   return ok({ message: 'Email verified. Registration complete.' });
 };
