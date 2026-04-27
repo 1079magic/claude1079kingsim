@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KingSim — Login</title>
+  <link rel="icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/assets/theme-all.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg, #0a0f15);
+      font-family: 'Inter', system-ui, sans-serif;
+      padding: 24px 16px;
+    }
+
+    .auth-card {
+      width: 100%;
+      max-width: 420px;
+      background: #111922;
+      border: 1px solid #1e2d40;
+      border-radius: 16px;
+      padding: 40px 32px;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+    }
+
+    .auth-logo {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    .auth-logo .brand-name {
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: #f6a435;
+      letter-spacing: 0.04em;
+    }
+    .auth-logo .brand-sub {
+      font-size: 0.82rem;
+      color: #667788;
+      margin-top: 4px;
+    }
+
+    h2 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #e8eaf0;
+      margin-bottom: 24px;
+      text-align: center;
+    }
+
+    .field { margin-bottom: 16px; }
+    .field label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: #aab4c8;
+      margin-bottom: 6px;
+    }
+    .field input {
+      width: 100%;
+      padding: 11px 14px;
+      background: #0d1620;
+      border: 1px solid #1e2d40;
+      border-radius: 8px;
+      color: #e8eaf0;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .field input:focus { border-color: #f6a435; }
+
+    .btn-primary {
+      width: 100%;
+      padding: 12px;
+      background: #f6a435;
+      color: #0a0f15;
+      font-weight: 700;
+      font-size: 0.95rem;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: background 0.15s, opacity 0.15s;
+    }
+    .btn-primary:hover { background: #ffb84d; }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .auth-footer {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 0.85rem;
+      color: #667788;
+    }
+    .auth-footer a { color: #f6a435; text-decoration: none; }
+    .auth-footer a:hover { text-decoration: underline; }
+
+    .msg {
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      margin-bottom: 16px;
+      display: none;
+    }
+    .msg.error { background: rgba(232,50,74,0.12); border:1px solid rgba(232,50,74,0.3); color:#e8324a; display:block; }
+    .msg.success { background: rgba(60,200,120,0.10); border:1px solid rgba(60,200,120,0.25); color:#3cc878; display:block; }
+
+    .spinner {
+      display: inline-block;
+      width: 14px; height: 14px;
+      border: 2px solid rgba(0,0,0,0.2);
+      border-top-color: #0a0f15;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="brand-name">⚔ KingSim</div>
+      <div class="brand-sub">Kingdom #1079 Strategy Tool</div>
+    </div>
+
+    <h2>Sign In</h2>
+
+    <div id="msg" class="msg"></div>
+
+    <div class="field">
+      <label for="email">Email Address</label>
+      <input type="email" id="email" placeholder="your@email.com" autocomplete="email">
+    </div>
+
+    <div class="field">
+      <label for="password">Password</label>
+      <input type="password" id="password" placeholder="••••••••" autocomplete="current-password">
+    </div>
+
+    <button class="btn-primary" id="loginBtn">Sign In</button>
+
+    <div class="auth-footer">
+      No account yet? <a href="/register.html">Register here</a>
+    </div>
+  </div>
+
+  <script src="/assets/auth-client.js"></script>
+  <script>
+    // If already logged in, go home
+    if (window.KsAuth.isLoggedIn()) window.location.href = '/index.html';
+
+    const msgEl  = document.getElementById('msg');
+    const btn    = document.getElementById('loginBtn');
+    const emailEl = document.getElementById('email');
+    const pwEl   = document.getElementById('password');
+
+    function showMsg(text, type) {
+      msgEl.textContent = text;
+      msgEl.className = 'msg ' + type;
+    }
+
+    async function doLogin() {
+      const email = emailEl.value.trim();
+      const password = pwEl.value;
+      if (!email || !password) { showMsg('Please enter email and password.', 'error'); return; }
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span>Signing in…';
+      msgEl.className = 'msg';
+
+      const { ok, data } = await window.KsAuth.apiFetch('/auth-login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password }),
+      });
+
+      btn.disabled = false;
+      btn.innerHTML = 'Sign In';
+
+      if (!ok) { showMsg(data.error || 'Login failed.', 'error'); return; }
+
+      window.KsAuth.saveSession(data.token, data.user);
+      showMsg('Welcome back, ' + (data.user.game_nick || data.user.full_name || 'Commander') + '!', 'success');
+      setTimeout(() => { window.location.href = '/index.html'; }, 800);
+    }
+
+    btn.addEventListener('click', doLogin);
+    [emailEl, pwEl].forEach(el => el.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); }));
+  </script>
+</body>
+</html>

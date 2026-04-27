@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KingSim — Register</title>
+  <link rel="icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/assets/theme-all.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg, #0a0f15);
+      font-family: 'Inter', system-ui, sans-serif;
+      padding: 24px 16px;
+    }
+
+    .auth-card {
+      width: 100%;
+      max-width: 460px;
+      background: #111922;
+      border: 1px solid #1e2d40;
+      border-radius: 16px;
+      padding: 40px 32px;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+    }
+
+    .auth-logo {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+    .auth-logo .brand-name { font-size: 1.8rem; font-weight: 800; color: #f6a435; letter-spacing: 0.04em; }
+    .auth-logo .brand-sub  { font-size: 0.82rem; color: #667788; margin-top: 4px; }
+
+    /* Step indicator */
+    .steps {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      margin-bottom: 28px;
+    }
+    .step-dot {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: #1e2d40;
+      color: #667788;
+      font-size: 0.78rem;
+      font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s;
+    }
+    .step-dot.active  { background: #f6a435; color: #0a0f15; }
+    .step-dot.done    { background: #3cc878; color: #0a0f15; }
+    .step-line {
+      width: 48px; height: 2px;
+      background: #1e2d40;
+      transition: background 0.2s;
+    }
+    .step-line.done { background: #3cc878; }
+
+    .step-label {
+      text-align: center;
+      font-size: 0.75rem;
+      color: #667788;
+      margin-bottom: 20px;
+    }
+
+    h2 { font-size: 1.1rem; font-weight: 600; color: #e8eaf0; margin-bottom: 20px; text-align: center; }
+
+    .field { margin-bottom: 14px; }
+    .field label { display: block; font-size: 0.82rem; font-weight: 500; color: #aab4c8; margin-bottom: 5px; }
+    .field input, .field select {
+      width: 100%;
+      padding: 11px 14px;
+      background: #0d1620;
+      border: 1px solid #1e2d40;
+      border-radius: 8px;
+      color: #e8eaf0;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .field input:focus, .field select:focus { border-color: #f6a435; }
+    .field select option { background: #111922; }
+
+    .field .hint { font-size: 0.75rem; color: #556677; margin-top: 4px; }
+
+    /* Code input */
+    .code-input {
+      display: flex; gap: 8px; justify-content: center; margin: 16px 0;
+    }
+    .code-input input {
+      width: 44px; height: 52px;
+      text-align: center;
+      font-size: 1.4rem; font-weight: 700;
+      background: #0d1620;
+      border: 2px solid #1e2d40;
+      border-radius: 8px;
+      color: #f6a435;
+      outline: none;
+    }
+    .code-input input:focus { border-color: #f6a435; }
+
+    .btn-primary {
+      width: 100%;
+      padding: 12px;
+      background: #f6a435;
+      color: #0a0f15;
+      font-weight: 700;
+      font-size: 0.95rem;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 4px;
+      transition: background 0.15s, opacity 0.15s;
+    }
+    .btn-primary:hover { background: #ffb84d; }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .btn-ghost {
+      width: 100%;
+      padding: 10px;
+      background: transparent;
+      color: #667788;
+      font-size: 0.85rem;
+      border: 1px solid #1e2d40;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .btn-ghost:hover { color: #f6a435; border-color: #f6a435; }
+
+    .auth-footer {
+      text-align: center;
+      margin-top: 18px;
+      font-size: 0.85rem;
+      color: #667788;
+    }
+    .auth-footer a { color: #f6a435; text-decoration: none; }
+    .auth-footer a:hover { text-decoration: underline; }
+
+    .msg {
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      margin-bottom: 14px;
+      display: none;
+    }
+    .msg.error   { background: rgba(232,50,74,0.12); border:1px solid rgba(232,50,74,0.3); color:#e8324a; display:block; }
+    .msg.success { background: rgba(60,200,120,0.10); border:1px solid rgba(60,200,120,0.25); color:#3cc878; display:block; }
+    .msg.info    { background: rgba(246,164,53,0.08); border:1px solid rgba(246,164,53,0.2); color:#f6a435; display:block; }
+
+    .spinner {
+      display: inline-block;
+      width: 14px; height: 14px;
+      border: 2px solid rgba(0,0,0,0.2);
+      border-top-color: #0a0f15;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .step-panel { display: none; }
+    .step-panel.active { display: block; }
+
+    .resend-row { text-align: center; margin-top: 10px; font-size: 0.82rem; color: #556677; }
+    .resend-row a { color: #f6a435; cursor: pointer; }
+  </style>
+</head>
+<body>
+
+<div class="auth-card">
+  <div class="auth-logo">
+    <div class="brand-name">⚔ KingSim</div>
+    <div class="brand-sub">Kingdom #1079 — Create Account</div>
+  </div>
+
+  <!-- Step indicator -->
+  <div class="steps">
+    <div class="step-dot active" id="dot1">1</div>
+    <div class="step-line" id="line1"></div>
+    <div class="step-dot" id="dot2">2</div>
+    <div class="step-line" id="line2"></div>
+    <div class="step-dot" id="dot3">3</div>
+  </div>
+  <div class="step-label" id="stepLabel">Step 1 of 3 — Create your account</div>
+
+  <div id="msg" class="msg"></div>
+
+  <!-- STEP 1: Email + Password -->
+  <div class="step-panel active" id="step1">
+    <h2>Create Your Account</h2>
+    <div class="field">
+      <label for="email">Email Address</label>
+      <input type="email" id="email" placeholder="your@email.com" autocomplete="email">
+      <div class="hint">A 6-digit verification code will be sent here</div>
+    </div>
+    <div class="field">
+      <label for="password">Password</label>
+      <input type="password" id="password" placeholder="Minimum 8 characters" autocomplete="new-password">
+    </div>
+    <div class="field">
+      <label for="password2">Confirm Password</label>
+      <input type="password" id="password2" placeholder="Repeat password" autocomplete="new-password">
+    </div>
+    <button class="btn-primary" id="btn1">Send Verification Code</button>
+    <div class="auth-footer">Already have an account? <a href="/login.html">Sign in</a></div>
+  </div>
+
+  <!-- STEP 2: Verify code -->
+  <div class="step-panel" id="step2">
+    <h2>Verify Your Email</h2>
+    <p style="text-align:center;color:#aab4c8;font-size:0.88rem;margin-bottom:16px;">
+      We sent a 6-digit code to <strong id="emailDisplay" style="color:#f6a435"></strong>.<br>
+      Enter it below to continue.
+    </p>
+    <div class="code-input" id="codeInputs">
+      <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" id="c0">
+      <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" id="c1">
+      <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" id="c2">
+      <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" id="c3">
+      <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" id="c4">
+      <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" id="c5">
+    </div>
+    <button class="btn-primary" id="btn2">Verify Code</button>
+    <div class="resend-row">Didn't receive it? <a id="resendLink">Resend code</a></div>
+  </div>
+
+  <!-- STEP 3: Profile -->
+  <div class="step-panel" id="step3">
+    <h2>Complete Your Profile</h2>
+    <div class="field">
+      <label for="fullName">Full Name</label>
+      <input type="text" id="fullName" placeholder="Your real name (optional)">
+    </div>
+    <div class="field">
+      <label for="gameNick">In-Game Nickname <span style="color:#e8324a">*</span></label>
+      <input type="text" id="gameNick" placeholder="Your KingShot nickname">
+    </div>
+    <div class="field">
+      <label for="alliance">Alliance <span style="color:#e8324a">*</span></label>
+      <select id="alliance">
+        <option value="">— Select your alliance —</option>
+        <option value="WHO">WHO</option>
+        <option value="HRD">HRD</option>
+        <option value="404">404</option>
+        <option value="UNT">UNT</option>
+      </select>
+    </div>
+    <button class="btn-primary" id="btn3">Complete Registration</button>
+  </div>
+
+</div>
+
+<script src="/assets/auth-client.js"></script>
+<script>
+  if (window.KsAuth.isLoggedIn()) window.location.href = '/index.html';
+
+  let currentStep = 1;
+  let userId = null;
+
+  const msgEl = document.getElementById('msg');
+
+  function showMsg(text, type) {
+    msgEl.textContent = text;
+    msgEl.className = 'msg ' + type;
+  }
+  function clearMsg() { msgEl.className = 'msg'; }
+
+  function setStep(n) {
+    currentStep = n;
+    [1,2,3].forEach(i => {
+      document.getElementById('step' + i).classList.toggle('active', i === n);
+      const dot = document.getElementById('dot' + i);
+      dot.classList.toggle('active', i === n);
+      dot.classList.toggle('done', i < n);
+    });
+    [1,2].forEach(i => {
+      document.getElementById('line' + i).classList.toggle('done', i < n);
+    });
+    const labels = ['Step 1 of 3 — Create your account','Step 2 of 3 — Verify your email','Step 3 of 3 — Complete your profile'];
+    document.getElementById('stepLabel').textContent = labels[n-1];
+    clearMsg();
+  }
+
+  function setBtnLoading(id, loading, label) {
+    const btn = document.getElementById(id);
+    btn.disabled = loading;
+    btn.innerHTML = loading ? `<span class="spinner"></span>${label}` : label;
+  }
+
+  // ---- STEP 1 ----
+  document.getElementById('btn1').addEventListener('click', async () => {
+    const email = document.getElementById('email').value.trim();
+    const pw    = document.getElementById('password').value;
+    const pw2   = document.getElementById('password2').value;
+
+    if (!email) { showMsg('Email is required.', 'error'); return; }
+    if (pw.length < 8) { showMsg('Password must be at least 8 characters.', 'error'); return; }
+    if (pw !== pw2) { showMsg('Passwords do not match.', 'error'); return; }
+
+    setBtnLoading('btn1', true, 'Sending…');
+
+    const { ok, data } = await window.KsAuth.apiFetch('/auth-register', {
+      method: 'POST',
+      body: JSON.stringify({ email, password: pw }),
+    });
+
+    setBtnLoading('btn1', false, 'Send Verification Code');
+
+    if (!ok) { showMsg(data.error || 'Registration failed.', 'error'); return; }
+
+    userId = data.userId;
+    document.getElementById('emailDisplay').textContent = email;
+    showMsg('Code sent! Check your inbox (and spam folder).', 'success');
+    setTimeout(() => setStep(2), 800);
+    document.getElementById('c0').focus();
+  });
+
+  // ---- Code input auto-advance ----
+  const codeInputEls = [0,1,2,3,4,5].map(i => document.getElementById('c'+i));
+  codeInputEls.forEach((el, i) => {
+    el.addEventListener('input', () => {
+      el.value = el.value.replace(/\D/g,'').slice(-1);
+      if (el.value && i < 5) codeInputEls[i+1].focus();
+    });
+    el.addEventListener('keydown', e => {
+      if (e.key === 'Backspace' && !el.value && i > 0) codeInputEls[i-1].focus();
+      if (e.key === 'Enter') document.getElementById('btn2').click();
+    });
+    el.addEventListener('paste', e => {
+      e.preventDefault();
+      const digits = (e.clipboardData.getData('text').replace(/\D/g,'')).slice(0,6);
+      digits.split('').forEach((d,j) => { if (codeInputEls[j]) codeInputEls[j].value = d; });
+      const last = Math.min(digits.length, 5);
+      codeInputEls[last].focus();
+    });
+  });
+
+  // ---- STEP 2 ----
+  document.getElementById('btn2').addEventListener('click', async () => {
+    const code = codeInputEls.map(el => el.value).join('');
+    if (code.length < 6) { showMsg('Enter all 6 digits.', 'error'); return; }
+
+    setBtnLoading('btn2', true, 'Verifying…');
+
+    const { ok, data } = await window.KsAuth.apiFetch('/auth-verify', {
+      method: 'POST',
+      body: JSON.stringify({ userId, code }),
+    });
+
+    setBtnLoading('btn2', false, 'Verify Code');
+
+    if (!ok) { showMsg(data.error || 'Verification failed.', 'error'); return; }
+
+    showMsg('Email verified! Now complete your profile.', 'success');
+    setTimeout(() => setStep(3), 700);
+  });
+
+  // Resend
+  document.getElementById('resendLink').addEventListener('click', async () => {
+    const email = document.getElementById('email').value.trim();
+    const pw    = document.getElementById('password').value;
+    if (!email || !pw) { showMsg('Go back and fill email and password first.', 'error'); return; }
+    const { ok, data } = await window.KsAuth.apiFetch('/auth-register', {
+      method: 'POST',
+      body: JSON.stringify({ email, password: pw }),
+    });
+    if (ok) { userId = data.userId; showMsg('New code sent!', 'info'); }
+    else showMsg(data.error || 'Failed to resend.', 'error');
+  });
+
+  // ---- STEP 3 ----
+  document.getElementById('btn3').addEventListener('click', async () => {
+    const gameNick = document.getElementById('gameNick').value.trim();
+    const alliance = document.getElementById('alliance').value;
+    const fullName = document.getElementById('fullName').value.trim();
+
+    if (!gameNick) { showMsg('In-game nickname is required.', 'error'); return; }
+    if (!alliance) { showMsg('Please select your alliance.', 'error'); return; }
+
+    setBtnLoading('btn3', true, 'Finishing…');
+
+    const { ok, data } = await window.KsAuth.apiFetch('/user-profile-update', {
+      method: 'POST',
+      body: JSON.stringify({ userId, full_name: fullName, game_nick: gameNick, alliance }),
+    });
+
+    setBtnLoading('btn3', false, 'Complete Registration');
+
+    if (!ok) { showMsg(data.error || 'Profile save failed.', 'error'); return; }
+
+    showMsg('Registration complete! Redirecting to login…', 'success');
+    setTimeout(() => { window.location.href = '/login.html?registered=1'; }, 1500);
+  });
+</script>
+</body>
+</html>

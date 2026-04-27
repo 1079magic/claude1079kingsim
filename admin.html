@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KingSim — Admin</title>
+  <link rel="icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/assets/theme-all.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg,#0a0f15); color: #e8eaf0; font-family: 'Inter',system-ui,sans-serif; padding: 0 0 60px; }
+
+    .admin-wrap { max-width: 1100px; margin: 0 auto; padding: 32px 16px; }
+    h1 { font-size: 1.5rem; color: #f6a435; margin-bottom: 8px; }
+    .sub { color: #667788; font-size: 0.85rem; margin-bottom: 28px; }
+
+    /* Stat cards */
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 14px;
+      margin-bottom: 32px;
+    }
+    .stat-card {
+      background: #111922;
+      border: 1px solid #1e2d40;
+      border-radius: 12px;
+      padding: 18px 16px;
+    }
+    .stat-card .val { font-size: 2rem; font-weight: 800; color: #f6a435; }
+    .stat-card .lbl { font-size: 0.78rem; color: #667788; margin-top: 4px; }
+    .stat-card.green .val { color: #3cc878; }
+    .stat-card.red .val   { color: #e8324a; }
+
+    /* Alliance strip */
+    .alliance-strip { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 32px; }
+    .alliance-badge {
+      background: #111922;
+      border: 1px solid #1e2d40;
+      border-radius: 8px;
+      padding: 10px 18px;
+      font-size: 0.9rem;
+    }
+    .alliance-badge .a-name { font-weight: 700; color: #f6a435; }
+    .alliance-badge .a-cnt  { color: #aab4c8; margin-left: 8px; }
+
+    /* Users table */
+    h2 { font-size: 1rem; font-weight: 600; color: #cdd6e8; margin-bottom: 12px; }
+    .table-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid #1e2d40; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    th { background: #111922; color: #667788; font-weight: 600; padding: 10px 12px; text-align: left; white-space: nowrap; }
+    td { padding: 9px 12px; border-top: 1px solid #1a2535; color: #cdd6e8; white-space: nowrap; }
+    tr:hover td { background: #131e2a; }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 700;
+    }
+    .badge.admin   { background: #e8324a22; color: #e8324a; border:1px solid #e8324a44; }
+    .badge.user    { background: #f6a43522; color: #f6a435; border:1px solid #f6a43544; }
+    .badge.ok      { background: #3cc87822; color: #3cc878; border:1px solid #3cc87844; }
+    .badge.pending { background: #66778822; color: #667788; border:1px solid #66778844; }
+
+    .loading-msg { color: #667788; padding: 40px; text-align: center; }
+
+    .refresh-btn {
+      float: right;
+      background: #1e2d40;
+      border: 1px solid #2a3a52;
+      color: #aab4c8;
+      padding: 6px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      transition: color 0.15s;
+    }
+    .refresh-btn:hover { color: #f6a435; }
+
+    .access-denied {
+      display: flex; align-items: center; justify-content: center;
+      min-height: 60vh; flex-direction: column; gap: 16px; color: #667788;
+    }
+    .access-denied .icon { font-size: 3rem; }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <div class="nav">
+    <div class="nav-inner">
+      <a class="brand" href="index.html"><span class="brand-badge"></span>KingSim</a>
+      <div class="nav-links">
+        <a href="index.html">Home</a>
+        <a href="troops.html">Troops &amp; Stats</a>
+        <a href="heros.html">Heroes</a>
+        <a href="magic.html">Bear Magic</a>
+        <a href="optiona.html">Bear Option‑A</a>
+        <a href="mystic.html">Mystic Trials</a>
+        <a href="pvp.html">PvP</a>
+        <a href="admin.html" style="color:#e8324a">⚙ Admin</a>
+      </div>
+      <div class="nav-ctas"></div>
+    </div>
+  </div>
+
+  <div class="admin-wrap" id="adminWrap">
+    <div class="loading-msg">Loading admin dashboard…</div>
+  </div>
+
+  <script src="/assets/auth-client.js"></script>
+  <script>
+    async function init() {
+      const session = await window.KsAuth.requireLogin();
+      if (!session) return;
+      if (session.user.role !== 'admin') {
+        document.getElementById('adminWrap').innerHTML = `
+          <div class="access-denied">
+            <div class="icon">🚫</div>
+            <div>Admin access required.</div>
+            <a href="/index.html" style="color:#f6a435">Go back home</a>
+          </div>`;
+        return;
+      }
+      loadDashboard();
+    }
+
+    async function loadDashboard() {
+      const { ok, data } = await window.KsAuth.apiFetch('/admin-dashboard');
+      if (!ok) {
+        document.getElementById('adminWrap').innerHTML = `<div class="loading-msg">Failed to load: ${data.error||'unknown error'}</div>`;
+        return;
+      }
+
+      const t = data.totals;
+      const wrap = document.getElementById('adminWrap');
+
+      wrap.innerHTML = `
+        <h1>⚙ Admin Dashboard</h1>
+        <p class="sub">KingSim 1079 — all numbers are live from the database</p>
+
+        <div class="stat-grid">
+          <div class="stat-card">
+            <div class="val">${t.total_users}</div>
+            <div class="lbl">Registered Users</div>
+          </div>
+          <div class="stat-card green">
+            <div class="val">${t.active_24h}</div>
+            <div class="lbl">Active (24h)</div>
+          </div>
+          <div class="stat-card green">
+            <div class="val">${t.active_7d}</div>
+            <div class="lbl">Active (7 days)</div>
+          </div>
+          <div class="stat-card">
+            <div class="val">${t.new_7d}</div>
+            <div class="lbl">New (7 days)</div>
+          </div>
+          <div class="stat-card red">
+            <div class="val">${t.pending_verification}</div>
+            <div class="lbl">Pending Verification</div>
+          </div>
+          <div class="stat-card">
+            <div class="val">${data.active_sessions}</div>
+            <div class="lbl">Active Sessions</div>
+          </div>
+        </div>
+
+        <h2>Alliance Breakdown</h2>
+        <div class="alliance-strip">
+          ${(data.by_alliance||[]).map(a => `
+            <div class="alliance-badge">
+              <span class="a-name">${a.alliance}</span>
+              <span class="a-cnt">${a.cnt} member${a.cnt != 1 ? 's':''}</span>
+            </div>`).join('')}
+          ${!data.by_alliance?.length ? '<div style="color:#667788;font-size:0.85rem">No alliance data yet</div>' : ''}
+        </div>
+
+        <h2>
+          All Users
+          <button class="refresh-btn" onclick="loadDashboard()">↻ Refresh</button>
+        </h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Email</th>
+                <th>Nick</th>
+                <th>Alliance</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Registered</th>
+                <th>Last Login</th>
+                <th>Logins</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${data.users.map((u,i) => `
+                <tr>
+                  <td style="color:#445566">${u.id}</td>
+                  <td>${u.email}</td>
+                  <td>${u.game_nick || u.full_name || '<span style="color:#445566">—</span>'}</td>
+                  <td>${u.alliance ? `<span class="badge user">${u.alliance}</span>` : '<span style="color:#445566">—</span>'}</td>
+                  <td><span class="badge ${u.role}">${u.role}</span></td>
+                  <td><span class="badge ${u.verified?'ok':'pending'}">${u.verified?'verified':'pending'}</span></td>
+                  <td>${new Date(u.created_at).toLocaleDateString()}</td>
+                  <td>${u.last_login ? new Date(u.last_login).toLocaleString() : '<span style="color:#445566">never</span>'}</td>
+                  <td>${u.login_count}</td>
+                </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    init();
+  </script>
+</body>
+</html>
