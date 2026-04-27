@@ -11,16 +11,17 @@ exports.handler = async (event) => {
   const [totals, byAlliance, recent, activeSessions] = await Promise.all([
     query(`
       SELECT
-        COUNT(*) FILTER (WHERE verified=TRUE)             AS total_users,
-        COUNT(*) FILTER (WHERE verified=FALSE)            AS pending_verification,
+        COUNT(*) FILTER (WHERE verified=TRUE)                                    AS total_users,
+        COUNT(*) FILTER (WHERE verified=TRUE AND role='admin')                   AS total_admins,
+        COUNT(*) FILTER (WHERE verified=FALSE)                                   AS pending_verification,
         COUNT(*) FILTER (WHERE last_login > NOW()-INTERVAL '24h' AND verified=TRUE) AS active_24h,
         COUNT(*) FILTER (WHERE last_login > NOW()-INTERVAL '7d'  AND verified=TRUE) AS active_7d,
-        COUNT(*) FILTER (WHERE created_at > NOW()-INTERVAL '7d' AND verified=TRUE)  AS new_7d
-      FROM users WHERE role='user'
+        COUNT(*) FILTER (WHERE created_at > NOW()-INTERVAL '7d'  AND verified=TRUE) AS new_7d
+      FROM users
     `),
     query(`
       SELECT alliance, COUNT(*) AS cnt
-      FROM users WHERE verified=TRUE AND role='user' AND alliance IS NOT NULL
+      FROM users WHERE verified=TRUE AND alliance IS NOT NULL
       GROUP BY alliance ORDER BY cnt DESC
     `),
     query(`
