@@ -9,13 +9,14 @@
 (function(){
   'use strict';
 
-  // ---------- Global Composition Bounds ----------
-  const INF_MIN_PCT = 0.075;
-  const INF_MAX_PCT = 0.10;
-  const CAV_MIN_PCT = 0.10;
+  // ---------- Global Composition Bounds (REMOVED — no clamping on call) ----------
+  // Kept only for JOIN fallback defaults
+  const INF_MIN_PCT = 0.075;  // used for JOIN minimums only
+  const INF_MAX_PCT = 1.0;    // effectively unclamped
+  const CAV_MIN_PCT = 0.0;    // no minimum
 
   let inited = false;
-  let lastBestTriplet = { fin: INF_MIN_PCT, fcav: CAV_MIN_PCT, farc: 1-INF_MIN_PCT-CAV_MIN_PCT };
+  let lastBestTriplet = { fin: 0.075, fcav: 0.10, farc: 0.825 };
   let compUserEdited = false;
   let compJoinUserEdited = false;
 
@@ -41,20 +42,14 @@
     return (t === 'T6') ? (4.4/1.25) : (2.78/1.45);
   }
 
-  // ---------- Composition Bounds ----------
+  // ---------- Composition Bounds (no clamping — pass through) ----------
   function enforceCompositionBounds(fin, fcav, farc) {
-    let i = fin, c = fcav, a = farc;
-    if (i < INF_MIN_PCT) i = INF_MIN_PCT;
-    if (i > INF_MAX_PCT) i = INF_MAX_PCT;
-    if (c < CAV_MIN_PCT) c = CAV_MIN_PCT;
-    a = 1 - i - c;
-    if (a < 0) {
-      c = Math.max(CAV_MIN_PCT, 1 - i);
-      a = 1 - i - c;
-      if (a < 0) { a = 0; c = 1 - i; }
-    }
+    // No clamping: let the optimizer produce any valid fractions
+    const i = Math.max(0, fin);
+    const c = Math.max(0, fcav);
+    const a = Math.max(0, farc);
     const S = i + c + a;
-    if (S <= 0) return { fin: INF_MIN_PCT, fcav: CAV_MIN_PCT, farc: 1 - INF_MIN_PCT - CAV_MIN_PCT };
+    if (S <= 0) return { fin: 0.075, fcav: 0.10, farc: 0.825 };
     return { fin: i/S, fcav: c/S, farc: a/S };
   }
 
@@ -129,7 +124,7 @@
   // ---------- Parse fractions from actual troop counts ----------
   function fractionsFromCounts(inf, cav, arc) {
     const total = inf + cav + arc;
-    if (total <= 0) return { fin: INF_MIN_PCT, fcav: CAV_MIN_PCT, farc: 1 - INF_MIN_PCT - CAV_MIN_PCT };
+    if (total <= 0) return { fin: 0.075, fcav: 0.10, farc: 0.825 };
     return { fin: inf / total, fcav: cav / total, farc: arc / total };
   }
 
@@ -154,7 +149,7 @@
     if (!el) return;
     el.value = formatTriplet(lastBestTriplet.fin, lastBestTriplet.fcav, lastBestTriplet.farc);
     const hint = getCompHintEl();
-    if (hint) hint.textContent = "Auto-filled from Best (bounded). Edit to override.";
+    if (hint) hint.textContent = "Auto-filled from engine (unclamped). Edit to override.";
   }
   function getFractionsForRally() {
     const el = getCompEl();
@@ -175,7 +170,7 @@
       if (hint) {
         const orig = formatTriplet(parsed.fin,parsed.fcav,parsed.farc);
         hint.textContent = (orig !== disp)
-          ? `Using (clamped): ${disp} · (Inf 7.5–10%, Cav ≥ 10%)`
+          ? `Using (adjusted): ${disp}`
           : `Using: ${disp}`;
       }
       return bounded;
@@ -244,7 +239,7 @@
           const bestReadoutEl = document.getElementById("bestReadout");
           if (bestReadoutEl) {
             bestReadoutEl.innerText =
-              `Best Call Rally Composition ≈ ${actualDisp} (Inf/Cav/Arc) · [Inf 7.5–10%, Cav ≥ 10%].`;
+              `Best Call Rally Composition ≈ ${actualDisp} (Inf/Cav/Arc) · [unclamped].`;
           }
         }
       }
@@ -376,35 +371,27 @@
     }
 
     document.getElementById("bestReadout").innerText =
-      `Best Call Rally Composition ≈ ${formatTriplet(bounded.fin,bounded.fcav,bounded.farc)} (Inf/Cav/Arc) · [Inf 7.5–10%, Cav ≥ 10%].`;
+      `Best Call Rally Composition ≈ ${formatTriplet(bounded.fin,bounded.fcav,bounded.farc)} (Inf/Cav/Arc) · [unclamped].`;
 
     updateRecommendedDisplay();
   }
 
-// ---------- Rally Build — allocates proportionally to fractions, then clamps to bounds ----------
-// fractions = { fin, fcav, farc } from the plot/optimizer (the actual optimal ratios).
-// Bounds: INF 7.5–10%, CAV ≥ 10%. Remaining space after placing inf+cav goes to archers.
-// If archers run short, excess space is filled by cav first, then inf (up to 10%).
+// ---------- Rally Build — allocates proportionally to fractions, no formation clamping ----------
+// fractions = { fin, fcav, farc } from the plot/optimizer.
+// No INF/CAV bounds enforced — only stock limits apply.
 function buildRally(fractions, rallySize, stock) {
 
   if (rallySize <= 0)
     return { inf: 0, cav: 0, arc: 0 };
 
-  const iMin = Math.ceil(INF_MIN_PCT * rallySize);
-  const iMax = Math.floor(INF_MAX_PCT * rallySize);
-  const cMin = Math.ceil(CAV_MIN_PCT * rallySize);
+  // Step 1: Target amounts from optimizer fractions, limited only by stock
+  let inf = Math.min(stock.inf, Math.max(0, Math.round(fractions.fin * rallySize)));
+  let cav = Math.min(stock.cav, Math.max(0, Math.round(fractions.fcav * rallySize)));
 
-  // Step 1: Target amounts from optimizer fractions, clamped to bounds and stock.
-  // Infantry: clamp to [iMin, iMax], also limited by stock
-  let inf = Math.min(stock.inf, Math.max(iMin, Math.min(iMax, Math.round(fractions.fin * rallySize))));
-
-  // Cavalry: at least cMin, target from fractions, limited by stock
-  let cav = Math.min(stock.cav, Math.max(cMin, Math.round(fractions.fcav * rallySize)));
-
-  // If inf + cav already exceed rally size (shouldn't happen with sane fractions but be safe)
+  // If inf + cav already exceed rally size, scale back cav then inf
   if (inf + cav > rallySize) {
-    // Scale back cav first, keeping cMin
-    cav = Math.max(cMin, rallySize - inf);
+    cav = Math.max(0, rallySize - inf);
+    if (inf + cav > rallySize) inf = Math.max(0, rallySize - cav);
   }
 
   // Step 2: Fill remaining space with archers
@@ -418,9 +405,9 @@ function buildRally(fractions, rallySize, stock) {
     used += add;
   }
 
-  // Step 4: If still space, top up with extra infantry (up to iMax)
+  // Step 4: If still space, top up with extra infantry
   if (used < rallySize && stock.inf - inf > 0) {
-    const add = Math.min(rallySize - used, stock.inf - inf, Math.max(0, iMax - inf));
+    const add = Math.min(rallySize - used, stock.inf - inf);
     inf += add;
     used += add;
   }
@@ -594,7 +581,7 @@ function buildRally(fractions, rallySize, stock) {
     const bestDisp = formatTriplet(bounded.fin,bounded.fcav,bounded.farc);
 
     const fracEl = document.getElementById("opt_fractionReadout");
-    if (fracEl) fracEl.innerText = `Target fractions (bounded · Inf 7.5–10%, Cav ≥ 10%): ${usedDisp} · Best: ${bestDisp}`;
+    if (fracEl) fracEl.innerText = `Target fractions (unclamped): ${usedDisp} · Best: ${bestDisp}`;
 
     const stock = {
       inf: Math.max(0, Math.floor(num("stockInf"))),
