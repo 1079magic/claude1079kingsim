@@ -46,7 +46,7 @@ async function ensureSchema() {
     CREATE TABLE IF NOT EXISTS verification_codes (
       id         SERIAL PRIMARY KEY,
       user_id    INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      code       CHAR(6) NOT NULL,
+      code       TEXT NOT NULL,
       expires_at TIMESTAMPTZ NOT NULL,
       used       BOOLEAN NOT NULL DEFAULT FALSE,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
