@@ -28,11 +28,10 @@ exports.handler = async (event) => {
 
   const hash = await bcrypt.hash(password, 12);
   const code = randomCode();
-  const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 min
+  const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
 
   let userId;
   if (existing.rows.length) {
-    // Re-registration attempt — update password, reset verified
     userId = existing.rows[0].id;
     await query('UPDATE users SET password_hash=$1, verified=FALSE WHERE id=$2', [hash, userId]);
     await query('UPDATE verification_codes SET used=TRUE WHERE user_id=$1', [userId]);
@@ -52,8 +51,9 @@ exports.handler = async (event) => {
   try {
     await sendVerificationCode(email, code);
   } catch (e) {
-    console.error('Email send failed:', e.message);
-    return err('Failed to send verification email. Check email address.');
+    // Return the actual Resend error so we can diagnose
+    console.error('[auth-register] Email send failed:', e.message);
+    return err('Email send failed: ' + e.message, 500);
   }
 
   return ok({ message: 'Verification code sent', userId });
